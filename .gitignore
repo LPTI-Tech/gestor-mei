@@ -1,0 +1,104 @@
+# ==========================================
+# GESTOR MEI - .gitignore Unificado
+# React + Vite + FastAPI + Python + SQLite + PostgreSQL
+# ==========================================
+
+# ------------------------------------------
+# Python / FastAPI
+# ------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+
+# Testes & Cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# ------------------------------------------
+# Bancos de Dados Locais (SQLite & PostgreSQL)
+# ------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+gestor_mei.db
+*.sql.dump
+*.sql.gz
+*.psql
+
+# ------------------------------------------
+# Frontend React / Vite / TypeScript
+# ------------------------------------------
+node_modules/
+frontend/node_modules/
+.pnp
+.pnp.js
+frontend/dist/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------
+# Variáveis de Ambiente & Segredos
+# ------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# ------------------------------------------
+# IDEs & Editores
+# ------------------------------------------
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+Desktop.ini
