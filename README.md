@@ -228,12 +228,21 @@ O banco de dados de desenvolvimento já inicializa com dados demonstrativos comp
 |---|---|---|---|
 | **Administrador** | Leonidas Paulino | `admin@gestormei.com.br` | `admin123` |
 | **Operador** | Carlos Atendente | `operador@gestormei.com.br` | `operador123` |
+| **Consultor LPTI Tech** | Consultor LPTI Tech | `consultor@lptitech.com.br` | `consultor123` |
+
+---
+
+## ☁️ Deploy em Nuvem (Ambiente Beta)
+
+O Gestor MEI está 100% pronto para publicação em nuvem:
+- 📖 [Guia Completo de Deploy (Vercel + Render + Neon/Supabase)](DEPLOY_BETA.md)
+- 📋 [Roteiro & Checklist de Testes Piloto](CHECKLIST_TESTES_PILOTO.md)
 
 ---
 
 ## 🧪 Testes Automatizados
 
-Para executar os testes de integração das Sprints 1, 2, 3 e 4:
+Para executar os testes de integração de todas as Sprints (46 testes automatizados com 100% de aprovação):
 ```powershell
 cd backend
 pytest -v

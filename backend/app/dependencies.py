@@ -88,3 +88,26 @@ def require_operador(
             detail="Acesso não autorizado.",
         )
     return user
+
+
+def require_consultor_or_admin(
+    user: User = Depends(get_current_user)
+) -> User:
+    # ADMIN e CONSULTOR podem acessar o Painel do Consultor
+    if user.role not in [UserRole.ADMIN, UserRole.CONSULTOR]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a Consultores e Administradores.",
+        )
+    return user
+
+
+def require_consultor(
+    user: User = Depends(get_current_user)
+) -> User:
+    if user.role != UserRole.CONSULTOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao perfil Consultor.",
+        )
+    return user

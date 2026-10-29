@@ -13,6 +13,14 @@ import {
   LinearProgress,
   Paper,
   Chip,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  ButtonGroup,
 } from '@mui/material';
 import {
   Today,
@@ -22,15 +30,15 @@ import {
   AccountBalanceWallet,
   ShoppingBag,
   TrendingUp,
-  PointOfSale,
   ArrowForward,
-  TrendingDown,
-  Assessment,
   WarningAmber,
   CheckCircle,
   ReportProblem,
   ReceiptLong,
-  Payment,
+  Favorite,
+  OpenInNew,
+  ContentCopy,
+  Inventory2,
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -44,7 +52,7 @@ import {
   Bar,
 } from 'recharts';
 import api from '../services/api';
-import { DashboardMetrics, Produto } from '../types';
+import { DashboardMetrics, Produto, SaudeNegocio } from '../types';
 import { StatCard } from '../components/StatCard';
 import { DashboardGreeting } from '../components/DashboardGreeting';
 import { formatCurrency } from '../services/exportUtils';
@@ -55,18 +63,24 @@ export const Dashboard: React.FC = () => {
   const { user, empresa } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [saude, setSaude] = useState<SaudeNegocio | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
 
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const [resMetrics, resProdutos] = await Promise.all([
+      const [resMetrics, resProdutos, resSaude] = await Promise.all([
         api.get<DashboardMetrics>('/dashboard'),
         api.get<Produto[]>('/produtos?apenas_ativos=true').catch(() => ({ data: [] as Produto[] })),
+        api.get<SaudeNegocio>('/saude-negocio?dias=30').catch(() => ({ data: null })),
       ]);
       setMetrics(resMetrics.data);
       setProdutos(resProdutos.data);
+      if (resSaude?.data) {
+        setSaude(resSaude.data);
+      }
       setError(null);
     } catch (err: any) {
       setError('Não foi possível carregar os dados do dashboard.');
@@ -78,6 +92,35 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchMetrics();
   }, []);
+
+  const handleCopyDasData = () => {
+    const cnpj = empresa?.cnpj || 'Não informado';
+    const razao = empresa?.nome_empresarial || empresa?.nome_fantasia || 'MEI';
+    const mesAtual = metrics?.das_vencimento_mes_atual ? `Vencimento: ${metrics.das_vencimento_mes_atual}` : 'Vencimento: Dia 20';
+    const valor = formatCurrency(metrics?.das_valor_mes_atual || 75.60);
+    const status = metrics?.das_status_mes_atual || 'Pendente';
+
+    const text = `DADOS PARA PAGAMENTO DO DAS MEI\n` +
+      `Razão Social / Nome: ${razao}\n` +
+      `CNPJ: ${cnpj}\n` +
+      `Valor da Guia: ${valor}\n` +
+      `${mesAtual}\n` +
+      `Status: ${status}\n` +
+      `Portal Oficial PGMEI: https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/pgmei.app/Identificacao`;
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+    setSnackbarMsg('Dados do DAS copiados com sucesso para a área de transferência!');
+  };
+
+  const handleOpenPgmei = () => {
+    window.open(
+      'https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/pgmei.app/Identificacao',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
 
   if (loading) {
     return (
@@ -95,6 +138,10 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  const produtosCriticos = produtos.filter(
+    (p) => (p.quantidade_estoque ?? 0) <= (p.estoque_minimo ?? 0)
+  );
+
   return (
     <Box>
       {/* Dashboard Inteligente: Saudação Personalizada & Insights Dinâmicos */}
@@ -105,29 +152,59 @@ export const Dashboard: React.FC = () => {
         produtos={produtos}
       />
 
-      {/* Alertas do Controle DAS Mensal (Sprint 5) */}
-      {/* 1. Alerta: DAS Venceu */}
+      {/* Alertas Aprimorados do Controle DAS Mensal (Sprint 5.1 UX/UI) */}
+      {/* 1. Alerta: DAS Venceu / Em atraso */}
       {Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
         <Alert
           severity="error"
           icon={<ReportProblem />}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => navigate('/das')}
-              sx={{ fontWeight: 700 }}
-            >
-              Regularizar DAS
-            </Button>
-          }
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+          sx={{ mb: 2.5, fontWeight: 500, borderRadius: 2 }}
         >
-          DAS Venceu: Você possui {metrics.das_qtd_atrasados} guia(s) DAS em atraso. Regularize para evitar multas de mora e suspensão de benefícios!
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 1.5, width: '100%' }}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={800}>
+                DAS em Atraso ({metrics.das_qtd_atrasados} guia{metrics.das_qtd_atrasados > 1 ? 's' : ''})
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.2 }}>
+                Regularize suas guias em aberto para evitar multas de mora e preservar benefícios como aposentadoria e auxílio-doença.
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: { xs: 1, md: 0 } }}>
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                onClick={() => navigate('/das')}
+                sx={{ fontWeight: 700, textTransform: 'none' }}
+              >
+                Regularizar DAS
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleOpenPgmei}
+                startIcon={<OpenInNew />}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Abrir PGMEI
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleCopyDasData}
+                startIcon={<ContentCopy />}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Copiar Dados
+              </Button>
+            </Box>
+          </Box>
         </Alert>
       )}
 
-      {/* 2. Alerta: DAS Vence em 7 dias */}
+      {/* 2. Alerta: DAS Vence em breve (até 7 dias) */}
       {metrics.das_status_mes_atual === 'Pendente' &&
         metrics.das_dias_restantes !== undefined &&
         metrics.das_dias_restantes !== null &&
@@ -136,19 +213,49 @@ export const Dashboard: React.FC = () => {
         <Alert
           severity="warning"
           icon={<CalendarMonth />}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => navigate('/das')}
-              sx={{ fontWeight: 700 }}
-            >
-              Pagar DAS
-            </Button>
-          }
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+          sx={{ mb: 2.5, fontWeight: 500, borderRadius: 2 }}
         >
-          DAS Vence em {metrics.das_dias_restantes === 0 ? 'HOJE (dia 20)!' : `${metrics.das_dias_restantes} dias (${metrics.das_vencimento_mes_atual || 'dia 20'})`}: Valor de {formatCurrency(metrics.das_valor_mes_atual || 75.60)}.
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 1.5, width: '100%' }}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={800}>
+                Lembrete Amigo: O DAS deste mês vence {metrics.das_dias_restantes === 0 ? 'HOJE!' : `em ${metrics.das_dias_restantes} dia(s)`}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.2 }}>
+                Vencimento: {metrics.das_vencimento_mes_atual || 'dia 20'} • Valor: {formatCurrency(metrics.das_valor_mes_atual || 75.60)}. O pagamento pontual mantém sua empresa 100% legalizada!
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: { xs: 1, md: 0 } }}>
+              <Button
+                variant="contained"
+                color="warning"
+                size="small"
+                onClick={() => navigate('/das')}
+                sx={{ fontWeight: 700, textTransform: 'none' }}
+              >
+                Ver Guia
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleOpenPgmei}
+                startIcon={<OpenInNew />}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Abrir PGMEI
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleCopyDasData}
+                startIcon={<ContentCopy />}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Copiar Dados
+              </Button>
+            </Box>
+          </Box>
         </Alert>
       )}
 
@@ -157,23 +264,43 @@ export const Dashboard: React.FC = () => {
         <Alert
           severity="success"
           icon={<CheckCircle />}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => navigate('/das')}
-              sx={{ fontWeight: 700 }}
-            >
-              Ver Detalhes
-            </Button>
-          }
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+          sx={{ mb: 2.5, fontWeight: 500, borderRadius: 2 }}
         >
-          DAS Pago: A guia deste mês ({metrics.das_vencimento_mes_atual}) já está quitada! Sua empresa está em dia com a Receita Federal.
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 1.5, width: '100%' }}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={800}>
+                Tudo Certo! DAS Quitado
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.2 }}>
+                A guia deste mês ({metrics.das_vencimento_mes_atual || 'competência atual'}) já está paga. Parabéns por manter seu negócio pontual e seguro!
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, mt: { xs: 1, md: 0 } }}>
+              <Button
+                variant="outlined"
+                color="success"
+                size="small"
+                onClick={() => navigate('/das')}
+                sx={{ fontWeight: 700, textTransform: 'none' }}
+              >
+                Ver Histórico
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={handleOpenPgmei}
+                startIcon={<OpenInNew />}
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              >
+                Portal PGMEI
+              </Button>
+            </Box>
+          </Box>
         </Alert>
       )}
 
-      {/* Alerta de Estoque Crítico (Sprint 4) */}
+      {/* Alerta de Estoque Crítico */}
       {Boolean(metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0) && (
         <Alert
           severity="warning"
@@ -324,7 +451,7 @@ export const Dashboard: React.FC = () => {
         </Grid>
       </Paper>
 
-      {/* Indicadores do Controle DAS Mensal (Sprint 5) */}
+      {/* Card Controle DAS Mensal (Sprint 5) com Ações Rápidas (Sprint 5.1 UX/UI) */}
       <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, borderLeft: '6px solid #1976D2' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -333,15 +460,38 @@ export const Dashboard: React.FC = () => {
               Controle DAS Mensal — Situação Fiscal MEI
             </Typography>
           </Box>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => navigate('/das')}
-            endIcon={<ArrowForward />}
-            sx={{ fontWeight: 700, borderRadius: 2 }}
-          >
-            Acessar Controle DAS
-          </Button>
+          {/* Ações Rápidas: Abrir PGMEI, Ver Guia, Copiar Dados */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              onClick={handleOpenPgmei}
+              startIcon={<OpenInNew />}
+              sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
+            >
+              Abrir PGMEI
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="inherit"
+              onClick={handleCopyDasData}
+              startIcon={<ContentCopy />}
+              sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
+            >
+              Copiar Dados
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => navigate('/das')}
+              endIcon={<ArrowForward />}
+              sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+            >
+              Acessar Controle DAS
+            </Button>
+          </Box>
         </Box>
 
         <Grid container spacing={2}>
@@ -416,6 +566,236 @@ export const Dashboard: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+
+      {/* Grid: Saúde do Negócio + Produtos com Estoque Crítico (Sprint 5.1 UX/UI) */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Card 1: Saúde do Negócio */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Favorite sx={{ color: saude?.score_saude && saude.score_saude >= 70 ? '#2E7D32' : '#ED6C02' }} />
+                  <Typography variant="h6" fontWeight={700}>
+                    Saúde do Negócio
+                  </Typography>
+                </Box>
+                {saude && (
+                  <Chip
+                    size="small"
+                    label={
+                      saude.classificacao_saude === 'EXCELENTE' ? 'Excelente' :
+                      saude.classificacao_saude === 'SAUDAVEL' ? 'Saudável' :
+                      saude.classificacao_saude === 'ATENCAO' ? 'Atenção' : 'Crítico'
+                    }
+                    color={
+                      saude.classificacao_saude === 'EXCELENTE' || saude.classificacao_saude === 'SAUDAVEL'
+                        ? 'success'
+                        : saude.classificacao_saude === 'ATENCAO'
+                        ? 'warning'
+                        : 'error'
+                    }
+                    sx={{ fontWeight: 800 }}
+                  />
+                )}
+              </Box>
+
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
+                Diagnóstico de rentabilidade e desempenho dos últimos 30 dias.
+              </Typography>
+
+              {saude ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Typography variant="body2" fontWeight={600} color="text.secondary">
+                        Score de Vitalidade Financeira
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        fontWeight={900}
+                        sx={{
+                          color: saude.score_saude >= 70 ? '#2E7D32' : saude.score_saude >= 50 ? '#ED6C02' : '#D32F2F',
+                        }}
+                      >
+                        {saude.score_saude}/100
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={saude.score_saude}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: 'divider',
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: saude.score_saude >= 70 ? '#2E7D32' : saude.score_saude >= 50 ? '#ED6C02' : '#D32F2F',
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          Margem de Lucro
+                        </Typography>
+                        <Typography variant="h6" fontWeight={800} color={saude.margem_lucro_percentual >= 15 ? 'success.main' : 'warning.main'}>
+                          {saude.margem_lucro_percentual.toFixed(1)}%
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          Resultado Líquido
+                        </Typography>
+                        <Typography variant="h6" fontWeight={800} color={saude.resultado_operacional >= 0 ? 'success.main' : 'error.main'}>
+                          {formatCurrency(saude.resultado_operacional)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  {saude.insights && saude.insights.length > 0 && (
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(25, 118, 210, 0.06)', borderLeft: '4px solid #1976D2' }}>
+                      <Typography variant="body2" fontWeight={700} color="primary.main">
+                        💡 {saude.insights[0].titulo}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {saude.insights[0].descricao}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Box sx={{ mt: 'auto', pt: 1 }}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      onClick={() => navigate('/saude-negocio')}
+                      endIcon={<ArrowForward />}
+                      sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Ver Diagnóstico Detalhado
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ py: 3, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Carregando indicadores de saúde do negócio...
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Card 2: Produtos com Estoque Crítico */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Inventory2 color={produtosCriticos.length > 0 ? 'warning' : 'success'} />
+                  <Typography variant="h6" fontWeight={700}>
+                    Produtos em Estoque Crítico
+                  </Typography>
+                </Box>
+                <Chip
+                  size="small"
+                  label={`${produtosCriticos.length} ${produtosCriticos.length === 1 ? 'item' : 'itens'}`}
+                  color={produtosCriticos.length > 0 ? 'warning' : 'success'}
+                  sx={{ fontWeight: 800 }}
+                />
+              </Box>
+
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
+                Itens com saldo igual ou inferior ao estoque mínimo recomendado.
+              </Typography>
+
+              {produtosCriticos.length > 0 ? (
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <TableContainer sx={{ maxHeight: 220 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Produto</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Estoque Atual</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Estoque Mín.</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Ação</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {produtosCriticos.slice(0, 4).map((p) => (
+                          <TableRow key={p.id} hover>
+                            <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                              {p.nome}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                size="small"
+                                label={`${p.quantidade_estoque ?? 0} un`}
+                                color={(p.quantidade_estoque ?? 0) <= 0 ? 'error' : 'warning'}
+                                sx={{ fontWeight: 700, height: 22, fontSize: '0.7rem' }}
+                              />
+                            </TableCell>
+                            <TableCell align="center" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                              {p.estoque_minimo ?? 0} un
+                            </TableCell>
+                            <TableCell align="right">
+                              <Button
+                                size="small"
+                                variant="text"
+                                color="primary"
+                                onClick={() => navigate('/estoque')}
+                                sx={{ fontSize: '0.75rem', fontWeight: 700, p: 0.5, minWidth: 'auto', textTransform: 'none' }}
+                              >
+                                Repor
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                  {produtosCriticos.length > 4 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                      + {produtosCriticos.length - 4} outro(s) produto(s) com atenção necessária.
+                    </Typography>
+                  )}
+
+                  <Box sx={{ mt: 'auto', pt: 1.5 }}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      onClick={() => navigate('/estoque')}
+                      endIcon={<ArrowForward />}
+                      sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Gerenciar Todo o Estoque
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ py: 4, textAlign: 'center', my: 'auto' }}>
+                  <CheckCircle sx={{ fontSize: 44, color: 'success.main', mb: 1, opacity: 0.9 }} />
+                  <Typography variant="body2" fontWeight={700} color="text.primary">
+                    Estoque 100% equilibrado!
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Nenhum produto cadastrado está abaixo da margem de reposição.
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Row 4: Gráficos de Vendas */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -597,6 +977,15 @@ export const Dashboard: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Snackbar para Copiar Dados do DAS */}
+      <Snackbar
+        open={Boolean(snackbarMsg)}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarMsg(null)}
+        message={snackbarMsg}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 };

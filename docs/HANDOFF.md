@@ -1,6 +1,6 @@
 # 📋 Manual de Handoff & Arquitetura — GESTOR MEI
 
-> **Versão:** 1.2.0 (Sprints 1, 2, 3, 4 e 5 Concluídas)  
+> **Versão:** 1.4.0 (Sprints 1, 2, 3, 4, 5, 6, 6.5 e 7 Concluídas)  
 > **Responsável:** Equipe de Engenharia / Leonidas Paulino  
 > **Data:** 29 de Outubro de 2026  
 
@@ -196,6 +196,7 @@ npm run dev
 - **API Swagger Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **Credenciais Demonstrativas:**
   - **Administrador:** `admin@gestormei.com.br` / `admin123`
+  - **Consultor LPTI Tech:** `consultor@lptitech.com.br` / `consultor123`
   - **Operador:** `operador@gestormei.com.br` / `operador123`
 
 ---
@@ -206,7 +207,7 @@ Na pasta `backend/`:
 ```bash
 pytest tests/ -v
 ```
-Todos os 27 testes automatizados das Sprints 2, 3, 4 e 5 (CRUD de clientes, vendas com carrinho, cálculo automático de totais, impacto no caixa, demonstrativo DASN-SIMEI, ciclo de status do pedido, vinculação de motoboys, relatórios logísticos, comanda térmica ESC/POS, controle de estoque com entradas/saídas manuais, ajuste de inventário, baixa automática no PDV, estorno em cancelamento, alertas de estoque crítico, auto-geração das 12 guias DAS, registro de pagamento, alteração manual de status, consulta de vencimentos e alertas em 7 dias/vencidos/pagos, resumo financeiro do DAS e integração com Dashboard) rodam com 100% de aprovação.
+Todos os 46 testes automatizados das Sprints 2, 3, 4, 5, 6, 6.5 e 7 (CRUD de clientes, vendas com carrinho, cálculo automático de totais, impacto no caixa, demonstrativo DASN-SIMEI, ciclo de status do pedido, vinculação de motoboys, relatórios logísticos, comanda térmica ESC/POS, controle de estoque com entradas/saídas manuais, ajuste de inventário, baixa automática no PDV, estorno em cancelamento, alertas de estoque crítico, auto-geração das 12 guias DAS, registro de pagamento, alteração manual de status, consulta de vencimentos e alertas do DAS, resumo financeiro do DAS, parser seguro SEFAZ v4.00, efetivação de estoque por XML NF-e, prevenção de duplicidade por chave de acesso, histórico faturado, indicadores de compras, login do consultor, controle de acesso RBAC com bloqueio 403, listagem de clientes com scores de saúde e filtros avançados) rodam com 100% de aprovação em ~7.02s.
 
 ---
 

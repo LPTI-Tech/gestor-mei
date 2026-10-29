@@ -99,3 +99,4 @@ A versão **v1.2.0 (Sprint 5)** traz ao **GESTOR MEI** a gestão financeira e fi
 - `README.md`
 - `GESTOR_MEI_DOCUMENTACAO_COMPLETA.md`
 - `docs/HANDOFF.md`
+

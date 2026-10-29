@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'OPERADOR';
+export type UserRole = 'ADMIN' | 'OPERADOR' | 'CONSULTOR';
 
 export interface User {
   id: number;
@@ -574,4 +574,274 @@ export interface SaudeNegocio {
   classificacao_saude: 'EXCELENTE' | 'SAUDAVEL' | 'ATENCAO' | 'CRITICO';
   evolucao_mensal: EvolucaoMensalSaude[];
   insights: InsightSaude[];
+}
+
+
+// ==========================================
+// Sprint 6: Módulo XML NF-e
+// ==========================================
+
+export interface FornecedorNfe {
+  cnpj: string;
+  nome: string;
+  nome_fantasia?: string | null;
+  uf?: string | null;
+  ie?: string | null;
+}
+
+export type StatusVinculoNfe = 'VINCULADO' | 'SUGESTAO' | 'PENDENTE';
+
+export interface ItemNfePreview {
+  numero_item: number;
+  codigo_fornecedor: string;
+  descricao_fornecedor: string;
+  ncm?: string | null;
+  cfop?: string | null;
+  unidade_comercial: string;
+  quantidade_comercial: number;
+  valor_unitario: number;
+  valor_total: number;
+  ean?: string | null;
+  produto_id_vinculado?: number | null;
+  produto_nome_vinculado?: string | null;
+  produto_vinculado_id?: number | null;
+  produto_vinculado_nome?: string | null;
+  fator_conversao: number;
+  status_vinculo: StatusVinculoNfe;
+  quantidade_estoque_entrada: number;
+  custo_unitario_calculado: number;
+  atualizar_custo?: boolean;
+  atualizar_vinculo?: boolean;
+}
+
+export interface NfePreviewResponse {
+  chave_acesso: string;
+  numero_nota: string;
+  serie: string;
+  data_emissao: string;
+  valor_total: number;
+  fornecedor: FornecedorNfe;
+  destinatario_cnpj?: string | null;
+  destinatario_valido: boolean;
+  ja_importada: boolean;
+  data_importacao_previa?: string | null;
+  total_itens: number;
+  itens_vinculados: number;
+  itens_pendentes: number;
+  itens: ItemNfePreview[];
+}
+
+export interface ItemNfeImportarRequest {
+  produto_id: number;
+  codigo_fornecedor: string;
+  descricao_fornecedor?: string | null;
+  unidade_comercial?: string;
+  quantidade_comercial: number;
+  fator_conversao: number;
+  valor_unitario: number;
+  valor_total: number;
+  atualizar_custo: boolean;
+  atualizar_vinculo: boolean;
+}
+
+export interface NfeImportarRequest {
+  chave_acesso: string;
+  numero_nota: string;
+  serie?: string;
+  data_emissao?: string | null;
+  valor_total: number;
+  fornecedor_cnpj: string;
+  fornecedor_nome: string;
+  fornecedor_uf?: string | null;
+  itens: ItemNfeImportarRequest[];
+  observacao?: string | null;
+}
+
+export interface ProdutoAtualizadoInfo {
+  produto_id: number;
+  nome: string;
+  quantidade_anterior: number;
+  quantidade_adicionada: number;
+  quantidade_nova: number;
+  custo_anterior: number;
+  custo_novo: number;
+  custo_atualizado: boolean;
+}
+
+export interface NfeImportarResultadoResponse {
+  sucesso: boolean;
+  mensagem: string;
+  nfe_id: number;
+  chave_acesso: string;
+  numero_nota: string;
+  total_itens_processados: number;
+  produtos_atualizados: ProdutoAtualizadoInfo[];
+}
+
+export interface ItemNfeImportada {
+  id: number;
+  produto_id: number;
+  produto_nome?: string | null;
+  codigo_fornecedor: string;
+  descricao_fornecedor?: string | null;
+  unidade_comercial?: string | null;
+  quantidade_comercial: number;
+  fator_conversao: number;
+  quantidade_entrada: number;
+  valor_unitario_nota: number;
+  custo_unitario_calculado: number;
+  valor_total: number;
+}
+
+export interface NfeImportada {
+  id: number;
+  empresa_id: number;
+  chave_acesso: string;
+  numero_nota: string;
+  serie: string;
+  data_emissao?: string | null;
+  valor_total: number;
+  fornecedor_cnpj: string;
+  fornecedor_nome: string;
+  fornecedor_uf?: string | null;
+  total_itens: number;
+  data_importacao: string;
+  usuario_nome?: string | null;
+  observacao?: string | null;
+  itens?: ItemNfeImportada[];
+}
+
+export interface ProdutoVinculoXML {
+  id: number;
+  empresa_id: number;
+  fornecedor_cnpj: string;
+  fornecedor_nome?: string | null;
+  codigo_fornecedor: string;
+  descricao_fornecedor?: string | null;
+  ean_fornecedor?: string | null;
+  produto_id: number;
+  produto_nome?: string | null;
+  fator_conversao: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================
+// Sprint 6.5: Módulo de Compras
+// ==========================================
+
+export interface ItemCompraResponse {
+  id: number;
+  produto_id: number;
+  produto_nome?: string | null;
+  codigo_fornecedor: string;
+  descricao_fornecedor?: string | null;
+  unidade_comercial?: string | null;
+  quantidade_comercial: number;
+  fator_conversao: number;
+  quantidade_entrada: number;
+  valor_unitario_nota: number;
+  custo_unitario_calculado: number;
+  valor_total: number;
+}
+
+export interface CompraItemResumo {
+  id: number;
+  empresa_id: number;
+  chave_acesso: string;
+  numero_nota: string;
+  serie: string;
+  data_emissao?: string | null;
+  valor_total: number;
+  fornecedor_cnpj: string;
+  fornecedor_nome: string;
+  fornecedor_uf?: string | null;
+  total_itens: number;
+  data_importacao: string;
+  usuario_nome?: string | null;
+  observacao?: string | null;
+}
+
+export interface CompraDetalhe extends CompraItemResumo {
+  itens: ItemCompraResponse[];
+}
+
+export interface UltimaCompraInfo {
+  id: number;
+  numero_nota: string;
+  fornecedor_nome: string;
+  valor_total: number;
+  data: string;
+}
+
+export interface FornecedorPrincipalInfo {
+  nome: string;
+  cnpj: string;
+  total_comprado: number;
+  quantidade_notas: number;
+}
+
+export interface MesCompraInfo {
+  mes: string;
+  valor: number;
+  quantidade_notas: number;
+}
+
+export interface ResumoCompras {
+  total_comprado_mes: number;
+  total_comprado_ano: number;
+  numero_notas_mes: number;
+  numero_notas_total: number;
+  ultima_compra?: UltimaCompraInfo | null;
+  fornecedor_principal?: FornecedorPrincipalInfo | null;
+  compras_por_mes: MesCompraInfo[];
+  top_fornecedores: FornecedorPrincipalInfo[];
+}
+
+
+// ==========================================
+// Sprint 7: Painel do Consultor LPTI Tech
+// ==========================================
+
+export type ScoreClienteTipo = 'SAUDAVEL' | 'ATENCAO' | 'CRITICO';
+
+export interface UltimaCompraConsultor {
+  id: number;
+  numero_nota: string;
+  fornecedor_nome: string;
+  valor_total: number;
+  data: string;
+}
+
+export interface ClienteConsultorItem {
+  id: number;
+  nome_fantasia: string;
+  nome_empresarial: string;
+  cnpj: string;
+  telefone?: string | null;
+  email?: string | null;
+  segmento?: string | null;
+  status_das: 'Em dia' | 'Pendente' | 'Atrasado';
+  qtd_das_atrasados: number;
+  das_vence_em_breve: boolean;
+  faturamento_anual: number;
+  limite_mei_anual: number;
+  percentual_limite_mei: number;
+  proximo_limite_mei: boolean;
+  estourou_limite_mei: boolean;
+  quantidade_produtos_criticos: number;
+  produtos_criticos_nomes: string[];
+  ultima_compra?: UltimaCompraConsultor | null;
+  score: ScoreClienteTipo;
+  score_motivo: string;
+}
+
+export interface ResumoConsultor {
+  total_clientes_ativos: number;
+  total_das_atrasado: number;
+  total_estoque_critico: number;
+  total_proximo_limite: number;
+  total_saudaveis: number;
+  total_atencao: number;
+  total_criticos: number;
 }

@@ -7,6 +7,8 @@ from app.database import Base, engine, get_db
 from app.seed import seed_database
 from app.migrate_sprint4 import run_migration as run_migration_sprint4
 from app.migrate_sprint5 import run_migration as run_migration_sprint5
+from app.migrate_sprint6 import run_migration as run_migration_sprint6
+from app.migrate_sprint7 import run_migration as run_migration_sprint7
 
 # Import routers
 from app.routers import (
@@ -27,7 +29,10 @@ from app.routers import (
     relatorio_mei,
     saude_negocio,
     relatorio_entregas,
-    backup
+    backup,
+    nfe,
+    compras,
+    consultor
 )
 
 app = FastAPI(
@@ -42,6 +47,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +59,8 @@ def on_startup():
     Base.metadata.create_all(bind=engine)
     run_migration_sprint4()
     run_migration_sprint5()
+    run_migration_sprint6()
+    run_migration_sprint7()
     seed_database()
 
 # Include Routers
@@ -74,6 +82,9 @@ app.include_router(relatorio_mei.router, prefix=settings.API_PREFIX)
 app.include_router(saude_negocio.router, prefix=settings.API_PREFIX)
 app.include_router(relatorio_entregas.router, prefix=settings.API_PREFIX)
 app.include_router(backup.router, prefix=settings.API_PREFIX)
+app.include_router(nfe.router, prefix=settings.API_PREFIX)
+app.include_router(compras.router, prefix=settings.API_PREFIX)
+app.include_router(consultor.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 def root():

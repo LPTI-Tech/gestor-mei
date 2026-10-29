@@ -54,13 +54,11 @@ def run_migration():
 
     # 3. For PostgreSQL
     elif "postgres" in settings.DATABASE_URL:
-        with engine.connect() as conn:
-            conn.execute("""
-                ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade_estoque FLOAT DEFAULT 0.0;
-                ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque_minimo FLOAT DEFAULT 0.0;
-                ALTER TABLE produtos ADD COLUMN IF NOT EXISTS custo_unitario FLOAT DEFAULT 0.0;
-            """)
-            conn.commit()
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade_estoque FLOAT DEFAULT 0.0;"))
+            conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque_minimo FLOAT DEFAULT 0.0;"))
+            conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS custo_unitario FLOAT DEFAULT 0.0;"))
             print("PostgreSQL columns updated for produtos.")
 
     print("Sprint 4 Migration completed successfully!")

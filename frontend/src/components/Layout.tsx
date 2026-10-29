@@ -47,6 +47,9 @@ import {
   Storefront,
   Inventory2,
   RequestQuote,
+  CloudUpload,
+  ShoppingBag,
+  SupervisorAccount,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
@@ -58,7 +61,8 @@ interface NavItemDef {
   label: string;
   path: string;
   icon: React.ReactNode;
-  adminOnly: boolean;
+  adminOnly?: boolean;
+  consultorOnly?: boolean;
   badge?: string;
   moduleKey?: 'modulo_motoboy' | 'modulo_ifood';
 }
@@ -68,7 +72,7 @@ export const Layout: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, empresa, logout, isAdmin } = useAuth();
+  const { user, empresa, logout, isAdmin, isConsultor } = useAuth();
   const { mode, toggleTheme } = useAppTheme();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -102,6 +106,20 @@ export const Layout: React.FC = () => {
     { label: 'Caixa do Dia', path: '/caixa', icon: <AccountBalanceWallet />, adminOnly: false },
     { label: 'Produtos & Serviços', path: '/produtos', icon: <RestaurantMenu />, adminOnly: false },
     { label: 'Controle de Estoque', path: '/estoque', icon: <Inventory2 color="warning" />, adminOnly: false, badge: 'Sprint 4' },
+    { 
+      label: 'Entrada XML NF-e', 
+      path: '/nfe', 
+      icon: <CloudUpload color="primary" />, 
+      adminOnly: false, 
+      badge: 'Sprint 6' 
+    },
+    { 
+      label: 'Compras', 
+      path: '/compras', 
+      icon: <ShoppingBag color="success" />, 
+      adminOnly: false, 
+      badge: 'Sprint 6.5' 
+    },
     { label: 'Despesas', path: '/despesas', icon: <ReceiptLong />, adminOnly: false },
     { 
       label: 'Controle DAS', 
@@ -124,13 +142,21 @@ export const Layout: React.FC = () => {
     { label: 'Motoboys', path: '/motoboys', icon: <TwoWheeler />, adminOnly: false, moduleKey: 'modulo_motoboy' },
     { label: 'Controle iFood', path: '/ifood', icon: <DeliveryDining />, adminOnly: false, moduleKey: 'modulo_ifood' },
     
-    // GESTÃO ADMINISTRATIVA
+    // GESTÃO ADMINISTRATIVA & CONSULTORIA
+    { 
+      label: 'Painel do Consultor', 
+      path: '/consultor', 
+      icon: <SupervisorAccount color="primary" />, 
+      consultorOnly: true, 
+      badge: 'Sprint 7' 
+    },
     { label: 'Usuários / Equipe', path: '/usuarios', icon: <People />, adminOnly: true },
     { label: 'Configurações & Módulos', path: '/configuracoes', icon: <Settings />, adminOnly: true },
   ];
 
   // Filtra itens com base nas permissões e nos módulos ativos da empresa
   const visibleNavItems = navItems.filter((item) => {
+    if (item.consultorOnly && !isConsultor) return false;
     if (item.adminOnly && !isAdmin) return false;
     if (item.moduleKey === 'modulo_motoboy' && empresa?.modulo_motoboy === false) return false;
     if (item.moduleKey === 'modulo_ifood' && empresa?.modulo_ifood === false) return false;

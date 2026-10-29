@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "GESTOR MEI"
-    VERSION: str = "1.2.0"
+    VERSION: str = "1.4.0"
     API_PREFIX: str = "/api"
     
     # Database URL: defaults to SQLite for immediate local zero-config, supports PostgreSQL

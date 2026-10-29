@@ -1,7 +1,7 @@
 # 📘 Documentação Técnica Completa — GESTOR MEI
 
 > **Sistema:** Gestor MEI — Plataforma de Gestão Integrada para Microempreendedores Individuais  
-> **Versão Atual:** 1.2.0 (Sprints 1, 2, 3, 4 e 5 Concluídas + Controle DAS Mensal)  
+> **Versão Atual:** 1.4.0 (Sprints 1 a 6.5 Concluídas + Sprint 7 Painel do Consultor LPTI Tech Concluído)  
 > **Data do Documento:** 29 de Outubro de 2026  
 > **Autor / Mantenedor:** Leonidas Paulino / Equipe LPTI Tech  
 > **Arquivo:** `GESTOR_MEI_DOCUMENTACAO_COMPLETA.md`  
@@ -836,16 +836,97 @@ O sistema monitora proativamente os vencimentos fiscais e reflete o status diret
 
 ---
 
-## 12. Testes Automatizados
+## 12. Módulo de Entrada por XML NF-e (Sprint 6 — Fases 1 e 2 Concluídas)
 
-O sistema conta com **27 testes automatizados de ponta a ponta** executados via Pytest, garantindo que novas alterações não causem regressão:
+A Sprint 6 introduz a automação da entrada de mercadorias por notas fiscais de fornecedores (NF-e Modelo 55), eliminando digitação manual, calculando conversões de fardo/caixa para unidades e atualizando custos de reposição.
+
+### 12.1 Entidades do Módulo
+1. **`ProdutoVinculoXML` (`produtos_vinculo_xml`):**
+   - Associa `(empresa_id, fornecedor_cnpj, codigo_fornecedor)` a um `produto_id` local com `fator_conversao`.
+   - `UniqueConstraint("empresa_id", "fornecedor_cnpj", "codigo_fornecedor")`.
+2. **`NfeImportada` (`nfe_importadas`):**
+   - Cabeçalho da nota: `chave_acesso` (44 dígitos), `numero_nota`, `serie`, `data_emissao`, `valor_total`, `fornecedor_cnpj`, `fornecedor_nome`, `fornecedor_uf`, `data_importacao`.
+   - `UniqueConstraint("empresa_id", "chave_acesso")`: Bloqueio estrito de importações duplicadas.
+3. **`ItemNfeImportada` (`nfe_importadas_itens`):**
+   - Detalhamento por item: `quantidade_comercial`, `fator_conversao`, `quantidade_entrada`, `valor_unitario_nota`, `custo_unitario_calculado` e `valor_total`.
+
+### 12.2 Endpoints REST da API (`/api/nfe`)
+| Método | Endpoint | Descrição / Regra de Negócio |
+| :--- | :--- | :--- |
+| `POST` | `/api/nfe/preview-xml` | Upload e parsing seguro de XML SEFAZ v4.00, batimento com vínculos existentes, status (`VINCULADO`, `SUGESTAO`, `PENDENTE`) e alerta de nota já importada. |
+| `POST` | `/api/nfe/importar` | Efetivação em lote: bloqueia duplicidade por chave, incrementa saldo em estoque, atualiza custo unitário, gera `MovimentacaoEstoque` (`ENTRADA` / `Importação XML NF-e`) e salva histórico. |
+| `GET` | `/api/nfe/historico` | Consulta cronológica das notas importadas pela empresa. |
+| `GET` | `/api/nfe/historico/{id}` | Detalhes da nota fiscal importada com a lista de todos os seus itens. |
+| `GET` | `/api/nfe/vinculos` | Lista regras De-Para de códigos de fornecedores e produtos locais. |
+| `POST` | `/api/nfe/vinculos` | Cria ou atualiza uma regra De-Para com fator de conversão de unidades. |
+| `DELETE` | `/api/nfe/vinculos/{id}` | Remove uma regra De-Para. |
+
+---
+
+## 12.4 Módulo de Compras (Sprint 6.5)
+
+A Sprint 6.5 transforma os registros de NF-e importadas em um módulo financeiro e operacional de **Compras**, permitindo ao MEI auditar o histórico de aquisições de insumos, analisar a concentração de gastos por fornecedor e monitorar despesas de reposição.
+
+### 12.4.1 Reutilização de Infraestrutura
+O módulo reutiliza integralmente e sem redundância de dados:
+- `nfe_importadas`: Tabela de notas fiscais faturadas com dados do emitente, chave de acesso, valor e usuário.
+- `nfe_importadas_itens`: Relação de itens faturados, vinculados ao catálogo de produtos com fator de conversão e custo unitário de reposição.
+
+### 12.4.2 Indicadores do Dashboard de Compras
+1. **Total Comprado no Mês:** Total financeiro de compras faturadas no mês corrente e quantidade de notas.
+2. **Última Compra:** Fornecedor, data, valor e número da nota da aquisição mais recente.
+3. **Notas Fiscais:** Quantidade total acumulada de notas faturadas e total anual.
+4. **Fornecedor Principal:** Fornecedor com maior volume financeiro transacionado.
+
+### 12.4.3 Endpoints do Módulo de Compras
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/compras/resumo` | Indicadores de KPI do Dashboard de Compras. |
+| `GET` | `/api/compras` | Histórico com filtros por busca textual, mês e ano. |
+| `GET` | `/api/compras/{id}` | Detalhes completos da compra com relação de itens e custos. |
+
+---
+
+## 12.5 Painel do Consultor LPTI Tech (Sprint 7)
+
+A Sprint 7 introduz o perfil de acesso `CONSULTOR` e o **Painel do Consultor LPTI Tech**, permitindo que consultores de negócios e contadores gerenciem a carteira completa de clientes MEI sob assessoria contábil, tributária e patrimonial em uma tela unificada.
+
+### 12.5.1 Perfil de Usuário CONSULTOR
+- Implementado no enum `UserRole.CONSULTOR` ([user.py](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/backend/app/models/user.py)).
+- Protegido pela dependência `require_consultor_or_admin`, permitindo que consultores e administradores monitorem a carteira.
+- Credenciais demonstrativas padrão: `consultor@lptitech.com.br` / `consultor123`.
+
+### 12.5.2 Indicadores Executivos do Dashboard do Consultor
+1. **Clientes Ativos:** Total de empresas MEI cadastradas e ativas na carteira da consultoria.
+2. **DAS em Atraso:** Empresas que possuem guias mensais vencidas não regularizadas.
+3. **Estoque Crítico:** Empresas com produtos zerados ou abaixo do estoque mínimo.
+4. **Próximos do Limite MEI:** Empresas com faturamento acumulado ≥ 80% do teto anual de R$ 81.000,00.
+
+### 12.5.3 Regras de Score de Saúde do Negócio
+O sistema analisa automaticamente os dados fiscais, patrimoniais e faturamento de cada cliente:
+- 🔴 **Crítico:** Possui guias DAS em atraso OU faturamento anual ≥ 100% do teto (risco imediato de desenquadramento fiscal) OU 3+ produtos em nível crítico/zerado.
+- 🟡 **Atenção:** Faturamento anual entre 80% e 100% do teto MEI OU possui 1 a 2 produtos com estoque crítico OU guia DAS do mês pendente com vencimento em até 7 dias.
+- 🟢 **Saudável:** Regularidade fiscal plena (DAS em dia), faturamento anual < 80% do limite e estoque em conformidade.
+
+### 12.5.4 Endpoints do Consultor
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/consultor/resumo` | Totalizadores de clientes ativos, DAS em atraso, estoque crítico, limite MEI e contagem por scores. |
+| `GET` | `/api/consultor/clientes` | Relação detalhada de clientes com busca textual e filtros (`filtro_das_atrasado`, `filtro_estoque_critico`, `filtro_proximo_limite`, `score`). |
+| `GET` | `/api/consultor/clientes/{id}` | Visão diagnóstica completa do cliente selecionado para emissão de parecer consultivo. |
+
+---
+
+## 13. Testes Automatizados
+
+O sistema conta com **46 testes automatizados de ponta a ponta** executados via Pytest, garantindo 100% de confiabilidade e integridade arquitetural:
 
 ```bash
 cd backend
 .\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-### 12.1 Cobertura por Sprint
+### 13.1 Cobertura por Sprint
 
 #### Sprint 2 — Vendas, Carrinho & Clientes (`test_sprint2_vendas_clientes.py` - 5 Testes)
 - `test_1_clientes_crud`: Criação, leitura, atualização e inativação de clientes com telefone e região.
@@ -882,16 +963,41 @@ cd backend
 - `test_7_das_filtro_por_status`: Filtragem estrita por status na listagem.
 - `test_8_das_isolamento_e_404`: Verificação de isolamento multi-tenant e tratamento de 404 para guias inexistentes.
 
-### 12.2 Status Atual
+#### Sprint 6 — Importação de XML NF-e (`test_sprint6_nfe.py` - 8 Testes)
+- `test_1_nfe_parser_sucesso`: Parsing isolado de XML NF-e v4.00 padrão SEFAZ.
+- `test_2_nfe_parser_xml_invalido`: Rejeição com erro descritivo para XML corrompido ou sem tag `<infNFe>`.
+- `test_3_api_preview_xml`: Pré-visualização estruturada dos dados de cabeçalho, fornecedor e itens.
+- `test_4_crud_vinculo_e_conversao_fator`: CRUD de De-Para e recálculo de fator de conversão de unidades.
+- `test_5_importar_nfe_sucesso`: Efetivação de entrada automática com incremento físico, custo atualizado e movimentações registradas.
+- `test_6_impedir_importacao_duplicada`: Bloqueio estrito de reimportação da mesma nota por chave de acesso (400 Bad Request).
+- `test_7_historico_nfe_e_detalhes`: Consulta e detalhamento das notas fiscais importadas e seus itens.
+- `test_8_preview_detecta_nota_ja_importada`: Detecção de notas previamente importadas na conferência de pré-visualização.
+
+#### Sprint 6.5 — Módulo de Compras & Histórico Faturado (`test_sprint6_5_compras.py` - 5 Testes)
+- `test_1_resumo_compras_indicadores`: Validação de KPIs consolidados do Dashboard de Compras (Total do Mês, Total do Ano, Quantidade de Notas, Última Compra e Fornecedor Principal).
+- `test_2_listar_compras_historico`: Listagem do histórico faturado reutilizando integralmente `nfe_importadas`.
+- `test_3_filtro_busca_compras`: Busca textual inteligente por fornecedor, CNPJ e número de nota.
+- `test_4_detalhes_compra_por_id`: Obtenção da nota completa com itens, unidades de medida, fatores de conversão e custo faturado.
+- `test_5_detalhe_compra_inexistente_retorna_404`: Garantia de integridade e resposta HTTP 404 em consultas a IDs inválidos.
+
+#### Sprint 7 — Painel do Consultor LPTI Tech (`test_sprint7_consultor.py` - 6 Testes)
+- `test_1_login_usuario_consultor`: Validação do perfil de acesso `CONSULTOR` e emissão de token JWT autenticado.
+- `test_2_bloqueio_usuario_operador_no_painel_consultor`: Garantia de proteção RBAC com resposta HTTP 403 Forbidden para operadores comuns.
+- `test_3_resumo_consultor_indicadores`: Validação matemática dos totalizadores da carteira de clientes (clientes ativos, DAS em atraso, estoque crítico, limite MEI e contagem por scores).
+- `test_4_listar_clientes_consultor_com_scores`: Validação da listagem de clientes com cálculo dos scores (Saudável, Atenção, Crítico) e métricas consolidadas.
+- `test_5_filtros_consultor`: Validação dos filtros de auditoria por DAS atrasado, estoque crítico, proximidade do teto MEI (≥ 80%), filtro por score e busca textual.
+- `test_6_detalhes_cliente_consultor`: Validação de consulta diagnóstica aprofundada por empresa e tratamento de 404 para identificadores inexistentes.
+
+### 13.2 Status Atual
 ```text
-======================= 27 passed, 64 warnings in 7.28s =======================
+======================= 46 passed, 93 warnings in 7.02s =======================
 ```
-- **Taxa de Aprovação:** 100% (27/27 testes aprovados).
-- **Tempo de Execução:** Menos de 8 segundos.
+- **Taxa de Aprovação:** 100% (46/46 testes aprovados).
+- **Tempo de Execução:** ~7.02 segundos.
 
 ---
 
-## 13. Roadmap (Próximas Sprints)
+## 14. Roadmap (Próximas Sprints)
 
 O planejamento de evolução contínua do Gestor MEI prevê as seguintes fases:
 
@@ -899,8 +1005,9 @@ O planejamento de evolução contínua do Gestor MEI prevê as seguintes fases:
 ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐
 │  SPRINT 5  │ ➔ │  SPRINT 6  │ ➔ │  SPRINT 7  │ ➔ │  SPRINT 8  │ ➔ │  SPRINT 9  │
 │  Controle  │   │ Importação │   │ Emissão de │   │ Painel do  │   │ Integração │
-│ DAS Mensal │   │ XML NF-e   │   │   NFC-e    │   │ Consultor  │   │   iFood    │
-│ [CONCLUÍDO]│   │ [PRÓXIMA]  │   │            │   │            │   │            │
+│ DAS Mensal │   │  XML NF-e  │   │   NFC-e    │   │ Consultor  │   │   iFood    │
+│[CONCLUÍDO] │   │[FASES 1 e 2│   │            │   │            │   │            │
+│            │   │ CONCLUÍDAS]│   │            │   │            │   │            │
 └────────────┘   └────────────┘   └────────────┘   └────────────┘   └────────────┘
 ```
 
@@ -910,17 +1017,15 @@ O planejamento de evolução contínua do Gestor MEI prevê as seguintes fases:
 - Registro de liquidação, alteração manual de status e consulta de vencimentos.
 - Tela dedicada com exportação e atalho oficial ao PGMEI.
 
-### Sprint 6: Importação de XML de NF-e de Compra (Próxima)
-- Controle de pagamento da guia única DAS-MEI de cada mês.
-- Alertas visuais e notificação por WhatsApp antes do vencimento no dia 20.
-- Histórico de guias pagas e pendentes de anos anteriores.
-- Botão de download direto do boleto DAS via integração com o Portal do Empreendedor.
-
-### Sprint 6: Importação de XML de NF-e de Compra
-- Leitura e upload de arquivos `.xml` de notas fiscais de fornecedores.
-- Cadastro automático de novos produtos a partir dos dados do XML.
-- Atualização em massa de saldos de estoque e custos de aquisição.
-- Conciliação automática de contas a pagar contra notas fiscais emitidas para o CNPJ.
+### Sprint 6: Importação de XML de NF-e de Compra [FASES 1 e 2 CONCLUÍDAS]
+- Leitura e upload de arquivos `.xml` de notas fiscais de fornecedores (SEFAZ v4.00).
+- Memória inteligente de vínculos De-Para entre código do fornecedor e catálogo local (`ProdutoVinculoXML`).
+- Conversão automática de unidades (ex: fardos/caixas para unidades) com cálculo de custo unitário.
+- Endpoint de efetivação de entrada (`POST /api/nfe/importar`) atualizando estoque físico e custos.
+- Registro obrigatório de movimentações de estoque (Tipo `ENTRADA`, Motivo `Importação XML NF-e`).
+- Rastreamento completo de fornecedor e chave de acesso da NF-e com prevenção estrita de duplicidade.
+- Histórico completo de notas importadas e consulta de itens (`nfe_importadas` e `nfe_importadas_itens`).
+- **Próximo passo (Fase 3):** Interface Web no frontend com Drag-and-Drop e modal de conferência.
 
 ### Sprint 7: Emissão de Nota Fiscal do Consumidor (NFC-e / NFS-e)
 - Integração com provedor de mensageria fiscal (ex: Focus NFe, PlugNotas ou Nuvem Fiscal).
@@ -942,9 +1047,9 @@ O planejamento de evolução contínua do Gestor MEI prevê as seguintes fases:
 
 ---
 
-## 13. Instruções de Execução Local
+## 15. Instruções de Execução Local
 
-### 13.1 Pré-requisitos
+### 15.1 Pré-requisitos
 - **Python:** Versão 3.11 ou superior instalada e no PATH do Windows.
 - **Node.js:** Versão 18, 20 ou 26 LTS com `npm` instalado.
 - **PowerShell:** Permissão de execução de scripts habilitada:
@@ -952,14 +1057,14 @@ O planejamento de evolução contínua do Gestor MEI prevê as seguintes fases:
   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
   ```
 
-### 13.2 Inicialização Rápida com Script Unificado
+### 15.2 Inicialização Rápida com Script Unificado
 Na raiz do projeto (`gestor-mei-main`), execute:
 ```powershell
 .\start-all.ps1
 ```
 Esse script abre duas janelas automáticas: uma com o servidor backend na porta **8001** e outra com o frontend Vite na porta **5173**.
 
-### 13.3 Inicialização Manual Passo a Passo
+### 15.3 Inicialização Manual Passo a Passo
 
 #### 1. Backend (FastAPI):
 ```powershell
@@ -983,13 +1088,13 @@ npm install
 npm run dev
 ```
 
-### 13.4 URLs de Acesso e Documentação Interativa
+### 15.4 URLs de Acesso e Documentação Interativa
 - **Frontend SPA:** [http://localhost:5173](http://localhost:5173)
 - **API Swagger UI:** [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
 - **API ReDoc:** [http://127.0.0.1:8001/redoc](http://127.0.0.1:8001/redoc)
 - **Health Check:** [http://127.0.0.1:8001/api/health](http://127.0.0.1:8001/api/health)
 
-### 13.5 Credenciais Demonstrativas de Acesso
+### 15.5 Credenciais Demonstrativas de Acesso
 O banco de dados já possui dois perfis pré-configurados prontos para uso:
 
 | Perfil | E-mail de Acesso | Senha | Nível de Permissão |
@@ -999,11 +1104,11 @@ O banco de dados já possui dois perfis pré-configurados prontos para uso:
 
 ---
 
-## 14. Backup e Transferência de Ambiente
+## 16. Backup e Transferência de Ambiente
 
 Para transferir o projeto para outro computador, servidor ou máquina virtual mantendo **100% dos dados, históricos e configurações**, siga rigorosamente as instruções abaixo.
 
-### 14.1 O que DEVE ser copiado:
+### 16.1 O que DEVE ser copiado:
 ```text
 gestor-mei-main/
 ├── backend/
@@ -1027,13 +1132,13 @@ gestor-mei-main/
 └── GESTOR_MEI_DOCUMENTACAO_COMPLETA.md
 ```
 
-### 14.2 O que NÃO deve ser copiado (pastas pesadas / descartáveis):
+### 16.2 O que NÃO deve ser copiado (pastas pesadas / descartáveis):
 - ❌ `backend/.venv/` *(ambiente virtual deve ser recriado na máquina destino com `python -m venv .venv`)*
 - ❌ `backend/__pycache__/` e `.pytest_cache/`
 - ❌ `frontend/node_modules/` *(deve ser reinstalado com `npm install`)*
 - ❌ `frontend/dist/` *(artefatos compilados)*
 
-### 14.3 Procedimento de Restauração no Novo Computador:
+### 16.3 Procedimento de Restauração no Novo Computador:
 1. Copie a pasta `gestor-mei-main` limpa (sem `.venv` e sem `node_modules`) para o destino.
 2. Certifique-se de que o arquivo `backend/gestor_mei.db` foi copiado com sucesso.
 3. Abra o terminal na raiz e execute:
@@ -1055,21 +1160,34 @@ gestor-mei-main/
    ```
 4. O sistema estará imediatamente operacional com todos os dados preservados exatamente como estavam na máquina de origem.
 
+### 16.4 Publicação e Deploy em Nuvem (Ambiente Beta)
+O sistema conta com documentação completa e arquivos de infraestrutura automatizados para deploy na nuvem:
+- **Backend:** Hospedado no [Render](https://render.com) com Blueprint [render.yaml](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/render.yaml), start command Uvicorn e health check `/api/health`.
+- **Frontend:** Hospedado na [Vercel](https://vercel.com) com regras SPA em [vercel.json](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/frontend/vercel.json).
+- **Banco de Dados:** PostgreSQL Serverless no [Neon](https://neon.tech) ou [Supabase](https://supabase.com).
+- **Guias Oficiais:**
+  - Manual Completo de Deploy: [DEPLOY_BETA.md](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/DEPLOY_BETA.md)
+  - Roteiro e Checklist de Testes Piloto: [CHECKLIST_TESTES_PILOTO.md](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/CHECKLIST_TESTES_PILOTO.md)
+
 ---
 
-## 16. Relatório de Conclusão & Checklist de Entrega
+## 17. Relatório de Conclusão & Checklist de Entrega
 
 O projeto **GESTOR MEI** encontra-se em estado maduro, estável, totalmente funcional e devidamente documentado:
 
 - [x] **Ambiente Local Estabilizado:** Python 3.14+, Node.js v26 e portas operacionais (Backend 8001, Frontend 5173).
+- [x] **Infraestrutura Cloud Pronta:** Compatibilidade SQLite ➔ PostgreSQL validada, normalização de URL, pool pre-ping, CORS regex Vercel e Blueprint Render.
 - [x] **Controle de Conexão em Tempo Real:** Indicador visual de status online/offline integrado no Layout.
 - [x] **Sprint 1 (Núcleo):** Concluída com PDV, Caixa Cego, Despesas e Relatório Anual DASN-SIMEI.
 - [x] **Sprint 2 (Carrinho & Clientes):** Concluída com Venda 1:N, WhatsApp integrado e histórico.
 - [x] **Sprint 3 (Delivery & Comanda):** Concluída com Bairros, Motoboys, Kanban e ESC/POS (58mm/80mm).
 - [x] **Sprint 4 (Estoque Completo):** Concluída com baixa no PDV, estorno, entradas, perdas, inventário e KPIs patrimoniais.
 - [x] **Sprint 5 (Controle DAS Mensal):** Concluída com entidade `DasMensal`, APIs REST `/api/das`, alertas proativos (7 dias, vencido, pago), indicadores no Dashboard e tela completa [ControleDas.tsx](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/frontend/src/pages/ControleDas.tsx).
+- [x] **Sprint 6 (Entrada por XML NF-e - Fases 1, 2 e 3):** Concluída com parser seguro SEFAZ v4.00, modelo `ProdutoVinculoXML`, endpoint de preview (`POST /api/nfe/preview-xml`), efetivação de entrada (`POST /api/nfe/importar`), histórico de notas (`nfe_importadas`), prevenção de duplicidade por chave de acesso, interface visual completa com Drag & Drop e recálculo automático de estoque/custo.
+- [x] **Sprint 6.5 (Módulo de Compras):** Concluído com dashboard de compras (Última Compra, Total do Mês, Número de Notas e Fornecedor Principal), tela de histórico faturado (`/compras`), detalhes da compra com movimentação de estoque (`/compras/:id`) e menu integrado no Layout, reaproveitando 100% dos dados fiscais de `nfe_importadas`.
+- [x] **Sprint 7 (Painel do Consultor LPTI Tech):** Concluído com perfil `CONSULTOR`, dashboard consolidado de clientes (Clientes Ativos, DAS em Atraso, Estoque Crítico, Próximos do Limite MEI), motor de scores (🟢 Saudável, 🟡 Atenção, 🔴 Crítico), tela completa [PainelConsultor.tsx](file:///c:/Users/LeonidasPaulino/Downloads/gestor-mei-main/gestor-mei-main/frontend/src/pages/PainelConsultor.tsx) com filtros avançados e modal de diagnóstico consultivo.
 - [x] **Dashboard Inteligente:** Implementado com saudação temporal, nome higienizado, indicadores do DAS e motor de insights de alertas prioritários.
-- [x] **Suíte de Testes:** 27/27 testes automatizados com 100% de aprovação.
+- [x] **Suíte de Testes:** 46/46 testes automatizados com 100% de aprovação (tempo de execução: ~7.02s).
 - [x] **Documentação Consolidada:** Registrada formalmente no arquivo `GESTOR_MEI_DOCUMENTACAO_COMPLETA.md`.
 
 ---

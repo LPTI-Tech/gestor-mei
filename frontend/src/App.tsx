@@ -18,6 +18,10 @@ import { Estoque } from './pages/Estoque';
 import { Caixa } from './pages/Caixa';
 import { Despesas } from './pages/Despesas';
 import { ControleDas } from './pages/ControleDas';
+import { ImportarNfe } from './pages/ImportarNfe';
+import { Compras } from './pages/Compras';
+import { DetalheCompra } from './pages/DetalheCompra';
+import { PainelConsultor } from './pages/PainelConsultor';
 import { Motoboys } from './pages/Motoboys';
 import { IFood } from './pages/IFood';
 import { RelatorioMei } from './pages/RelatorioMei';
@@ -77,6 +81,10 @@ export const App: React.FC = () => {
               <Route path="caixa" element={<Caixa />} />
               <Route path="despesas" element={<Despesas />} />
               <Route path="das" element={<ControleDas />} />
+              <Route path="nfe" element={<ImportarNfe />} />
+              <Route path="compras" element={<Compras />} />
+              <Route path="compras/:id" element={<DetalheCompra />} />
+              <Route path="consultor" element={<PainelConsultor />} />
               <Route path="motoboys" element={<Motoboys />} />
               <Route path="ifood" element={<IFood />} />
               <Route path="relatorio-mei" element={<RelatorioMei />} />

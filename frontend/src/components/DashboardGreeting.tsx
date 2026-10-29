@@ -78,12 +78,12 @@ export const getDynamicInsight = (
       tipo: 'DAS',
       mensagem:
         qtd === 1
-          ? 'Atenção: Você tem 1 guia DAS em atraso. Regularize para evitar multas!'
-          : `Atenção: Você tem ${qtd} guias DAS em atraso. Regularize para evitar multas!`,
+          ? 'Olá! Notamos uma pendência na guia do DAS. Que tal quitar hoje para manter seu CNPJ regular e sem juros?'
+          : `Olá! Notamos ${qtd} guias do DAS em atraso. Vamos regularizar para garantir seus benefícios previdenciários e manter seu negócio 100% seguro?`,
       severity: 'error',
       icon: <ReportProblem fontSize="small" />,
       actionLink: '/das',
-      actionLabel: 'Pagar DAS',
+      actionLabel: 'Regularizar DAS',
     };
   }
 
@@ -94,11 +94,11 @@ export const getDynamicInsight = (
   if (dasPendente && diasRestantes >= 0 && diasRestantes <= 7) {
     let textoDas = '';
     if (diasRestantes === 0) {
-      textoDas = 'Seu DAS vence hoje (dia 20)!';
+      textoDas = 'Lembrete amigável: a guia do DAS vence hoje! É rapidinho pagar pelo app bancário e deixar tudo resolvido.';
     } else if (diasRestantes === 1) {
-      textoDas = 'Seu DAS vence amanhã (dia 20).';
+      textoDas = 'Lembrete do Gestor MEI: o seu DAS vence amanhã (dia 20). Não deixe para a última hora!';
     } else {
-      textoDas = `Seu DAS vence em ${diasRestantes} dias.`;
+      textoDas = `Fique atento: seu DAS vence em ${diasRestantes} dias (dia 20). Já programou o pagamento para manter tudo em dia?`;
     }
 
     return {
@@ -107,11 +107,30 @@ export const getDynamicInsight = (
       severity: 'warning',
       icon: <CalendarMonth fontSize="small" />,
       actionLink: '/das',
-      actionLabel: 'Ver DAS',
+      actionLabel: 'Ver Guia DAS',
     };
   }
 
-  // 2. Produtos com estoque baixo
+  // 3. Produtos sem estoque
+  const qtdSemEstoque = produtos.length > 0
+    ? produtos.filter((p) => p.tipo === 'PRODUTO' && (p.quantidade_estoque ?? 0) <= 0).length
+    : 0;
+
+  if (qtdSemEstoque > 0) {
+    return {
+      tipo: 'SEM_ESTOQUE',
+      mensagem:
+        qtdSemEstoque === 1
+          ? 'Aviso de vendas: identificamos 1 produto com estoque zerado. Hora de reabastecer para não perder pedidos!'
+          : `Aviso de vendas: há ${qtdSemEstoque} produtos com estoque zerado no momento. Seus clientes podem procurar por eles hoje!`,
+      severity: 'error',
+      icon: <ReportProblem fontSize="small" />,
+      actionLink: '/estoque',
+      actionLabel: 'Repor Estoque',
+    };
+  }
+
+  // 4. Produtos com estoque baixo
   const qtdEstoqueBaixo = produtos.length > 0
     ? produtos.filter(
         (p) =>
@@ -126,8 +145,8 @@ export const getDynamicInsight = (
       tipo: 'ESTOQUE_BAIXO',
       mensagem:
         qtdEstoqueBaixo === 1
-          ? 'Existe 1 produto com estoque baixo.'
-          : `Existem ${qtdEstoqueBaixo} produtos com estoque baixo.`,
+          ? 'Dica de reposição: 1 produto está atingindo o nível mínimo. Vale a pena planejar a próxima compra!'
+          : `Dica de reposição: ${qtdEstoqueBaixo} produtos estão próximos do mínimo. Antecipe os pedidos aos fornecedores!`,
       severity: 'warning',
       icon: <WarningAmber fontSize="small" />,
       actionLink: '/estoque',
@@ -135,26 +154,19 @@ export const getDynamicInsight = (
     };
   }
 
-  // 3. Produtos sem estoque
-  const qtdSemEstoque = produtos.length > 0
-    ? produtos.filter((p) => p.tipo === 'PRODUTO' && (p.quantidade_estoque ?? 0) <= 0).length
-    : 0;
-
-  if (qtdSemEstoque > 0) {
+  // 5. DAS Quitado no mês (Sem atrasos)
+  if (metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados) {
     return {
-      tipo: 'SEM_ESTOQUE',
-      mensagem:
-        qtdSemEstoque === 1
-          ? 'Existe 1 produto sem estoque.'
-          : `Existem ${qtdSemEstoque} produtos sem estoque.`,
-      severity: 'error',
-      icon: <ReportProblem fontSize="small" />,
-      actionLink: '/estoque',
-      actionLabel: 'Repor Estoque',
+      tipo: 'DAS',
+      mensagem: 'Tudo certo com a Receita Federal! A guia do DAS deste mês já está quitada e sua empresa segue 100% regular.',
+      severity: 'success',
+      icon: <CalendarMonth fontSize="small" />,
+      actionLink: '/das',
+      actionLabel: 'Ver Comprovantes',
     };
   }
 
-  // 4. Crescimento de faturamento (mês atual vs mês anterior)
+  // 6. Crescimento de faturamento (mês atual vs mês anterior)
   const currentMonthIdx = referenceDate.getMonth();
   const currentMonthVal =
     metrics.vendas_por_mes?.[currentMonthIdx]?.valor ?? metrics.venda_mes ?? 0;
@@ -166,16 +178,16 @@ export const getDynamicInsight = (
     if (crescimento > 0) {
       return {
         tipo: 'CRESCIMENTO',
-        mensagem: `Seu faturamento cresceu ${crescimento}% em relação ao mês anterior.`,
+        mensagem: `Parabéns pela dedicação! Seu faturamento cresceu ${crescimento}% em relação ao mês anterior. Seu esforço está dando resultado!`,
         severity: 'success',
         icon: <TrendingUp fontSize="small" />,
         actionLink: '/relatorio-mei',
-        actionLabel: 'Ver Relatório',
+        actionLabel: 'Ver Desempenho',
       };
     }
   }
 
-  // 5. Quantidade de vendas do dia
+  // 7. Quantidade de vendas do dia
   const todayPoint =
     metrics.vendas_por_dia && metrics.vendas_por_dia.length > 0
       ? metrics.vendas_por_dia[metrics.vendas_por_dia.length - 1]
@@ -187,9 +199,9 @@ export const getDynamicInsight = (
     const plural = qtdVendasHoje > 1 ? 'vendas' : 'venda';
     return {
       tipo: 'VENDAS_DIA',
-      mensagem: `Hoje você realizou ${qtdVendasHoje} ${plural} e faturou ${formatCurrency(
+      mensagem: `O dia está rendendo! Você já realizou ${qtdVendasHoje} ${plural} hoje, somando ${formatCurrency(
         valorVendasHoje
-      )}.`,
+      )}. Continue nesse ritmo!`,
       severity: 'info',
       icon: <PointOfSale fontSize="small" />,
       actionLink: '/vendas',
@@ -197,10 +209,10 @@ export const getDynamicInsight = (
     };
   }
 
-  // 6. Mensagem padrão de boas-vindas
+  // 8. Mensagem padrão acolhedora
   return {
     tipo: 'PADRAO',
-    mensagem: 'Tenha um excelente dia de trabalho e ótimas vendas!',
+    mensagem: 'Que seu dia de trabalho seja excelente, produtivo e cheio de clientes satisfeitos!',
     severity: 'info',
     icon: <Storefront fontSize="small" />,
   };
@@ -285,7 +297,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        {/* Saudação com emoji e nome do usuário */}
+        {/* Saudação com emoji e nome do usuário com destaque visual moderno */}
         <Typography
           variant="h5"
           fontWeight={800}
@@ -294,14 +306,32 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
             letterSpacing: '-0.02em',
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: 1,
-            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.65rem' },
+            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
           }}
         >
           <Box component="span" sx={{ userSelect: 'none' }}>
             {emoji}
           </Box>
-          {greeting}, {userName}!
+          {greeting},{' '}
+          <Box
+            component="span"
+            sx={{
+              background: (t) =>
+                t.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #64B5F6 0%, #BA68C8 100%)'
+                  : 'linear-gradient(135deg, #1565C0 0%, #7B1FA2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 900,
+              display: 'inline-block',
+              textShadow: '0 2px 10px rgba(25, 118, 210, 0.15)',
+            }}
+          >
+            {userName}
+          </Box>
+          !
         </Typography>
 
         {/* Subtítulo institucional */}
