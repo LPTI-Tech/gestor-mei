@@ -18,7 +18,14 @@ export const ApiStatusIndicator: React.FC<ApiStatusIndicatorProps> = ({
   const checkHealth = useCallback(async () => {
     try {
       setChecking(true);
-      const res = await api.get('/health', { timeout: 5000 });
+      // Garantir que a requisição seja direcionada para /api/health no backend Render
+      const healthEndpoint = api.defaults.baseURL?.endsWith('/api') ? '/health' : '/api/health';
+      let res;
+      try {
+        res = await api.get(healthEndpoint, { timeout: 5000 });
+      } catch {
+        res = await api.get('/api/health', { timeout: 5000 });
+      }
       if (res.status === 200 && res.data?.status === 'ok') {
         setIsOnline(true);
       } else {
