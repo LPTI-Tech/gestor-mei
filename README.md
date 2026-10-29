@@ -1,5 +1,6 @@
 # GESTOR MEI 🚀
 ### Sistema Web SaaS Profissional para Microempreendedores Individuais (MEI)
+*Desenvolvido sob medida pela LPTI Tech / Leonidas Paulino*
 
 O **GESTOR MEI** é uma plataforma SaaS multiempresa de alta performance e extrema simplicidade, desenvolvida sob medida para microempreendedores dos ramos de:
 - 🍲 **Marmitarias & Comida Caseira**
@@ -50,10 +51,11 @@ O sistema responde instantaneamente às 4 perguntas vitais de qualquer pequeno n
                     │   • ReportLab PDF + OpenPyXL Engine          │
                     └──────────────────────┬───────────────────────┘
                                            │
-                                 SQLAlchemy│ 2.0
+                                 SQLAlchemy│ 2.0 (PostgreSQL / SQLite)
                                            ▼
                     ┌──────────────────────────────────────────────┐
-                    │             BANCO DE DADOS (PostgreSQL)      │
+                    │         BANCO DE DADOS (PostgreSQL Cloud)    │
+                    │   • Neon / Supabase (Produção / Beta)        │
                     │   • Multiempresa com segregação de tenant    │
                     │   • Fallback automático para SQLite local    │
                     └──────────────────────────────────────────────┘
@@ -61,14 +63,14 @@ O sistema responde instantaneamente às 4 perguntas vitais de qualquer pequeno n
 
 - **Frontend**: React 18, Vite 5, TypeScript, Material UI (MUI v5), Recharts, jsPDF, XLSX (SheetJS).
 - **Backend**: FastAPI, Python 3.11, SQLAlchemy 2.0, Pydantic v2, JWT (HS256), Bcrypt, ReportLab, OpenPyXL.
-- **Banco de Dados**: PostgreSQL em produção (Render) com fallback automático zero-config para SQLite em desenvolvimento local.
+- **Banco de Dados**: PostgreSQL em produção/nuvem (Neon/Supabase) com fallback automático zero-config para SQLite em desenvolvimento local.
 - **Isolamento Multiempresa**: Segregação de tenant rigorosa via `empresa_id` em todas as tabelas e rotas.
-- **Controle de Acesso (RBAC)**: Perfis de Administrador (Dono) e Operador (Balcão/Caixa).
-- **Hospedagem**: Arquitetura pronta para deploy automatizado no **Render** (Backend) e **Vercel** (Frontend).
+- **Controle de Acesso (RBAC)**: Perfis de Administrador (Dono), Operador (Balcão/Caixa) e Consultor (Auditoria LPTI Tech).
+- **Hospedagem & Deploy**: Pronto para deploy automatizado na **Vercel** (Frontend) e **Render** (Backend).
 
 ---
 
-## 📦 Funcionalidades Implementadas (Sprints 1, 2, 3, 4 e 5)
+## 📦 Funcionalidades Implementadas (Evolução das Sprints)
 
 ### 📊 Sprint 1 — Núcleo SaaS & Gestão Financeira
 - **Dashboard Executivo**: Vendas do dia, semana, mês e ano, saldo de caixa, ticket médio, gráficos de evolução e detalhamento por meios de pagamento e canais.
@@ -98,87 +100,57 @@ O sistema responde instantaneamente às 4 perguntas vitais de qualquer pequeno n
   - ✅ **Entregue**
   - ❌ **Cancelado**
 - **Vinculação de Motoboy**: Associação do entregador responsável diretamente na comanda do pedido.
-- **Relatório Completo de Logística & Taxas**:
-  - Total de taxas de entrega cobradas por período.
-  - Distribuição e ranking de entregas por região/bairro.
-  - Desempenho e volume de entregas por motoboy.
-- **Arquitetura Pronta para ESC/POS**: Módulo `escpos_printer.py` preparado para acionar impressoras térmicas não-fiscais (58mm e 80mm via USB, Serial, Rede TCP/IP ou comando RAW de navegador).
+- **Relatório Completo de Logística & Taxas**: Total de taxas arrecadadas, distribuição por bairro e ranking por motoboy.
+- **Impressão Térmica ESC/POS**: Módulo preparado para acionar impressoras térmicas não-fiscais (58mm e 80mm).
 
 ### 📦 Sprint 4 — Controle de Estoque & Custos
 - **Modelagem de Estoque e Custos**: Campos `quantidade_estoque`, `estoque_minimo` e `custo_unitario` integrados à entidade `Produto`.
-- **Auditoria de Movimentações (MovimentacaoEstoque)**: Rastreamento completo com tipo (`ENTRADA`, `SAIDA`, `AJUSTE`), quantidade, motivo, usuário responsável e observações.
-- **Entrada Manual & Reposição**: Registro de compras de fornecedores com atualização opcional de custo unitário médio.
+- **Auditoria de Movimentações (MovimentacaoEstoque)**: Rastreamento completo com tipo (`ENTRADA`, `SAIDA`, `AJUSTE`), quantidade, motivo e usuário.
+- **Entrada Manual & Reposição**: Registro de compras de fornecedores com atualização do custo unitário médio.
 - **Saída Manual & Perdas**: Registro de avarias, consumo interno, produtos vencidos e descarte.
 - **Ajuste de Inventário Físico**: Correção rápida de divergências de contagem com recálculo automático de delta.
-- **Baixa Automática no PDV**: Cada venda de produto deduz instantaneamente a quantidade em estoque e gera registro de movimentação de saída.
+- **Baixa Automática no PDV**: Cada venda deduz instantaneamente a quantidade física em estoque.
 - **Estorno em Cancelamentos**: O cancelamento de vendas recompõe o estoque dos produtos e gera registro de movimentação de entrada/estorno.
 - **Alertas de Estoque Crítico**: Indicadores visuais na tela de produtos e no Dashboard quando o saldo atinge ou fica abaixo do estoque mínimo.
-- **Tela de Controle de Estoque Completa**: Aba de posição com valoração patrimonial (preço de custo e potencial de venda) e aba de histórico cronológico de movimentações.
 
 ### 💰 Sprint 5 — Controle DAS Mensal (MEI)
-- **Entidade DasMensal**: Modelagem dedicada para guias mensais com campos: `id`, `empresa_id`, `ano`, `mes`, `valor`, `vencimento`, `status` (`Pago`, `Pendente`, `Atrasado`), `data_pagamento`, `observacao`, `created_at` e `updated_at`.
-- **Auto-Geração & Sincronização Anual**: Geração automática das 12 guias para o exercício corrente e atualização dinâmica para `Atrasado` caso expire sem pagamento.
-- **APIs REST Especializadas**:
-  - `GET /api/das`: Listagem com filtros por ano e status.
-  - `POST /api/das/{id}/pagamento`: Quitação da guia com registro de data de pagamento, valor e observações.
-  - `PATCH /api/das/{id}/status`: Alteração de status com ajuste inteligente da data de liquidação.
-  - `GET /api/das/vencimentos`: Diagnóstico de vencimentos (próximos 7 dias, vencidos, pagos).
-  - `GET /api/das/resumo`: Resumo financeiro de totais e contagens.
-  - `POST /api/das/gerar-ano`: Sincronização em lote.
-- **Integração com Dashboard Inteligente**:
-  - Alerta crítico: DAS venceu / em atraso (com botão para regularização imediata).
-  - Alerta de atenção: DAS vence em até 7 dias (com contagem regressiva de dias).
-  - Alerta de conformidade: DAS quitado (com confirmação positiva de regularidade fiscal).
-  - Card integrado de "Controle DAS Mensal" com status da competência e contadores de guias.
-- **Tela Controle DAS**: Interface moderna com seletor de ano, 4 KPIs visuais, tabela dos 12 meses, modais de pagamento e edição, exportação para Excel/CSV e link direto para emissão no PGMEI da Receita Federal.
-- **Suíte de Testes Automatizados**: 8 testes em `test_sprint5_das.py` com 100% de cobertura das regras de negócio do DAS (27 testes no total do projeto).
+- **Entidade DasMensal**: Modelagem dedicada para guias mensais (`ano`, `mes`, `valor`, `vencimento`, `status`, `data_pagamento`).
+- **Auto-Geração & Sincronização Anual**: Geração automática das 12 guias para o exercício corrente e atualização dinâmica para `Atrasado`.
+- **APIs REST Especializadas**: Listagem, quitação, alteração de status e consulta de vencimentos (7 dias, vencidos, pagos).
+- **Integração com Dashboard**: Alertas de vencimento em 7 dias, alerta de guia vencida e confirmação de regularidade fiscal.
+- **Tela Controle DAS**: Interface com seletor de ano, 4 KPIs visuais, tabela dos 12 meses, modais de liquidação e atalho direto para o PGMEI oficial da Receita Federal.
+
+### 📄 Sprint 6 — Entrada Automática via XML NF-e
+- **Parser Robusto de XML NF-e (v4.00)**: Extração automática de chave de 44 dígitos, emitente/fornecedor, produtos, NCM, quantidades e valores.
+- **Associação Inteligente de Produtos (De-Para)**: Vínculo automático e persistente entre o código do fornecedor e o catálogo local.
+- **Fator de Conversão de Embalagens**: Conversão de caixas/fardos em unidades avulsas (ex: 1 CX com 12 unidades).
+- **Trava Anti-Duplicidade**: Bloqueio rigoroso de importação duplicada da mesma nota fiscal.
+- **Interface Visual**: Drag and Drop para upload do arquivo `.xml`, pré-visualização tabular e botão "Importar para o Estoque".
+
+### 🛍️ Sprint 6.5 — Módulo de Compras & Histórico
+- **Histórico Completo de Compras**: Registro de fornecedores, notas fiscais, datas, quantidade de itens e valores faturados.
+- **Dashboard de Compras**: 4 indicadores (Última Compra, Total Comprado no Mês, Número de Notas e Fornecedor Principal).
+- **Tela de Detalhes da Compra**: Espelho detalhado dos itens adquiridos, unidades e preços unitários.
+
+### 👔 Sprint 7 — Painel do Consultor LPTI Tech
+- **Novo Perfil de Usuário**: Role `CONSULTOR` com permissões de auditoria estratégica e leitura de clientes.
+- **Tela Painel do Consultor**: Visão panorâmica de toda a carteira de microempreendedores atendidos.
+- **Sistema de Scores Semáforo**:
+  - 🟢 **Saudável:** Faturamento em dia, estoque estável e guias pagas.
+  - 🟡 **Atenção:** Vencimento próximo, estoque mínimo ou faturamento acima de 80% do teto.
+  - 🔴 **Crítico:** DAS atrasado, estoque zerado ou risco iminente de desenquadramento fiscal.
+- **Filtros de Auditoria & Diagnóstico Consultivo**: Geração de planos de ação táticos sob medida para o MEI.
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📚 Documentação Completa e Manuais
 
-```
-gestor-mei/
-├── backend/
-│   ├── app/
-│   │   ├── models/            # Modelos relacionais SQLAlchemy (Multi-tenant)
-│   │   ├── routers/           # Endpoints REST (auth, vendas, caixa, clientes, etc.)
-│   │   ├── schemas/           # Validação e serialização Pydantic v2
-│   │   ├── config.py          # Configurações de ambiente e variáveis
-│   │   ├── database.py        # Conexão de banco (PostgreSQL / SQLite fallback)
-│   │   ├── dependencies.py    # Injeção de dependências e segurança JWT
-│   │   ├── escpos_printer.py  # Arquitetura para impressão de comandas térmicas
-│   │   ├── main.py            # Ponto de entrada FastAPI com CORS e routers
-│   │   ├── security.py        # Criptografia Bcrypt e geração de tokens JWT
-│   │   └── seed.py            # Carga de dados inicial para testes
-│   ├── tests/                 # Suíte de testes automatizados (pytest + httpx)
-│   ├── Dockerfile             # Container Docker do Backend
-│   ├── Procfile               # Configuração de processo para PaaS
-│   ├── render.yaml            # Blueprint de deploy no Render
-│   └── requirements.txt       # Dependências Python (FastAPI, SQLAlchemy, etc.)
-├── frontend/
-│   ├── src/
-│   │   ├── components/        # Componentes reutilizáveis (Layout, Sidebar, etc.)
-│   │   ├── contexts/          # Contextos React (AuthContext, ThemeContext)
-│   │   ├── pages/             # Telas da aplicação (Dashboard, PDV, Pedidos, etc.)
-│   │   ├── services/          # Clientes HTTP Axios integrados à API
-│   │   ├── types/             # Interfaces e tipos TypeScript
-│   │   ├── App.tsx            # Roteamento e provedores globais
-│   │   ├── main.tsx           # Ponto de entrada React
-│   │   └── theme.ts           # Configuração de temas Claro / Escuro MUI
-│   ├── package.json           # Dependências e scripts npm
-│   ├── tsconfig.json          # Configurações do compilador TypeScript
-│   ├── vercel.json            # Configuração de rewrite e deploy na Vercel
-│   └── vite.config.ts         # Configuração de build do Vite
-├── docs/
-│   └── HANDOFF.md             # Guia completo de arquitetura e transição técnica
-├── .gitignore                 # Arquivo de exclusão Git unificado
-├── LICENSE                    # Licença MIT
-├── README.md                  # Apresentação completa da plataforma
-├── start-all.ps1              # Inicializador conjunto para Windows PowerShell
-├── start-backend.ps1          # Inicializador exclusivo do FastAPI
-└── start-frontend.ps1         # Inicializador exclusivo do Vite
-```
+- 📘 [**Manual do Usuário Ilustrado (Markdown)**](MANUAL_DO_USUARIO_GESTOR_MEI_v1.4.0.md): Guia passo a passo com capturas reais de todas as 13 telas, FAQ e glossário.
+- 📕 [**Manual do Usuário (PDF para Impressão / Leitura)**](MANUAL_DO_USUARIO_GESTOR_MEI_v1.4.0.pdf): Versão em PDF de alta resolução com paginação e diagramação profissional.
+- 📖 [**Guia Completo de Deploy Beta (Vercel + Render + Neon/Supabase)**](DEPLOY_BETA.md): Passo a passo para publicação online.
+- 📋 [**Roteiro & Checklist de Testes Piloto**](CHECKLIST_TESTES_PILOTO.md): Matriz de 9 módulos para homologação com usuários reais.
+- 📑 [**Documentação Técnica Geral do Sistema**](GESTOR_MEI_DOCUMENTACAO_COMPLETA.md): Especificações detalhadas de modelos e APIs.
+- 📝 [**Histórico de Mudanças (Changelog)**](CHANGELOG.md): Registro de todas as versões e sprints.
 
 ---
 
@@ -222,27 +194,20 @@ npm run dev
 
 ## 🔑 Credenciais de Teste Pré-configuradas
 
-O banco de dados de desenvolvimento já inicializa com dados demonstrativos completos:
+O banco de dados de desenvolvimento inicializa com dados demonstrativos completos:
 
-| Perfil | Usuário | E-mail | Senha |
-|---|---|---|---|
-| **Administrador** | Leonidas Paulino | `admin@gestormei.com.br` | `admin123` |
-| **Operador** | Carlos Atendente | `operador@gestormei.com.br` | `operador123` |
-| **Consultor LPTI Tech** | Consultor LPTI Tech | `consultor@lptitech.com.br` | `consultor123` |
-
----
-
-## ☁️ Deploy em Nuvem (Ambiente Beta)
-
-O Gestor MEI está 100% pronto para publicação em nuvem:
-- 📖 [Guia Completo de Deploy (Vercel + Render + Neon/Supabase)](DEPLOY_BETA.md)
-- 📋 [Roteiro & Checklist de Testes Piloto](CHECKLIST_TESTES_PILOTO.md)
+| Perfil | Usuário | E-mail | Senha | Missão |
+|---|---|---|---|---|
+| **Administrador** | Leonidas Paulino | `admin@gestormei.com.br` | `admin123` | Dono da empresa, gestão financeira, estoque e compras. |
+| **Operador** | Carlos Atendente | `operador@gestormei.com.br` | `operador123` | Atendimento rápido no balcão e entrega. |
+| **Consultor LPTI Tech** | Consultor LPTI Tech | `consultor@lptitech.com.br` | `consultor123` | Visão panorâmica da carteira e auditoria consultiva. |
 
 ---
 
-## 🧪 Testes Automatizados
+## 🧪 Suíte de Testes Automatizados
 
-Para executar os testes de integração de todas as Sprints (46 testes automatizados com 100% de aprovação):
+O sistema conta com **46 testes de integração automatizados** cobrindo todas as Sprints com 100% de aprovação:
+
 ```powershell
 cd backend
 pytest -v
@@ -250,23 +215,6 @@ pytest -v
 
 ---
 
-## 🚀 Publicação no GitHub
-
-Para publicar este projeto em um repositório remoto no GitHub:
-
-```bash
-# 1. Adicione o repositório remoto
-git remote add origin https://github.com/SEU_USUARIO/gestor-mei.git
-
-# 2. Defina a branch principal
-git branch -M main
-
-# 3. Envie os arquivos para o GitHub
-git push -u origin main
-```
-
----
-
 ## 📄 Licença
 
-Este projeto é distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para obter mais informações.
+Este projeto é desenvolvido pela **LPTI Tech / Leonidas Paulino** e distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para obter mais informações.
