@@ -68,7 +68,7 @@ O sistema responde instantaneamente às 4 perguntas vitais de qualquer pequeno n
 
 ---
 
-## 📦 Funcionalidades Implementadas (Sprints 1, 2, 3 e 4)
+## 📦 Funcionalidades Implementadas (Sprints 1, 2, 3, 4 e 5)
 
 ### 📊 Sprint 1 — Núcleo SaaS & Gestão Financeira
 - **Dashboard Executivo**: Vendas do dia, semana, mês e ano, saldo de caixa, ticket médio, gráficos de evolução e detalhamento por meios de pagamento e canais.
@@ -114,6 +114,24 @@ O sistema responde instantaneamente às 4 perguntas vitais de qualquer pequeno n
 - **Estorno em Cancelamentos**: O cancelamento de vendas recompõe o estoque dos produtos e gera registro de movimentação de entrada/estorno.
 - **Alertas de Estoque Crítico**: Indicadores visuais na tela de produtos e no Dashboard quando o saldo atinge ou fica abaixo do estoque mínimo.
 - **Tela de Controle de Estoque Completa**: Aba de posição com valoração patrimonial (preço de custo e potencial de venda) e aba de histórico cronológico de movimentações.
+
+### 💰 Sprint 5 — Controle DAS Mensal (MEI)
+- **Entidade DasMensal**: Modelagem dedicada para guias mensais com campos: `id`, `empresa_id`, `ano`, `mes`, `valor`, `vencimento`, `status` (`Pago`, `Pendente`, `Atrasado`), `data_pagamento`, `observacao`, `created_at` e `updated_at`.
+- **Auto-Geração & Sincronização Anual**: Geração automática das 12 guias para o exercício corrente e atualização dinâmica para `Atrasado` caso expire sem pagamento.
+- **APIs REST Especializadas**:
+  - `GET /api/das`: Listagem com filtros por ano e status.
+  - `POST /api/das/{id}/pagamento`: Quitação da guia com registro de data de pagamento, valor e observações.
+  - `PATCH /api/das/{id}/status`: Alteração de status com ajuste inteligente da data de liquidação.
+  - `GET /api/das/vencimentos`: Diagnóstico de vencimentos (próximos 7 dias, vencidos, pagos).
+  - `GET /api/das/resumo`: Resumo financeiro de totais e contagens.
+  - `POST /api/das/gerar-ano`: Sincronização em lote.
+- **Integração com Dashboard Inteligente**:
+  - Alerta crítico: DAS venceu / em atraso (com botão para regularização imediata).
+  - Alerta de atenção: DAS vence em até 7 dias (com contagem regressiva de dias).
+  - Alerta de conformidade: DAS quitado (com confirmação positiva de regularidade fiscal).
+  - Card integrado de "Controle DAS Mensal" com status da competência e contadores de guias.
+- **Tela Controle DAS**: Interface moderna com seletor de ano, 4 KPIs visuais, tabela dos 12 meses, modais de pagamento e edição, exportação para Excel/CSV e link direto para emissão no PGMEI da Receita Federal.
+- **Suíte de Testes Automatizados**: 8 testes em `test_sprint5_das.py` com 100% de cobertura das regras de negócio do DAS (27 testes no total do projeto).
 
 ---
 

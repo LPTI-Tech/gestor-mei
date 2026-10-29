@@ -9,6 +9,7 @@ from app.models.despesa import Despesa
 from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.ifood import LancamentoIFood
 from app.models.estoque import MovimentacaoEstoque
+from app.models.das import DasMensal
 
 __all__ = [
     "Empresa",
@@ -25,5 +26,6 @@ __all__ = [
     "Motoboy",
     "EntregaMotoboy",
     "LancamentoIFood",
-    "MovimentacaoEstoque"
+    "MovimentacaoEstoque",
+    "DasMensal"
 ]

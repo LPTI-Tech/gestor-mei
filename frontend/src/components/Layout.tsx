@@ -46,6 +46,7 @@ import {
   Logout,
   Storefront,
   Inventory2,
+  RequestQuote,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
@@ -102,6 +103,13 @@ export const Layout: React.FC = () => {
     { label: 'Produtos & Serviços', path: '/produtos', icon: <RestaurantMenu />, adminOnly: false },
     { label: 'Controle de Estoque', path: '/estoque', icon: <Inventory2 color="warning" />, adminOnly: false, badge: 'Sprint 4' },
     { label: 'Despesas', path: '/despesas', icon: <ReceiptLong />, adminOnly: false },
+    { 
+      label: 'Controle DAS', 
+      path: '/das', 
+      icon: <RequestQuote color="primary" />, 
+      adminOnly: false, 
+      badge: 'Sprint 5' 
+    },
     { label: 'Relatório Entregas', path: '/relatorio-entregas', icon: <TrendingUp color="primary" />, adminOnly: false },
     { 
       label: 'Relatório MEI (DASN)', 

@@ -6,6 +6,7 @@ from app.config import settings
 from app.database import Base, engine, get_db
 from app.seed import seed_database
 from app.migrate_sprint4 import run_migration as run_migration_sprint4
+from app.migrate_sprint5 import run_migration as run_migration_sprint5
 
 # Import routers
 from app.routers import (
@@ -21,6 +22,7 @@ from app.routers import (
     despesas,
     motoboys,
     ifood,
+    das,
     dashboard,
     relatorio_mei,
     saude_negocio,
@@ -50,6 +52,7 @@ app.add_middleware(
 def on_startup():
     Base.metadata.create_all(bind=engine)
     run_migration_sprint4()
+    run_migration_sprint5()
     seed_database()
 
 # Include Routers
@@ -65,6 +68,7 @@ app.include_router(caixa.router, prefix=settings.API_PREFIX)
 app.include_router(despesas.router, prefix=settings.API_PREFIX)
 app.include_router(motoboys.router, prefix=settings.API_PREFIX)
 app.include_router(ifood.router, prefix=settings.API_PREFIX)
+app.include_router(das.router, prefix=settings.API_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_PREFIX)
 app.include_router(relatorio_mei.router, prefix=settings.API_PREFIX)
 app.include_router(saude_negocio.router, prefix=settings.API_PREFIX)

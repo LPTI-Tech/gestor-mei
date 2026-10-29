@@ -433,6 +433,73 @@ export interface DashboardMetrics {
   total_itens_estoque?: number;
   itens_estoque_baixo?: number;
   valor_estoque_custo?: number;
+
+  // Indicadores do Controle DAS Mensal (Sprint 5)
+  das_status_mes_atual?: 'Pago' | 'Pendente' | 'Atrasado';
+  das_valor_mes_atual?: number;
+  das_vencimento_mes_atual?: string;
+  das_dias_restantes?: number;
+  das_qtd_atrasados?: number;
+  das_qtd_pendentes?: number;
+  das_qtd_pagos?: number;
+  das_alerta_tipo?: 'error' | 'warning' | 'success' | 'info' | null;
+  das_alerta_mensagem?: string | null;
+}
+
+export type DasStatus = 'Pago' | 'Pendente' | 'Atrasado';
+
+export interface DasMensal {
+  id: number;
+  empresa_id: number;
+  ano: number;
+  mes: number;
+  valor: number;
+  vencimento: string;
+  status: DasStatus;
+  data_pagamento?: string | null;
+  observacao?: string | null;
+  nome_mes?: string;
+  competencia_formatada?: string;
+  dias_para_vencimento?: number;
+  alerta_vencimento?: 'vencido' | 'vence_hoje' | 'vence_7_dias' | 'em_dia' | 'pago';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DasResumo {
+  ano: number;
+  total_pago: number;
+  total_pendente: number;
+  total_atrasado: number;
+  qtd_pago: number;
+  qtd_pendente: number;
+  qtd_atrasado: number;
+  total_guias: number;
+  das_mes_atual?: DasMensal | null;
+  proximo_vencimento?: DasMensal | null;
+  alerta_principal?: string | null;
+  tipo_alerta?: 'error' | 'warning' | 'success' | 'info' | null;
+}
+
+export interface DasVencimentosResponse {
+  ano: number;
+  das_vence_em_7_dias: DasMensal[];
+  das_vencidos: DasMensal[];
+  das_pagos: DasMensal[];
+  proximo_a_vencer?: DasMensal | null;
+  resumo: DasResumo;
+}
+
+export interface RegistrarPagamentoDasRequest {
+  data_pagamento?: string;
+  valor?: number;
+  observacao?: string;
+}
+
+export interface AlterarStatusDasRequest {
+  status: DasStatus;
+  data_pagamento?: string;
+  observacao?: string;
 }
 
 export interface MesMeiItem {

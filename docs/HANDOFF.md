@@ -1,8 +1,8 @@
 # 📋 Manual de Handoff & Arquitetura — GESTOR MEI
 
-> **Versão:** 1.1.0 (Sprints 1, 2, 3 e 4 Concluídas)  
+> **Versão:** 1.2.0 (Sprints 1, 2, 3, 4 e 5 Concluídas)  
 > **Responsável:** Equipe de Engenharia / Leonidas Paulino  
-> **Data:** 28 de Outubro de 2026  
+> **Data:** 29 de Outubro de 2026  
 
 ---
 
@@ -15,6 +15,7 @@ O **GESTOR MEI** é uma plataforma web SaaS multiempresa de alta performance pro
 - **Ponto de Venda (PDV) com Carrinho Ágil:** Registro de pedidos com múltiplos itens, combos e adicionais em menos de 10 segundos.
 - **Logística e Delivery Próprio:** Gestão de regiões/bairros com taxas fixas, despacho de motoboys e pipeline de status do pedido (*Recebido ➔ Em Preparo ➔ Saiu para Entrega ➔ Entregue*).
 - **Controle de Estoque Inteligente (Sprint 4):** Baixa automática no PDV ao concluir vendas, reposição manual (entradas), saídas operacionais (perdas, consumo interno, descarte), ajuste de inventário físico, estorno automático em cancelamentos e alertas de estoque mínimo no Dashboard.
+- **Controle DAS Mensal (Sprint 5):** Acompanhamento rigoroso das 12 guias mensais do Documento de Arrecadação do Simples Nacional (DAS-MEI), registro de quitação, alertas de vencimento (em 7 dias, vencido, pago), indicadores no Dashboard e link direto para o portal PGMEI da Receita Federal.
 - **Risco de Desenquadramento MEI:** Cálculo em tempo real do faturamento acumulado, projeção anual de fechamento e demonstrativo segregado entre **Comércio (Produtos)** e **Serviços** conforme o Artigo 68 da Resolução CGSN nº 140/2018 (DASN-SIMEI) com exportação em PDF oficial e planilha Excel.
 
 ---
@@ -205,7 +206,7 @@ Na pasta `backend/`:
 ```bash
 pytest tests/ -v
 ```
-Todos os 19 testes automatizados das Sprints 2, 3 e 4 (CRUD de clientes, vendas com carrinho, cálculo automático de totais, impacto no caixa, demonstrativo DASN-SIMEI, ciclo de status do pedido, vinculação de motoboys, relatórios logísticos, comanda térmica ESC/POS, controle de estoque com entradas/saídas manuais, ajuste de inventário, baixa automática no PDV, estorno em cancelamento e alertas de estoque crítico) devem rodar com 100% de aprovação.
+Todos os 27 testes automatizados das Sprints 2, 3, 4 e 5 (CRUD de clientes, vendas com carrinho, cálculo automático de totais, impacto no caixa, demonstrativo DASN-SIMEI, ciclo de status do pedido, vinculação de motoboys, relatórios logísticos, comanda térmica ESC/POS, controle de estoque com entradas/saídas manuais, ajuste de inventário, baixa automática no PDV, estorno em cancelamento, alertas de estoque crítico, auto-geração das 12 guias DAS, registro de pagamento, alteração manual de status, consulta de vencimentos e alertas em 7 dias/vencidos/pagos, resumo financeiro do DAS e integração com Dashboard) rodam com 100% de aprovação.
 
 ---
 

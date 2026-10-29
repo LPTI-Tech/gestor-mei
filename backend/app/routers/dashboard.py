@@ -8,6 +8,8 @@ from app.models.despesa import Despesa
 from app.models.caixa import CaixaTurno, CaixaLancamento
 from app.models.user import User
 from app.models.produto import Produto
+from app.models.das import DasMensal
+from app.routers.das import sincronizar_e_garantir_ano
 from app.schemas.dashboard import DashboardMetricsResponse, ChartPoint, BreakdownItem
 from app.dependencies import get_current_user
 
@@ -227,6 +229,46 @@ def get_dashboard_metrics(
     itens_baixo_est = sum(1 for p in prods_est if (p.quantidade_estoque or 0.0) <= (p.estoque_minimo or 0.0))
     valor_est_custo = sum(float(p.quantidade_estoque or 0.0) * float(p.custo_unitario or 0.0) for p in prods_est)
 
+    # 9. Indicadores do Controle DAS Mensal (Sprint 5)
+    sincronizar_e_garantir_ano(db, empresa_id, today.year)
+    guias_ano = db.query(DasMensal).filter(
+        DasMensal.empresa_id == empresa_id,
+        DasMensal.ano == today.year
+    ).order_by(DasMensal.mes.asc()).all()
+
+    das_mes_atual = next((d for d in guias_ano if d.mes == today.month), None)
+    das_status_mes = das_mes_atual.status if das_mes_atual else "Pendente"
+    das_valor_mes = round(float(das_mes_atual.valor), 2) if das_mes_atual else 75.60
+    das_venc_mes_str = das_mes_atual.vencimento.strftime("%d/%m/%Y") if das_mes_atual else f"20/{today.month:02d}/{today.year}"
+    das_dias_rest = (das_mes_atual.vencimento - today).days if das_mes_atual else None
+
+    # Contagens gerais do ano
+    das_qtd_atrasados = sum(1 for d in guias_ano if d.status == "Atrasado" or (d.status != "Pago" and d.vencimento < today))
+    das_qtd_pagos = sum(1 for d in guias_ano if d.status == "Pago")
+    das_qtd_pendentes = sum(1 for d in guias_ano if d.status == "Pendente" and d.vencimento >= today)
+
+    # Determinar tipo e mensagem de alerta para o Dashboard
+    das_alerta_tipo = None
+    das_alerta_mensagem = None
+
+    if das_qtd_atrasados > 0:
+        das_alerta_tipo = "error"
+        das_alerta_mensagem = f"Atenção: Você possui {das_qtd_atrasados} guia(s) DAS em atraso. Regularize para evitar multas."
+    elif das_mes_atual and das_mes_atual.status == "Pago":
+        das_alerta_tipo = "success"
+        das_alerta_mensagem = f"O DAS deste mês ({MESES_NOMES[today.month - 1]}) já está pago! Sua empresa está em dia."
+    elif das_dias_rest is not None and 0 <= das_dias_rest <= 7:
+        das_alerta_tipo = "warning"
+        if das_dias_rest == 0:
+            das_alerta_mensagem = "O DAS deste mês vence hoje (dia 20)! Realize o pagamento."
+        elif das_dias_rest == 1:
+            das_alerta_mensagem = "O DAS deste mês vence amanhã (dia 20). Não se esqueça de pagar."
+        else:
+            das_alerta_mensagem = f"O DAS deste mês vence em {das_dias_rest} dias (dia 20/{today.month:02d})."
+    else:
+        das_alerta_tipo = "info"
+        das_alerta_mensagem = f"DAS de {MESES_NOMES[today.month - 1]} a vencer em {das_venc_mes_str}."
+
     return DashboardMetricsResponse(
         venda_dia=round(venda_dia, 2),
         venda_semana=round(venda_semana, 2),
@@ -244,5 +286,14 @@ def get_dashboard_metrics(
         origens_breakdown=origens_breakdown,
         total_itens_estoque=total_itens_est,
         itens_estoque_baixo=itens_baixo_est,
-        valor_estoque_custo=round(valor_est_custo, 2)
+        valor_estoque_custo=round(valor_est_custo, 2),
+        das_status_mes_atual=das_status_mes,
+        das_valor_mes_atual=das_valor_mes,
+        das_vencimento_mes_atual=das_venc_mes_str,
+        das_dias_restantes=das_dias_rest,
+        das_qtd_atrasados=das_qtd_atrasados,
+        das_qtd_pendentes=das_qtd_pendentes,
+        das_qtd_pagos=das_qtd_pagos,
+        das_alerta_tipo=das_alerta_tipo,
+        das_alerta_mensagem=das_alerta_mensagem
     )

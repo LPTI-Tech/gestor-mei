@@ -17,6 +17,7 @@ import { Produtos } from './pages/Produtos';
 import { Estoque } from './pages/Estoque';
 import { Caixa } from './pages/Caixa';
 import { Despesas } from './pages/Despesas';
+import { ControleDas } from './pages/ControleDas';
 import { Motoboys } from './pages/Motoboys';
 import { IFood } from './pages/IFood';
 import { RelatorioMei } from './pages/RelatorioMei';
@@ -75,6 +76,7 @@ export const App: React.FC = () => {
               <Route path="estoque" element={<Estoque />} />
               <Route path="caixa" element={<Caixa />} />
               <Route path="despesas" element={<Despesas />} />
+              <Route path="das" element={<ControleDas />} />
               <Route path="motoboys" element={<Motoboys />} />
               <Route path="ifood" element={<IFood />} />
               <Route path="relatorio-mei" element={<RelatorioMei />} />

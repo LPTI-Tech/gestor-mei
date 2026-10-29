@@ -40,3 +40,14 @@ class DashboardMetricsResponse(BaseModel):
     total_itens_estoque: Optional[int] = 0
     itens_estoque_baixo: Optional[int] = 0
     valor_estoque_custo: Optional[float] = 0.0
+
+    # Indicadores do Controle DAS Mensal (Sprint 5)
+    das_status_mes_atual: Optional[str] = "Pendente"
+    das_valor_mes_atual: Optional[float] = 0.0
+    das_vencimento_mes_atual: Optional[str] = None
+    das_dias_restantes: Optional[int] = None
+    das_qtd_atrasados: Optional[int] = 0
+    das_qtd_pendentes: Optional[int] = 0
+    das_qtd_pagos: Optional[int] = 0
+    das_alerta_tipo: Optional[str] = None
+    das_alerta_mensagem: Optional[str] = None

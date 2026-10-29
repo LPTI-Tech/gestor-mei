@@ -12,6 +12,7 @@ import {
   Divider,
   LinearProgress,
   Paper,
+  Chip,
 } from '@mui/material';
 import {
   Today,
@@ -26,6 +27,10 @@ import {
   TrendingDown,
   Assessment,
   WarningAmber,
+  CheckCircle,
+  ReportProblem,
+  ReceiptLong,
+  Payment,
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -39,23 +44,29 @@ import {
   Bar,
 } from 'recharts';
 import api from '../services/api';
-import { DashboardMetrics } from '../types';
+import { DashboardMetrics, Produto } from '../types';
 import { StatCard } from '../components/StatCard';
+import { DashboardGreeting } from '../components/DashboardGreeting';
 import { formatCurrency } from '../services/exportUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { empresa } = useAuth();
+  const { user, empresa } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const res = await api.get<DashboardMetrics>('/dashboard');
-      setMetrics(res.data);
+      const [resMetrics, resProdutos] = await Promise.all([
+        api.get<DashboardMetrics>('/dashboard'),
+        api.get<Produto[]>('/produtos?apenas_ativos=true').catch(() => ({ data: [] as Produto[] })),
+      ]);
+      setMetrics(resMetrics.data);
+      setProdutos(resProdutos.data);
       setError(null);
     } catch (err: any) {
       setError('Não foi possível carregar os dados do dashboard.');
@@ -86,48 +97,81 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      {/* Top Welcome & Fast Action Bar */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight={800} color="text.primary">
-            Visão Geral do Negócio
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {empresa?.nome_fantasia} — Acompanhe vendas, caixa e lucratividade em tempo real.
-          </Typography>
-        </Box>
+      {/* Dashboard Inteligente: Saudação Personalizada & Insights Dinâmicos */}
+      <DashboardGreeting
+        user={user}
+        empresa={empresa}
+        metrics={metrics}
+        produtos={produtos}
+      />
 
-        <Box sx={{ display: 'flex', gap: 1.5, width: { xs: '100%', sm: 'auto' } }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<PointOfSale />}
-            onClick={() => navigate('/vendas')}
-            fullWidth={false}
-            sx={{ fontWeight: 700, px: 3, height: 44 }}
-          >
-            Nova Venda (PDV)
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            startIcon={<Assessment />}
-            onClick={() => navigate('/relatorio-mei')}
-            sx={{ fontWeight: 700, height: 44 }}
-          >
-            Ver Limite MEI
-          </Button>
-        </Box>
-      </Box>
+      {/* Alertas do Controle DAS Mensal (Sprint 5) */}
+      {/* 1. Alerta: DAS Venceu */}
+      {Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
+        <Alert
+          severity="error"
+          icon={<ReportProblem />}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate('/das')}
+              sx={{ fontWeight: 700 }}
+            >
+              Regularizar DAS
+            </Button>
+          }
+          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+        >
+          DAS Venceu: Você possui {metrics.das_qtd_atrasados} guia(s) DAS em atraso. Regularize para evitar multas de mora e suspensão de benefícios!
+        </Alert>
+      )}
+
+      {/* 2. Alerta: DAS Vence em 7 dias */}
+      {metrics.das_status_mes_atual === 'Pendente' &&
+        metrics.das_dias_restantes !== undefined &&
+        metrics.das_dias_restantes !== null &&
+        metrics.das_dias_restantes >= 0 &&
+        metrics.das_dias_restantes <= 7 && (
+        <Alert
+          severity="warning"
+          icon={<CalendarMonth />}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate('/das')}
+              sx={{ fontWeight: 700 }}
+            >
+              Pagar DAS
+            </Button>
+          }
+          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+        >
+          DAS Vence em {metrics.das_dias_restantes === 0 ? 'HOJE (dia 20)!' : `${metrics.das_dias_restantes} dias (${metrics.das_vencimento_mes_atual || 'dia 20'})`}: Valor de {formatCurrency(metrics.das_valor_mes_atual || 75.60)}.
+        </Alert>
+      )}
+
+      {/* 3. Alerta: DAS Pago */}
+      {metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados && (
+        <Alert
+          severity="success"
+          icon={<CheckCircle />}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate('/das')}
+              sx={{ fontWeight: 700 }}
+            >
+              Ver Detalhes
+            </Button>
+          }
+          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
+        >
+          DAS Pago: A guia deste mês ({metrics.das_vencimento_mes_atual}) já está quitada! Sua empresa está em dia com a Receita Federal.
+        </Alert>
+      )}
 
       {/* Alerta de Estoque Crítico (Sprint 4) */}
       {Boolean(metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0) && (
@@ -280,6 +324,99 @@ export const Dashboard: React.FC = () => {
         </Grid>
       </Paper>
 
+      {/* Indicadores do Controle DAS Mensal (Sprint 5) */}
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, borderLeft: '6px solid #1976D2' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ReceiptLong color="primary" />
+            <Typography variant="subtitle1" fontWeight={700}>
+              Controle DAS Mensal — Situação Fiscal MEI
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => navigate('/das')}
+            endIcon={<ArrowForward />}
+            sx={{ fontWeight: 700, borderRadius: 2 }}
+          >
+            Acessar Controle DAS
+          </Button>
+        </Box>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Guia do Mês Atual
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 0.5 }}>
+                <Typography variant="h6" fontWeight={800}>
+                  {formatCurrency(metrics.das_valor_mes_atual || 75.60)}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={metrics.das_status_mes_atual || 'Pendente'}
+                  color={
+                    metrics.das_status_mes_atual === 'Pago'
+                      ? 'success'
+                      : metrics.das_status_mes_atual === 'Atrasado'
+                      ? 'error'
+                      : 'warning'
+                  }
+                  sx={{ fontWeight: 800 }}
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Vencimento: {metrics.das_vencimento_mes_atual || 'Dia 20'}
+              </Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(46, 125, 50, 0.08)' }}>
+              <Typography variant="caption" color="success.dark" fontWeight={600}>
+                DAS Pagos no Ano
+              </Typography>
+              <Typography variant="h6" fontWeight={800} color="success.dark" sx={{ my: 0.5 }}>
+                {metrics.das_qtd_pagos || 0} guias
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Obrigações quitadas
+              </Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(237, 108, 2, 0.08)' }}>
+              <Typography variant="caption" color="warning.dark" fontWeight={600}>
+                DAS a Vencer (Pendentes)
+              </Typography>
+              <Typography variant="h6" fontWeight={800} color="warning.dark" sx={{ my: 0.5 }}>
+                {metrics.das_qtd_pendentes || 0} guias
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Aguardando vencimento
+              </Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(211, 47, 47, 0.08)' }}>
+              <Typography variant="caption" color="error.dark" fontWeight={600}>
+                DAS em Atraso
+              </Typography>
+              <Typography variant="h6" fontWeight={800} color="error.dark" sx={{ my: 0.5 }}>
+                {metrics.das_qtd_atrasados || 0} guias
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0 ? 'Regularização urgente' : 'Nenhuma guia atrasada'}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+
       {/* Row 4: Gráficos de Vendas */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Vendas por Dia (últimos 14 dias) */}
@@ -398,10 +535,10 @@ export const Dashboard: React.FC = () => {
                             item.nome === 'PIX'
                               ? '#00B4D8'
                               : item.nome === 'Dinheiro'
-                              ? '#2E7D32'
-                              : item.nome === 'Crédito'
-                              ? '#9C27B0'
-                              : '#ED6C02',
+                                ? '#2E7D32'
+                                : item.nome === 'Crédito'
+                                  ? '#9C27B0'
+                                  : '#ED6C02',
                         },
                       }}
                     />
@@ -446,10 +583,10 @@ export const Dashboard: React.FC = () => {
                             item.nome === 'WhatsApp'
                               ? '#25D366'
                               : item.nome === 'iFood'
-                              ? '#EA1D2C'
-                              : item.nome === 'Balcão'
-                              ? '#1976D2'
-                              : '#FB8C00',
+                                ? '#EA1D2C'
+                                : item.nome === 'Balcão'
+                                  ? '#1976D2'
+                                  : '#FB8C00',
                         },
                       }}
                     />
