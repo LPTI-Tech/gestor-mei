@@ -7,6 +7,8 @@ import { Layout } from './components/Layout';
 
 // Pages
 import { Login } from './pages/Login';
+import { EsqueciSenha } from './pages/EsqueciSenha';
+import { RedefinirSenha } from './pages/RedefinirSenha';
 import { Dashboard } from './pages/Dashboard';
 import { Vendas } from './pages/Vendas';
 import { PedidosEntrega } from './pages/PedidosEntrega';
@@ -61,6 +63,8 @@ export const App: React.FC = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
             <Route
               path="/"

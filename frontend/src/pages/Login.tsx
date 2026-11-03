@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -16,6 +16,7 @@ import {
   Paper,
   InputAdornment,
   IconButton,
+  Link,
 } from '@mui/material';
 import {
   Storefront,
@@ -251,6 +252,23 @@ export const Login: React.FC = () => {
                     ),
                   }}
                 />
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.8, mb: 1.5 }}>
+                  <Link
+                    component={RouterLink}
+                    to="/esqueci-senha"
+                    variant="body2"
+                    color="primary"
+                    sx={{
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      '&:hover': { textDecoration: 'underline' },
+                    }}
+                  >
+                    Esqueceu sua senha?
+                  </Link>
+                </Box>
 
                 <Button
                   type="submit"
