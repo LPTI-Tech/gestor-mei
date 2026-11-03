@@ -54,6 +54,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
+import logoIcon from '../assets/branding/gestor-mei-icon.png';
 
 const DRAWER_WIDTH = 260;
 
@@ -174,30 +175,29 @@ export const Layout: React.FC = () => {
 
   const drawerContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Brand Header */}
+      {/* Brand Header Oficial */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box
+          component="img"
+          src={logoIcon}
+          alt="Logo Gestor MEI"
           sx={{
-            width: 42,
-            height: 42,
-            borderRadius: 2,
-            bgcolor: 'primary.main',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '1.2rem',
-            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)',
+            width: 44,
+            height: 44,
+            borderRadius: 2.5,
+            boxShadow: '0 4px 14px rgba(7, 25, 51, 0.25)',
+            objectFit: 'cover',
+            flexShrink: 0,
           }}
-        >
-          MEI
-        </Box>
-        <Box sx={{ overflow: 'hidden' }}>
-          <Typography variant="h6" fontWeight={800} color="primary" lineHeight={1.2}>
+        />
+        <Box sx={{ overflow: 'hidden', minWidth: 0 }}>
+          <Typography variant="h6" fontWeight={800} color="primary" lineHeight={1.1} noWrap>
             GESTOR MEI
           </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.68rem', display: 'block' }}>
+            ERP Inteligente
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.5, fontSize: '0.72rem', opacity: 0.85 }}>
             {empresa?.nome_fantasia || 'Minha Empresa'}
           </Typography>
           <ApiStatusIndicator size="small" />
@@ -279,6 +279,13 @@ export const Layout: React.FC = () => {
           <Logout fontSize="small" />
         </IconButton>
       </Box>
+
+      {/* Assinatura Oficial LPTI Tech */}
+      <Box sx={{ p: 1.2, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', opacity: 0.85 }}>
+          Desenvolvido por <strong>LPTI Tech</strong>
+        </Typography>
+      </Box>
     </Box>
   );
 
@@ -315,7 +322,7 @@ export const Layout: React.FC = () => {
                 {empresa?.nome_fantasia || 'GESTOR MEI'}
               </Typography>
               <Chip
-                label="MEI"
+                label="ERP Oficial"
                 size="small"
                 color="primary"
                 variant="outlined"

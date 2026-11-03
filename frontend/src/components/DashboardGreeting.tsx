@@ -11,6 +11,7 @@ import {
   Assessment,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import logoIcon from '../assets/branding/gestor-mei-icon.png';
 import { DashboardMetrics, Produto, User, Empresa } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 
@@ -297,6 +298,69 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Cabeçalho Institucional Oficial - Rebranding Gestor MEI */}
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1.2,
+            mb: 1.5,
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 2,
+            bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.12 : 0.05),
+            border: '1px solid',
+            borderColor: (t) => alpha(t.palette.primary.main, 0.15),
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box
+            component="img"
+            src={logoIcon}
+            alt="Gestor MEI"
+            sx={{
+              width: 22,
+              height: 22,
+              borderRadius: '5px',
+              display: 'block',
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              color: 'primary.main',
+              fontSize: '0.78rem',
+            }}
+          >
+            GESTOR MEI
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 500,
+              fontSize: '0.74rem',
+              display: { xs: 'none', sm: 'inline' },
+            }}
+          >
+            • ERP Inteligente para MEIs e Pequenos Negócios
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.disabled',
+              fontWeight: 500,
+              fontSize: '0.7rem',
+              ml: { xs: 0, md: 1 },
+              display: { xs: 'none', md: 'inline' },
+            }}
+          >
+            | Desenvolvido por LPTI Tech
+          </Typography>
+        </Box>
+
         {/* Saudação com emoji e nome do usuário com destaque visual moderno */}
         <Typography
           variant="h5"

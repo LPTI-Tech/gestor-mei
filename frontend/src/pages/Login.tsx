@@ -14,6 +14,7 @@ import {
   IconButton,
   Link,
   Chip,
+  Container,
 } from '@mui/material';
 import {
   CheckCircleOutline,
@@ -22,9 +23,11 @@ import {
   Visibility,
   VisibilityOff,
   LockOutlined,
+  VerifiedUser,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { ApiStatusIndicator } from '../components/ApiStatusIndicator';
+import logoOficial from '../assets/branding/gestor-mei-logo-tight.png';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -101,65 +104,103 @@ export const Login: React.FC = () => {
       sx={{
         minHeight: '100vh',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: 'background.default',
-        p: { xs: 2, sm: 4 },
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'radial-gradient(ellipse at 50% 0%, #0d2847 0%, #071933 60%, #040d1a 100%)'
+            : 'radial-gradient(ellipse at 50% 0%, #e3f2fd 0%, #f4f7fb 60%, #e8eef6 100%)',
+        p: { xs: 2, sm: 3, md: 4 },
+        position: 'relative',
       }}
     >
-      <Box sx={{ maxWidth: 440, width: '100%' }}>
-        {/* Branding */}
+      <Container maxWidth="xs" sx={{ p: 0 }}>
+        {/* Bloco de Branding Oficial */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
+          {/* Logo Oficial com Container Refinado */}
           <Box
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 3,
-              bgcolor: 'primary.main',
-              color: 'white',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem',
-              fontWeight: 800,
-              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
-              mb: 1.5,
+              display: 'inline-block',
+              p: 1,
+              borderRadius: 4,
+              bgcolor: '#071933',
+              boxShadow: '0 12px 32px rgba(7, 25, 51, 0.25)',
+              mb: 2,
+              transition: 'transform 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.02)',
+              },
             }}
           >
-            MEI
+            <Box
+              component="img"
+              src={logoOficial}
+              alt="Logo Oficial Gestor MEI"
+              sx={{
+                width: { xs: 150, sm: 170 },
+                height: 'auto',
+                display: 'block',
+                borderRadius: 2,
+              }}
+            />
           </Box>
-          <Typography variant="h4" fontWeight={800} color="primary">
-            GESTOR MEI
+
+          {/* Subtítulo Oficial */}
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              fontSize: { xs: '0.85rem', sm: '0.92rem' },
+              letterSpacing: '-0.01em',
+              mb: 1,
+            }}
+          >
+            ERP Inteligente para MEIs e Pequenos Negócios
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Controle de Vendas, Caixa e Gestão Interna
-          </Typography>
-          <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'center' }}>
+
+          {/* Status da API */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <ApiStatusIndicator size="small" />
           </Box>
         </Box>
 
-        <Card elevation={3} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+        {/* Card Principal de Login */}
+        <Card
+          elevation={4}
+          sx={{
+            borderRadius: 4,
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          {/* Cabeçalho do Card */}
           <Box
             sx={{
-              py: 2,
+              py: 1.8,
               px: 3,
               bgcolor: 'primary.main',
               color: 'white',
               display: 'flex',
               alignItems: 'center',
-              gap: 1.2,
+              justifyContent: 'space-between',
             }}
           >
-            <LockOutlined fontSize="small" />
-            <Typography variant="subtitle1" fontWeight={700}>
-              Acesso Restrito ao Sistema
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LockOutlined fontSize="small" />
+              <Typography variant="subtitle2" fontWeight={700} sx={{ letterSpacing: '0.02em' }}>
+                Acesso Seguro ao Sistema
+              </Typography>
+            </Box>
+            <VerifiedUser sx={{ fontSize: 18, opacity: 0.85 }} />
           </Box>
 
           <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
             {errorMessage && (
-              <Alert severity="error" sx={{ mb: 2.5 }}>
+              <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>
                 {errorMessage}
               </Alert>
             )}
@@ -175,6 +216,9 @@ export const Login: React.FC = () => {
                 required
                 autoFocus
                 disabled={loading}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                }}
               />
               <TextField
                 fullWidth
@@ -185,6 +229,9 @@ export const Login: React.FC = () => {
                 margin="normal"
                 required
                 disabled={loading}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -211,7 +258,7 @@ export const Login: React.FC = () => {
                   sx={{
                     textDecoration: 'none',
                     fontWeight: 600,
-                    fontSize: '0.875rem',
+                    fontSize: '0.85rem',
                     '&:hover': { textDecoration: 'underline' },
                   }}
                 >
@@ -225,7 +272,16 @@ export const Login: React.FC = () => {
                 variant="contained"
                 size="large"
                 disabled={loading}
-                sx={{ mt: 2, mb: 2, height: 48, fontWeight: 700 }}
+                sx={{
+                  mt: 1.5,
+                  mb: 2,
+                  height: 48,
+                  fontWeight: 800,
+                  fontSize: '0.98rem',
+                  borderRadius: 2.5,
+                  textTransform: 'none',
+                  boxShadow: '0 4px 14px rgba(25, 118, 210, 0.35)',
+                }}
               >
                 {loading ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
@@ -237,10 +293,15 @@ export const Login: React.FC = () => {
                 )}
               </Button>
 
-              {/* 1-Click Demo Accounts */}
+              {/* Contas de Demonstração (1-Clique) */}
               <Paper
                 variant="outlined"
-                sx={{ p: 2, mt: 2, bgcolor: 'background.default', borderRadius: 2 }}
+                sx={{
+                  p: 2,
+                  mt: 2,
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                  borderRadius: 2.5,
+                }}
               >
                 <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" mb={1}>
                   ACESSO RÁPIDO DE DEMONSTRAÇÃO:
@@ -253,7 +314,7 @@ export const Login: React.FC = () => {
                     disabled={loading}
                     onClick={() => fillDemo('admin')}
                     startIcon={<Security fontSize="small" />}
-                    sx={{ flexGrow: 1 }}
+                    sx={{ flexGrow: 1, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
                   >
                     Dono (OWNER)
                   </Button>
@@ -264,7 +325,7 @@ export const Login: React.FC = () => {
                     disabled={loading}
                     onClick={() => fillDemo('operador')}
                     startIcon={<FlashOn fontSize="small" />}
-                    sx={{ flexGrow: 1 }}
+                    sx={{ flexGrow: 1, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
                   >
                     Operador (Caixa)
                   </Button>
@@ -274,13 +335,28 @@ export const Login: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Value props badges */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mt: 3, flexWrap: 'wrap' }}>
-          <Chip icon={<CheckCircleOutline />} label="100% Multiempresa" size="small" variant="outlined" />
-          <Chip icon={<CheckCircleOutline />} label="Segurança RBAC" size="small" variant="outlined" />
-          <Chip icon={<CheckCircleOutline />} label="Venda em < 10 segundos" size="small" variant="outlined" />
+        {/* Badges de Valor */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 3, flexWrap: 'wrap' }}>
+          <Chip icon={<CheckCircleOutline />} label="Multiempresa" size="small" variant="outlined" sx={{ borderRadius: 2 }} />
+          <Chip icon={<CheckCircleOutline />} label="Segurança RBAC" size="small" variant="outlined" sx={{ borderRadius: 2 }} />
+          <Chip icon={<CheckCircleOutline />} label="PDV Instantâneo" size="small" variant="outlined" sx={{ borderRadius: 2 }} />
         </Box>
-      </Box>
+
+        {/* Assinatura Oficial Discreta */}
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '0.75rem',
+              letterSpacing: '0.02em',
+              opacity: 0.85,
+            }}
+          >
+            Desenvolvido por <strong>LPTI Tech</strong> • Todos os direitos reservados
+          </Typography>
+        </Box>
+      </Container>
     </Box>
   );
 };

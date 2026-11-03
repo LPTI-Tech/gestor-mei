@@ -14,6 +14,7 @@ import {
 import { ArrowBack, EmailOutlined, CheckCircleOutline } from '@mui/icons-material';
 import api from '../services/api';
 import { ApiStatusIndicator } from '../components/ApiStatusIndicator';
+import logoOficial from '../assets/branding/gestor-mei-logo-tight.png';
 
 export const EsqueciSenha: React.FC = () => {
   const navigate = useNavigate();
@@ -60,33 +61,45 @@ export const EsqueciSenha: React.FC = () => {
       }}
     >
       <Box sx={{ maxWidth: 460, width: '100%' }}>
-        {/* Branding */}
+        {/* Branding Oficial Gestor MEI */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Box
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 3,
-              bgcolor: 'primary.main',
-              color: 'white',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem',
-              fontWeight: 800,
-              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
-              mb: 1.5,
+              display: 'inline-block',
+              p: 1,
+              borderRadius: 4,
+              bgcolor: '#071933',
+              boxShadow: '0 12px 32px rgba(7, 25, 51, 0.25)',
+              mb: 2,
             }}
           >
-            MEI
+            <Box
+              component="img"
+              src={logoOficial}
+              alt="Logo Oficial Gestor MEI"
+              sx={{
+                width: { xs: 140, sm: 160 },
+                height: 'auto',
+                display: 'block',
+                borderRadius: 2,
+              }}
+            />
           </Box>
-          <Typography variant="h4" fontWeight={800} color="primary">
-            GESTOR MEI
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              fontSize: { xs: '0.85rem', sm: '0.92rem' },
+              mb: 1,
+            }}
+          >
+            ERP Inteligente para MEIs e Pequenos Negócios
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, opacity: 0.85 }}>
             Recuperação de Acesso & Redefinição de Senha
           </Typography>
-          <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <ApiStatusIndicator size="small" />
           </Box>
         </Box>
@@ -180,6 +193,21 @@ export const EsqueciSenha: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Assinatura Oficial Discreta */}
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '0.75rem',
+              letterSpacing: '0.02em',
+              opacity: 0.85,
+            }}
+          >
+            Desenvolvido por <strong>LPTI Tech</strong> • Todos os direitos reservados
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

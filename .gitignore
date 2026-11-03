@@ -87,6 +87,13 @@ lerna-debug.log*
 *.key
 *.cert
 
+# Uploads locais
+uploads/
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/comprovantes/
+!backend/uploads/comprovantes/.gitkeep
+
 # ------------------------------------------
 # IDEs & Editores
 # ------------------------------------------
