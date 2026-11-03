@@ -14,8 +14,17 @@ import {
   Grid,
   Chip,
   Paper,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
-import { Storefront, CheckCircleOutline, FlashOn, Security } from '@mui/icons-material';
+import {
+  Storefront,
+  CheckCircleOutline,
+  FlashOn,
+  Security,
+  Visibility,
+  VisibilityOff,
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { ApiStatusIndicator } from '../components/ApiStatusIndicator';
 
@@ -26,6 +35,8 @@ export const Login: React.FC = () => {
   const [tabIndex, setTabIndex] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showRegPassword, setShowRegPassword] = useState<boolean>(false);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState<string>('admin@gestormei.com.br');
@@ -45,8 +56,58 @@ export const Login: React.FC = () => {
     password: '',
   });
 
+  const getLoginErrorMessage = (err: any): string => {
+    if (!err) return 'Erro inesperado ao realizar login.';
+    const status = err.response?.status;
+    const detail = err.response?.data?.detail;
+
+    if (status === 401) {
+      return 'E-mail ou senha incorretos.';
+    }
+    if (status === 404) {
+      return 'Serviço de autenticação não encontrado. Verifique a conexão com o servidor.';
+    }
+    if (status === 403) {
+      return 'Acesso negado. Sua conta não possui permissão para acessar o sistema.';
+    }
+    if (status === 422) {
+      return 'Por favor, informe um e-mail válido e preencha a senha.';
+    }
+    if (status && status >= 500) {
+      return 'Erro interno do servidor. Tente novamente.';
+    }
+    if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+      return 'O servidor demorou para responder. Tente novamente em instantes.';
+    }
+    if (!err.response) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+    }
+    return typeof detail === 'string' ? detail : 'Erro ao realizar login. Verifique suas credenciais.';
+  };
+
+  const getRegisterErrorMessage = (err: any): string => {
+    if (!err) return 'Erro inesperado ao cadastrar empresa.';
+    const status = err.response?.status;
+    const detail = err.response?.data?.detail;
+
+    if (status === 400 || status === 409) {
+      return typeof detail === 'string' ? detail : 'Este e-mail ou CNPJ já está cadastrado no sistema.';
+    }
+    if (status === 422) {
+      return 'Por favor, revise os dados preenchidos. Alguns campos estão inválidos.';
+    }
+    if (status && status >= 500) {
+      return 'Erro interno do servidor. Tente novamente.';
+    }
+    if (!err.response) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+    }
+    return typeof detail === 'string' ? detail : 'Erro ao cadastrar empresa. Verifique os dados preenchidos.';
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setErrorMessage(null);
     setLoading(true);
 
@@ -54,9 +115,7 @@ export const Login: React.FC = () => {
       await login(loginEmail, loginPassword);
       navigate('/');
     } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.detail || 'Erro ao realizar login. Verifique suas credenciais.'
-      );
+      setErrorMessage(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -64,6 +123,7 @@ export const Login: React.FC = () => {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setErrorMessage(null);
     setLoading(true);
 
@@ -71,9 +131,7 @@ export const Login: React.FC = () => {
       await register(regData);
       navigate('/');
     } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.detail || 'Erro ao cadastrar empresa. Verifique os dados preenchidos.'
-      );
+      setErrorMessage(getRegisterErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -166,15 +224,32 @@ export const Login: React.FC = () => {
                   margin="normal"
                   required
                   autoFocus
+                  disabled={loading}
                 />
                 <TextField
                   fullWidth
                   label="Senha"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   margin="normal"
                   required
+                  disabled={loading}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="alternar visibilidade da senha"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          edge="end"
+                          tabIndex={-1}
+                          disabled={loading}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
 
                 <Button
@@ -185,7 +260,14 @@ export const Login: React.FC = () => {
                   disabled={loading}
                   sx={{ mt: 2.5, mb: 2, height: 48, fontWeight: 700 }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Entrar no Sistema'}
+                  {loading ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                      <CircularProgress size={22} color="inherit" />
+                      <span>Entrando no Sistema...</span>
+                    </Box>
+                  ) : (
+                    'Entrar no Sistema'
+                  )}
                 </Button>
 
                 {/* 1-Click Demo Accounts */}
@@ -201,6 +283,7 @@ export const Login: React.FC = () => {
                       size="small"
                       variant="outlined"
                       color="primary"
+                      disabled={loading}
                       onClick={() => fillDemo('admin')}
                       startIcon={<Security fontSize="small" />}
                       sx={{ flexGrow: 1 }}
@@ -211,6 +294,7 @@ export const Login: React.FC = () => {
                       size="small"
                       variant="outlined"
                       color="secondary"
+                      disabled={loading}
                       onClick={() => fillDemo('operador')}
                       startIcon={<FlashOn fontSize="small" />}
                       sx={{ flexGrow: 1 }}
@@ -337,11 +421,28 @@ export const Login: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Crie sua Senha"
-                      type="password"
+                      type={showRegPassword ? 'text' : 'password'}
                       size="small"
                       required
                       value={regData.password}
                       onChange={(e) => setRegData({ ...regData, password: e.target.value })}
+                      disabled={loading}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              aria-label="alternar visibilidade da senha"
+                              onClick={() => setShowRegPassword((prev) => !prev)}
+                              edge="end"
+                              tabIndex={-1}
+                              disabled={loading}
+                            >
+                              {showRegPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
                     />
                   </Grid>
                 </Grid>
@@ -355,7 +456,14 @@ export const Login: React.FC = () => {
                   disabled={loading}
                   sx={{ mt: 3, height: 48, fontWeight: 700 }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Cadastrar Meu Negócio'}
+                  {loading ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                      <CircularProgress size={22} color="inherit" />
+                      <span>Cadastrando...</span>
+                    </Box>
+                  ) : (
+                    'Cadastrar Meu Negócio'
+                  )}
                 </Button>
               </Box>
             )}
