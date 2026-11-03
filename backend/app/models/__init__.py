@@ -1,5 +1,6 @@
 from app.models.empresa import Empresa
 from app.models.user import User, UserRole
+from app.models.empresa_consultor import EmpresaConsultor
 from app.models.produto import Produto
 from app.models.cliente import Cliente
 from app.models.regiao_entrega import RegiaoEntrega
@@ -17,6 +18,7 @@ __all__ = [
     "Empresa",
     "User",
     "UserRole",
+    "EmpresaConsultor",
     "Produto",
     "Cliente",
     "RegiaoEntrega",

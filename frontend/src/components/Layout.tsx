@@ -72,7 +72,14 @@ export const Layout: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, empresa, logout, isAdmin, isConsultor } = useAuth();
+  const { user, empresa, logout, isAdmin, isOwner, isMaster, isConsultor } = useAuth();
+
+  const getCargoLabel = () => {
+    if (isMaster) return 'Plataforma MASTER';
+    if (isOwner) return 'Proprietário (OWNER)';
+    if (user?.role === 'CONSULTOR') return 'Consultor LPTI Tech';
+    return 'Operador de Caixa';
+  };
   const { mode, toggleTheme } = useAppTheme();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -262,7 +269,7 @@ export const Layout: React.FC = () => {
               {user?.nome}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {isAdmin ? 'Administrador' : 'Operador'}
+              {getCargoLabel()}
             </Typography>
           </Box>
         </Box>

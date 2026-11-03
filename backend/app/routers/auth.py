@@ -74,36 +74,37 @@ def register_empresa(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(empresa)
     
-    # 2. Create Admin User
-    admin_user = User(
+    # 2. Create Owner User (Proprietário Titular da Empresa)
+    owner_user = User(
         empresa_id=empresa.id,
         nome=data.nome_usuario,
         email=data.email_usuario.lower().strip(),
         hashed_password=hash_password(data.password),
-        role=UserRole.ADMIN,
-        ativo=True
+        role=UserRole.OWNER,
+        ativo=True,
+        ultimo_acesso=datetime.utcnow()
     )
-    db.add(admin_user)
+    db.add(owner_user)
     db.commit()
-    db.refresh(admin_user)
+    db.refresh(owner_user)
     
     # Generate token
     token_payload = {
-        "sub": admin_user.email,
+        "sub": owner_user.email,
         "empresa_id": empresa.id,
-        "user_id": admin_user.id,
-        "role": admin_user.role.value
+        "user_id": owner_user.id,
+        "role": owner_user.role.value
     }
     access_token = create_access_token(token_payload)
     
     return Token(
         access_token=access_token,
         token_type="bearer",
-        user_id=admin_user.id,
+        user_id=owner_user.id,
         empresa_id=empresa.id,
-        nome=admin_user.nome,
-        email=admin_user.email,
-        role=admin_user.role,
+        nome=owner_user.nome,
+        email=owner_user.email,
+        role=owner_user.role,
         nome_fantasia=empresa.nome_fantasia
     )
 
@@ -124,12 +125,20 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
             detail="Usuário inativo. Contate o administrador da sua empresa."
         )
     
-    empresa = db.query(Empresa).filter(Empresa.id == user.empresa_id).first()
-    if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não localizada."
-        )
+    # Registra a data e hora do último acesso
+    user.ultimo_acesso = datetime.utcnow()
+    db.commit()
+
+    nome_fantasia = "Plataforma LPTI Tech"
+    if user.empresa_id is not None:
+        empresa = db.query(Empresa).filter(Empresa.id == user.empresa_id).first()
+        if not empresa and user.role != UserRole.MASTER:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Empresa não localizada."
+            )
+        if empresa:
+            nome_fantasia = empresa.nome_fantasia
     
     token_payload = {
         "sub": user.email,
@@ -147,18 +156,23 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         nome=user.nome,
         email=user.email,
         role=user.role,
-        nome_fantasia=empresa.nome_fantasia
+        nome_fantasia=nome_fantasia
     )
 
 
 @router.get("/me")
 def get_me(
     user: User = Depends(get_current_user),
-    empresa: Empresa = Depends(get_current_empresa)
+    db: Session = Depends(get_db)
 ):
+    empresa_data = None
+    if user.empresa_id:
+        empresa = db.query(Empresa).filter(Empresa.id == user.empresa_id).first()
+        if empresa:
+            empresa_data = EmpresaResponse.model_validate(empresa)
     return {
         "user": UserResponse.model_validate(user),
-        "empresa": EmpresaResponse.model_validate(empresa)
+        "empresa": empresa_data
     }
 
 

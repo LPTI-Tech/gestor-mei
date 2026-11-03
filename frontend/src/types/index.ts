@@ -1,11 +1,25 @@
-export type UserRole = 'ADMIN' | 'OPERADOR' | 'CONSULTOR';
+export type UserRole = 'MASTER' | 'OWNER' | 'CONSULTOR' | 'OPERATOR' | 'ADMIN' | 'OPERADOR';
 
 export interface User {
   id: number;
-  empresa_id: number;
+  empresa_id?: number | null;
   nome: string;
   email: string;
   role: UserRole;
+  ativo: boolean;
+  created_at: string;
+  ultimo_acesso?: string | null;
+  criado_por_id?: number | null;
+  criado_por_nome?: string | null;
+}
+
+export interface VinculoConsultor {
+  id: number;
+  empresa_id: number;
+  user_id: number;
+  nome_consultor?: string | null;
+  email_consultor?: string | null;
+  nome_empresa?: string | null;
   ativo: boolean;
   created_at: string;
 }

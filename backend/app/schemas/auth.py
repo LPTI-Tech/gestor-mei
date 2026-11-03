@@ -6,11 +6,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: int
-    empresa_id: int
+    empresa_id: Optional[int] = None
     nome: str
     email: str
     role: UserRole
-    nome_fantasia: str
+    nome_fantasia: Optional[str] = None
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
@@ -31,7 +31,7 @@ class RegisterRequest(BaseModel):
     telefone: Optional[str] = None
     email_empresa: EmailStr
     
-    # First admin user data
+    # First owner user data
     nome_usuario: str
     email_usuario: EmailStr
     password: str

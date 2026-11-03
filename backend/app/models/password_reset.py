@@ -31,3 +31,4 @@ class AuditoriaRecuperacaoSenha(Base):
     data_hora = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     user = relationship("User")
+

@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -28,21 +29,36 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    email: str = payload.get("sub")
-    empresa_id: int = payload.get("empresa_id")
+    email: Optional[str] = payload.get("sub")
+    empresa_id: Optional[int] = payload.get("empresa_id")
+    role_str: Optional[str] = payload.get("role")
     
-    if email is None or empresa_id is None:
+    if not email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais do token inválidas.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = db.query(User).filter(
-        User.email == email,
-        User.empresa_id == empresa_id,
-        User.ativo == True
-    ).first()
+    # Se o perfil for MASTER da plataforma, empresa_id pode ser None
+    if role_str == "MASTER":
+        user = db.query(User).filter(
+            User.email == email,
+            User.ativo == True
+        ).first()
+    else:
+        # Usuários vinculados a empresa (OWNER, OPERATOR, CONSULTOR)
+        if empresa_id is not None:
+            user = db.query(User).filter(
+                User.email == email,
+                User.empresa_id == empresa_id,
+                User.ativo == True
+            ).first()
+        else:
+            user = db.query(User).filter(
+                User.email == email,
+                User.ativo == True
+            ).first()
     
     if not user:
         raise HTTPException(
@@ -58,7 +74,13 @@ def get_current_empresa(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> Empresa:
-    empresa = db.query(Empresa).filter(Empresa.id == user.empresa_id).first()
+    target_empresa_id = user.empresa_id
+    if target_empresa_id is None:
+        # MASTER sem empresa vinculada usa a primeira empresa disponível como contexto padrão
+        empresa = db.query(Empresa).first()
+    else:
+        empresa = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
+
     if not empresa:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -67,22 +89,54 @@ def get_current_empresa(
     return empresa
 
 
+def require_master(
+    user: User = Depends(get_current_user)
+) -> User:
+    """Exige perfil MASTER da plataforma LPTI Tech."""
+    if user.role != UserRole.MASTER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso exclusivo ao perfil MASTER da plataforma.",
+        )
+    return user
+
+
+def require_owner(
+    user: User = Depends(get_current_user)
+) -> User:
+    """Exige perfil OWNER (Proprietário) ou MASTER."""
+    if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao Proprietário (OWNER).",
+        )
+    return user
+
+
+def require_owner_or_master(
+    user: User = Depends(get_current_user)
+) -> User:
+    """Exige perfil OWNER ou MASTER."""
+    if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao Proprietário ou Administrador MASTER.",
+        )
+    return user
+
+
 def require_admin(
     user: User = Depends(get_current_user)
 ) -> User:
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso restrito ao Administrador.",
-        )
-    return user
+    """Alias retrocompatível: OWNER e MASTER atuam como administradores."""
+    return require_owner_or_master(user)
 
 
 def require_operador(
     user: User = Depends(get_current_user)
 ) -> User:
-    # Both ADMIN and OPERADOR can access
-    if user.role not in [UserRole.ADMIN, UserRole.OPERADOR]:
+    """Acesso para MASTER, OWNER ou OPERATOR."""
+    if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER, UserRole.OPERATOR, UserRole.OPERADOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso não autorizado.",
@@ -93,8 +147,8 @@ def require_operador(
 def require_consultor_or_admin(
     user: User = Depends(get_current_user)
 ) -> User:
-    # ADMIN e CONSULTOR podem acessar o Painel do Consultor
-    if user.role not in [UserRole.ADMIN, UserRole.CONSULTOR]:
+    """Acesso para CONSULTOR, OWNER ou MASTER."""
+    if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER, UserRole.CONSULTOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito a Consultores e Administradores.",
@@ -105,7 +159,8 @@ def require_consultor_or_admin(
 def require_consultor(
     user: User = Depends(get_current_user)
 ) -> User:
-    if user.role != UserRole.CONSULTOR:
+    """Acesso para CONSULTOR ou MASTER."""
+    if user.role not in [UserRole.CONSULTOR, UserRole.MASTER]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito ao perfil Consultor.",

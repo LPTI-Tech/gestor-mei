@@ -9,6 +9,7 @@ from app.migrate_sprint4 import run_migration as run_migration_sprint4
 from app.migrate_sprint5 import run_migration as run_migration_sprint5
 from app.migrate_sprint6 import run_migration as run_migration_sprint6
 from app.migrate_sprint7 import run_migration as run_migration_sprint7
+from app.migrate_rbac import run_migration as run_migration_rbac
 
 # Import routers
 from app.routers import (
@@ -61,6 +62,7 @@ def on_startup():
     run_migration_sprint5()
     run_migration_sprint6()
     run_migration_sprint7()
+    run_migration_rbac()
     seed_database()
 
 # Include Routers

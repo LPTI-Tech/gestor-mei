@@ -267,3 +267,4 @@ def enviar_email_recuperacao(
     print("="*80 + "\n")
 
     return True, "Simulado localmente via console logger (modo dev/teste)"
+

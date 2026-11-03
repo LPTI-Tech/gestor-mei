@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -20,6 +20,14 @@ class EmpresaBase(BaseModel):
 
 class EmpresaCreate(EmpresaBase):
     pass
+
+class EmpresaCreateMaster(EmpresaBase):
+    nome_owner: Optional[str] = None
+    email_owner: Optional[EmailStr] = None
+    senha_owner: Optional[str] = None
+
+class TransferirPropriedadeRequest(BaseModel):
+    novo_owner_user_id: int
 
 class EmpresaUpdate(BaseModel):
     nome_empresarial: Optional[str] = None
