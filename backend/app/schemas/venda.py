@@ -52,6 +52,7 @@ class VendaBase(BaseModel):
 
 class VendaCreate(VendaBase):
     itens: Optional[List[ItemVendaCreate]] = None
+    autorizar_estoque_negativo: Optional[bool] = False
 
 class VendaStatusPedidoUpdate(BaseModel):
     status_pedido: str = Field(..., description="Recebido, Em Preparo, Saiu para Entrega, Entregue, Cancelado")

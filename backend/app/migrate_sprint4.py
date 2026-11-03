@@ -48,6 +48,14 @@ def run_migration():
             cursor.execute("UPDATE produtos SET custo_unitario = ROUND(preco_venda * 0.45, 2) WHERE custo_unitario IS NULL OR custo_unitario = 0.0")
             cursor.execute("UPDATE produtos SET quantidade_estoque = 25.0 WHERE quantidade_estoque = 0.0")
 
+            # Check empresas columns
+            cursor.execute("PRAGMA table_info(empresas)")
+            empresa_cols = [r[1] for r in cursor.fetchall()]
+            if "permitir_estoque_negativo" not in empresa_cols:
+                print("Adding column 'permitir_estoque_negativo' to empresas...")
+                cursor.execute("ALTER TABLE empresas ADD COLUMN permitir_estoque_negativo BOOLEAN DEFAULT 1")
+                cursor.execute("UPDATE empresas SET permitir_estoque_negativo = 1 WHERE permitir_estoque_negativo IS NULL")
+
             conn.commit()
             conn.close()
             print("SQLite columns updated for produtos.")
@@ -59,6 +67,7 @@ def run_migration():
             conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade_estoque FLOAT DEFAULT 0.0;"))
             conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque_minimo FLOAT DEFAULT 0.0;"))
             conn.execute(text("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS custo_unitario FLOAT DEFAULT 0.0;"))
+            conn.execute(text("ALTER TABLE empresas ADD COLUMN IF NOT EXISTS permitir_estoque_negativo BOOLEAN DEFAULT TRUE;"))
             print("PostgreSQL columns updated for produtos.")
 
     print("Sprint 4 Migration completed successfully!")

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.empresa import Empresa
-from app.schemas.empresa import EmpresaResponse, EmpresaUpdate, ModulosConfigUpdate
+from app.schemas.empresa import EmpresaResponse, EmpresaUpdate, ModulosConfigUpdate, ConfiguracaoEstoqueUpdate
 from app.dependencies import get_current_empresa, require_admin
 
 router = APIRouter(prefix="/empresa", tags=["Empresa"])
@@ -37,6 +37,20 @@ def update_modulos_config(
     empresa.modulo_motoboy = data.modulo_motoboy
     empresa.modulo_ifood = data.modulo_ifood
     empresa.modulo_estoque = data.modulo_estoque
+    if data.permitir_estoque_negativo is not None:
+        empresa.permitir_estoque_negativo = data.permitir_estoque_negativo
+    db.commit()
+    db.refresh(empresa)
+    return empresa
+
+@router.put("/estoque-config", response_model=EmpresaResponse)
+def update_estoque_config(
+    data: ConfiguracaoEstoqueUpdate,
+    empresa: Empresa = Depends(get_current_empresa),
+    db: Session = Depends(get_db),
+    admin = Depends(require_admin)
+):
+    empresa.permitir_estoque_negativo = data.permitir_estoque_negativo
     db.commit()
     db.refresh(empresa)
     return empresa

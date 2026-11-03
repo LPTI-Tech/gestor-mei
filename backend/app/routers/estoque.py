@@ -6,7 +6,8 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models.produto import Produto
-from app.models.estoque import MovimentacaoEstoque
+from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
+from app.models.empresa import Empresa
 from app.models.user import User
 from app.dependencies import get_current_user
 from app.schemas.estoque import (
@@ -160,6 +161,43 @@ def list_movimentacoes(
     return [_format_movimentacao_response(m) for m in movs]
 
 
+@router.get("/auditoria")
+def list_auditoria_estoque(
+    produto_id: Optional[int] = None,
+    limit: int = Query(default=100, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retorna o histórico de auditoria de saídas autorizadas com estoque insuficiente/crítico.
+    """
+    query = db.query(AuditoriaEstoque).filter(
+        AuditoriaEstoque.empresa_id == current_user.empresa_id
+    )
+
+    if produto_id:
+        query = query.filter(AuditoriaEstoque.produto_id == produto_id)
+
+    auditorias = query.order_by(desc(AuditoriaEstoque.data_registro)).limit(limit).all()
+    return [
+        {
+            "id": a.id,
+            "produto_id": a.produto_id,
+            "produto_nome": a.produto.nome if a.produto else None,
+            "venda_id": a.venda_id,
+            "usuario_id": a.usuario_id,
+            "usuario_nome": a.usuario.nome if a.usuario else None,
+            "saldo_anterior": a.saldo_anterior,
+            "quantidade_vendida": a.quantidade_vendida,
+            "saldo_resultante": a.saldo_resultante,
+            "tipo_evento": a.tipo_evento,
+            "justificativa": a.justificativa,
+            "data_registro": a.data_registro.isoformat() if a.data_registro else None,
+        }
+        for a in auditorias
+    ]
+
+
 @router.post("/entrada", response_model=MovimentacaoEstoqueResponse, status_code=status.HTTP_201_CREATED)
 def registrar_entrada_estoque(
     data: EntradaEstoqueRequest,
@@ -222,17 +260,59 @@ def registrar_saida_estoque(
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
-    produto.quantidade_estoque = float(produto.quantidade_estoque or 0.0) - float(data.quantidade)
+    empresa = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
+    permitir_negativo = getattr(empresa, "permitir_estoque_negativo", True)
+    if permitir_negativo is None:
+        permitir_negativo = True
+
+    saldo_atual = float(produto.quantidade_estoque or 0.0)
+    qtd_saida = float(data.quantidade)
+    insuficiente = qtd_saida > saldo_atual
+
+    if insuficiente:
+        if not permitir_negativo:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Estoque insuficiente para registrar a saída ({saldo_atual:.2f} disp.). O sistema está configurado para bloquear estoque negativo."
+            )
+        if not getattr(data, "autorizar_estoque_negativo", False):
+            raise HTTPException(
+                status_code=400,
+                detail="Estoque insuficiente para concluir a saída de estoque."
+            )
+
+    novo_saldo = round(saldo_atual - qtd_saida, 2)
+    produto.quantidade_estoque = novo_saldo
+
+    if insuficiente:
+        motivo_str = f"{data.motivo or 'Saída Manual'} [ESTOQUE CRÍTICO / NEGATIVO]"
+        obs_str = f"{data.observacao or ''} (Saída autorizada com saldo insuficiente: {saldo_atual:.2f} disp., {qtd_saida:.2f} retiradas, saldo resultante: {novo_saldo:.2f})".strip()
+        audit = AuditoriaEstoque(
+            empresa_id=current_user.empresa_id,
+            produto_id=produto.id,
+            venda_id=None,
+            usuario_id=current_user.id,
+            saldo_anterior=saldo_atual,
+            quantidade_vendida=qtd_saida,
+            saldo_resultante=novo_saldo,
+            tipo_evento="SAIDA_MANUAL_ESTOQUE_NEGATIVO",
+            justificativa=f"Saída manual autorizada: {data.motivo}",
+            data_registro=datetime.utcnow()
+        )
+        db.add(audit)
+    else:
+        motivo_str = data.motivo or "Saída Manual"
+        obs_str = data.observacao
 
     mov = MovimentacaoEstoque(
         empresa_id=current_user.empresa_id,
         produto_id=produto.id,
         tipo="SAIDA",
-        quantidade=float(data.quantidade),
-        motivo=data.motivo or "Saída Manual",
+        quantidade=qtd_saida,
+        motivo=motivo_str,
         usuario_id=current_user.id,
         data_movimentacao=datetime.utcnow(),
-        observacao=data.observacao,
+        observacao=obs_str,
     )
     db.add(mov)
     db.commit()

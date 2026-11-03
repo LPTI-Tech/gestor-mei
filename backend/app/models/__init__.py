@@ -8,7 +8,7 @@ from app.models.caixa import CaixaTurno, CaixaLancamento
 from app.models.despesa import Despesa
 from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.ifood import LancamentoIFood
-from app.models.estoque import MovimentacaoEstoque
+from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
 from app.models.das import DasMensal
 from app.models.nfe import ProdutoVinculoXML, NfeImportada, ItemNfeImportada
 
@@ -28,6 +28,7 @@ __all__ = [
     "EntregaMotoboy",
     "LancamentoIFood",
     "MovimentacaoEstoque",
+    "AuditoriaEstoque",
     "DasMensal",
     "ProdutoVinculoXML",
     "NfeImportada",

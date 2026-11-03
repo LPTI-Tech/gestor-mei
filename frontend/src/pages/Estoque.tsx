@@ -54,8 +54,11 @@ import {
 } from '../types';
 import { StatCard } from '../components/StatCard';
 import { formatCurrency } from '../services/exportUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Estoque: React.FC = () => {
+  const { empresa } = useAuth();
+  const [saidaNegativaModal, setSaidaNegativaModal] = useState(false);
   const [tabIndex, setTabIndex] = useState(0);
   const [resumo, setResumo] = useState<ResumoEstoqueGeral | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoEstoque[]>([]);
@@ -162,20 +165,42 @@ export const Estoque: React.FC = () => {
     }
   };
 
-  const handleSubmitSaida = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitSaida = async (e?: React.FormEvent, autorizarNegativo: boolean = false) => {
+    if (e) e.preventDefault();
     if (!selectedProdId || !formQtd || Number(formQtd) <= 0) return;
+
+    const prod = (resumo?.itens || []).find((p) => p.id === Number(selectedProdId));
+    const saldoAtual = prod?.quantidade_estoque ?? 0;
+    const qtdDesejada = Number(formQtd);
+
+    if (qtdDesejada > saldoAtual && !autorizarNegativo) {
+      if (empresa?.permitir_estoque_negativo === false) {
+        setError(
+          `Estoque insuficiente para registrar a saída (Saldo disponível: ${saldoAtual}). O sistema está configurado para bloquear estoque negativo.`
+        );
+        return;
+      }
+      setSaidaNegativaModal(true);
+      return;
+    }
+
     try {
       setActionLoading(true);
       const payload: SaidaEstoqueRequest = {
         produto_id: Number(selectedProdId),
-        quantidade: Number(formQtd),
+        quantidade: qtdDesejada,
         motivo: formMotivo || 'Saída Manual',
         observacao: formObs || undefined,
+        autorizar_estoque_negativo: autorizarNegativo,
       };
       await api.post('/estoque/saida', payload);
-      setSuccessMsg('Saída de estoque registrada com sucesso!');
+      setSuccessMsg(
+        autorizarNegativo
+          ? 'Saída manual de estoque autorizada sob alerta de estoque crítico!'
+          : 'Saída de estoque registrada com sucesso!'
+      );
       setSaidaOpen(false);
+      setSaidaNegativaModal(false);
       loadData();
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Erro ao registrar saída.');
@@ -718,6 +743,43 @@ export const Estoque: React.FC = () => {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      {/* DIALOG ALERTA SAÍDA ESTOQUE INSUFICIENTE (BUG-001) */}
+      <Dialog
+        open={saidaNegativaModal}
+        onClose={() => setSaidaNegativaModal(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: 'warning.dark', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningAmber color="warning" />
+          Estoque insuficiente para concluir a saída.
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+            A quantidade solicitada ({formQtd} un) é superior ao saldo atual disponível em estoque.
+            Ao prosseguir, o saldo ficará negativo e a ocorrência será registrada no histórico de auditoria.
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            Deseja cancelar ou confirmar a saída mesmo assim?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+          <Button variant="outlined" color="inherit" onClick={() => setSaidaNegativaModal(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={actionLoading}
+            onClick={() => handleSubmitSaida(undefined, true)}
+            sx={{ fontWeight: 800 }}
+          >
+            Confirmar Mesmo Assim
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* DIALOG 3: AJUSTE DE INVENTÁRIO */}

@@ -25,6 +25,7 @@ export interface Empresa {
   modulo_motoboy?: boolean;
   modulo_ifood?: boolean;
   modulo_estoque?: boolean;
+  permitir_estoque_negativo?: boolean;
   data_inicio_atividades: string;
   created_at: string;
   updated_at: string;
@@ -88,6 +89,7 @@ export interface SaidaEstoqueRequest {
   quantidade: number;
   motivo: string;
   observacao?: string;
+  autorizar_estoque_negativo?: boolean;
 }
 
 export interface AjusteEstoqueRequest {

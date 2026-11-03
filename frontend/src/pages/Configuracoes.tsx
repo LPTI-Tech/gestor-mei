@@ -18,6 +18,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Radio,
 } from '@mui/material';
 import {
   Settings,
@@ -55,6 +56,8 @@ export const Configuracoes: React.FC = () => {
 
   const [saving, setSaving] = useState<boolean>(false);
   const [savingModulos, setSavingModulos] = useState<boolean>(false);
+  const [permitirEstoqueNegativo, setPermitirEstoqueNegativo] = useState<boolean>(true);
+  const [savingEstoque, setSavingEstoque] = useState<boolean>(false);
   const [exportingBackup, setExportingBackup] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -75,6 +78,7 @@ export const Configuracoes: React.FC = () => {
         modulo_ifood: empresa.modulo_ifood ?? true,
         modulo_estoque: empresa.modulo_estoque ?? false,
       });
+      setPermitirEstoqueNegativo(empresa.permitir_estoque_negativo ?? true);
     }
   }, [empresa]);
 
@@ -115,6 +119,27 @@ export const Configuracoes: React.FC = () => {
       alert('Erro ao alterar configuração dos módulos.');
     } finally {
       setSavingModulos(false);
+    }
+  };
+
+  const handleChangePoliticaEstoque = async (permitir: boolean) => {
+    setSavingEstoque(true);
+    setSuccessMsg(null);
+    try {
+      await api.put('/empresa/estoque-config', {
+        permitir_estoque_negativo: permitir,
+      });
+      setPermitirEstoqueNegativo(permitir);
+      await refreshUserData();
+      setSuccessMsg(
+        permitir
+          ? 'Política de estoque atualizada: Permitir estoque negativo com confirmação.'
+          : 'Política de estoque atualizada: Bloquear estoque negativo em vendas e saídas.'
+      );
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Erro ao alterar política de estoque.');
+    } finally {
+      setSavingEstoque(false);
     }
   };
 
@@ -292,6 +317,114 @@ export const Configuracoes: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" mt={1}>
                   Controle de saldo e inventário de mercadorias.
                 </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* CONFIGURAÇÃO DE ESTOQUE NEGATIVO (BUG-001) */}
+      <Card sx={{ borderRadius: 3, mb: 3, border: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Inventory color="primary" />
+              <Typography variant="h6" fontWeight={800}>
+                Configurações de Estoque
+              </Typography>
+            </Box>
+            <Chip
+              label={permitirEstoqueNegativo ? "Permitir com Confirmação (Padrão)" : "Bloquear Estoque Negativo"}
+              color={permitirEstoqueNegativo ? "success" : "error"}
+              variant="outlined"
+              size="small"
+              sx={{ fontWeight: 700 }}
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+            Defina o comportamento do sistema ao registrar vendas (PDV, Delivery) ou saídas com saldo insuficiente:
+          </Typography>
+
+          <Grid container spacing={2}>
+            {/* Opção 1: Permitir estoque negativo com confirmação */}
+            <Grid item xs={12} md={6}>
+              <Paper
+                variant="outlined"
+                onClick={() => !savingEstoque && handleChangePoliticaEstoque(true)}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2.5,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  bgcolor: permitirEstoqueNegativo ? 'action.selected' : 'background.paper',
+                  borderColor: permitirEstoqueNegativo ? 'primary.main' : 'divider',
+                  borderWidth: permitirEstoqueNegativo ? 2 : 1,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1.5,
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <Radio
+                  checked={permitirEstoqueNegativo}
+                  onChange={() => handleChangePoliticaEstoque(true)}
+                  disabled={savingEstoque}
+                  sx={{ p: 0, mt: 0.2 }}
+                />
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Permitir estoque negativo
+                    </Typography>
+                    <Chip label="Padrão Recomendado" size="small" color="primary" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Caso o saldo seja insuficiente, o sistema exibe o alerta:
+                    <b> "Estoque insuficiente para concluir a venda."</b> com as opções <b>[Cancelar Venda]</b> e <b>[Vender Mesmo Assim]</b>, registrando a ocorrência no histórico de auditoria e gerando alerta de estoque crítico.
+                  </Typography>
+                </Box>
+              </Paper>
+            </Grid>
+
+            {/* Opção 2: Bloquear estoque negativo */}
+            <Grid item xs={12} md={6}>
+              <Paper
+                variant="outlined"
+                onClick={() => !savingEstoque && handleChangePoliticaEstoque(false)}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2.5,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  bgcolor: !permitirEstoqueNegativo ? 'action.selected' : 'background.paper',
+                  borderColor: !permitirEstoqueNegativo ? 'error.main' : 'divider',
+                  borderWidth: !permitirEstoqueNegativo ? 2 : 1,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1.5,
+                  '&:hover': {
+                    borderColor: 'error.main',
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <Radio
+                  checked={!permitirEstoqueNegativo}
+                  onChange={() => handleChangePoliticaEstoque(false)}
+                  disabled={savingEstoque}
+                  sx={{ p: 0, mt: 0.2 }}
+                />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Bloquear estoque negativo
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Bloqueia terminantemente a conclusão de vendas ou saídas caso a quantidade solicitada exceda o saldo em estoque. Impede o fechamento do pedido até que haja reposição física de mercadorias.
+                  </Typography>
+                </Box>
               </Paper>
             </Grid>
           </Grid>

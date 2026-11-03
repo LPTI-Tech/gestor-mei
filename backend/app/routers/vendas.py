@@ -12,7 +12,7 @@ from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.caixa import CaixaTurno
 from app.models.empresa import Empresa
 from app.models.user import User
-from app.models.estoque import MovimentacaoEstoque
+from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
 from app.schemas.venda import (
     VendaCreate,
     VendaResponse,
@@ -331,6 +331,52 @@ def create_venda(
         resumo_preco = round(valor_subtotal / resumo_qtd, 2) if resumo_qtd > 0 else 0.0
         resumo_prod_id = None
 
+    # Validação inteligente de estoque pré-venda (PDV e Delivery)
+    empresa_atual = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
+    permitir_negativo_config = getattr(empresa_atual, "permitir_estoque_negativo", True)
+    if permitir_negativo_config is None:
+        permitir_negativo_config = True
+
+    produtos_insuficientes = []
+    produtos_consultados = {}
+
+    for it in itens_para_criar:
+        if it["produto_id"] and it["tipo_item"] == "PRODUTO":
+            pid = it["produto_id"]
+            if pid not in produtos_consultados:
+                prod_obj = db.query(Produto).filter(
+                    Produto.id == pid,
+                    Produto.empresa_id == current_user.empresa_id
+                ).first()
+                produtos_consultados[pid] = prod_obj
+
+            prod_est = produtos_consultados[pid]
+            if prod_est:
+                saldo_atual = float(prod_est.quantidade_estoque or 0.0)
+                qtd_pedida = float(it["quantidade"])
+                if saldo_atual < qtd_pedida:
+                    produtos_insuficientes.append({
+                        "produto_id": prod_est.id,
+                        "nome": prod_est.nome,
+                        "saldo_disponivel": saldo_atual,
+                        "quantidade_solicitada": qtd_pedida,
+                        "deficit": round(qtd_pedida - saldo_atual, 2)
+                    })
+
+    if produtos_insuficientes:
+        # Se configurado para bloquear estoque negativo terminantemente
+        if not permitir_negativo_config:
+            raise HTTPException(
+                status_code=400,
+                detail="Estoque insuficiente para concluir a venda. O sistema está configurado para bloquear estoque negativo."
+            )
+        # Se configurado para permitir com confirmação mas sem flag de autorização
+        if not data.autorizar_estoque_negativo:
+            raise HTTPException(
+                status_code=400,
+                detail="Estoque insuficiente para concluir a venda."
+            )
+
     tipo_ped = data.tipo_pedido or ("ENTREGA" if data.origem in ["WhatsApp", "Delivery Próprio", "iFood"] else "BALCAO")
     status_ped = data.status_pedido or "Recebido"
 
@@ -380,23 +426,55 @@ def create_venda(
         )
         db.add(item_obj)
 
-        # Baixa automática de estoque
+        # Baixa de estoque inteligente
         if it["produto_id"] and it["tipo_item"] == "PRODUTO":
-            prod_est = db.query(Produto).filter(
+            prod_est = produtos_consultados.get(it["produto_id"]) or db.query(Produto).filter(
                 Produto.id == it["produto_id"],
                 Produto.empresa_id == current_user.empresa_id
             ).first()
             if prod_est:
-                prod_est.quantidade_estoque = float(prod_est.quantidade_estoque or 0.0) - float(it["quantidade"])
+                saldo_anterior = float(prod_est.quantidade_estoque or 0.0)
+                qtd_vendida = float(it["quantidade"])
+                novo_saldo = round(saldo_anterior - qtd_vendida, 2)
+                prod_est.quantidade_estoque = novo_saldo
+
+                teve_saldo_negativo = saldo_anterior < qtd_vendida
+
+                if teve_saldo_negativo:
+                    # Venda autorizada com estoque negativo: registra alerta crítico e auditoria
+                    motivo_mov = f"Venda {venda.numero_pedido} [ESTOQUE CRÍTICO / NEGATIVO]"
+                    obs_mov = (
+                        f"Venda autorizada sob confirmação com saldo insuficiente. "
+                        f"Saldo anterior: {saldo_anterior:.2f}, Vendido: {qtd_vendida:.2f}, Saldo resultante: {novo_saldo:.2f}. "
+                        f"Alerta de estoque crítico gerado para auditoria."
+                    )
+                    # Histórico de auditoria
+                    audit = AuditoriaEstoque(
+                        empresa_id=current_user.empresa_id,
+                        produto_id=prod_est.id,
+                        venda_id=venda.id,
+                        usuario_id=current_user.id,
+                        saldo_anterior=saldo_anterior,
+                        quantidade_vendida=qtd_vendida,
+                        saldo_resultante=novo_saldo,
+                        tipo_evento="ESTOQUE_NEGATIVO_CONFIRMADO",
+                        justificativa="Venda concluída com autorização do usuário após confirmação de saldo insuficiente.",
+                        data_registro=sale_dt
+                    )
+                    db.add(audit)
+                else:
+                    motivo_mov = f"Venda {venda.numero_pedido or f'PED-{venda.id:04d}'}"
+                    obs_mov = f"Baixa automática via PDV ({venda.origem})"
+
                 mov_venda = MovimentacaoEstoque(
                     empresa_id=current_user.empresa_id,
                     produto_id=prod_est.id,
                     tipo="SAIDA",
-                    quantidade=float(it["quantidade"]),
-                    motivo=f"Venda {venda.numero_pedido or f'PED-{venda.id:04d}'}",
+                    quantidade=qtd_vendida,
+                    motivo=motivo_mov,
                     usuario_id=current_user.id,
                     data_movimentacao=sale_dt,
-                    observacao=f"Baixa automática via PDV ({venda.origem})"
+                    observacao=obs_mov
                 )
                 db.add(mov_venda)
 

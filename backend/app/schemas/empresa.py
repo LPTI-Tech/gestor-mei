@@ -16,6 +16,7 @@ class EmpresaBase(BaseModel):
     modulo_motoboy: Optional[bool] = True
     modulo_ifood: Optional[bool] = True
     modulo_estoque: Optional[bool] = False
+    permitir_estoque_negativo: Optional[bool] = True
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -34,12 +35,17 @@ class EmpresaUpdate(BaseModel):
     modulo_motoboy: Optional[bool] = None
     modulo_ifood: Optional[bool] = None
     modulo_estoque: Optional[bool] = None
+    permitir_estoque_negativo: Optional[bool] = None
 
 class ModulosConfigUpdate(BaseModel):
     modulo_delivery: bool
     modulo_motoboy: bool
     modulo_ifood: bool
     modulo_estoque: bool
+    permitir_estoque_negativo: Optional[bool] = None
+
+class ConfiguracaoEstoqueUpdate(BaseModel):
+    permitir_estoque_negativo: bool
 
 class EmpresaResponse(EmpresaBase):
     id: int

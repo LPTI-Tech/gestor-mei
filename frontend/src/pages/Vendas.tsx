@@ -50,7 +50,9 @@ import {
   TwoWheeler,
   Storefront,
   Map,
+  Warning,
 } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import {
   Produto,
@@ -120,6 +122,17 @@ export const Vendas: React.FC = () => {
 
   // Cancel Dialog
   const [cancelVendaId, setCancelVendaId] = useState<number | null>(null);
+
+  // Alerta de Estoque Negativo / Insuficiente (BUG-001)
+  const { empresa } = useAuth();
+  const [estoqueModalOpen, setEstoqueModalOpen] = useState<boolean>(false);
+  const [itensSemSaldo, setItensSemSaldo] = useState<{
+    produto_id: number;
+    nome: string;
+    saldo_disponivel: number;
+    quantidade_solicitada: number;
+    saldo_resultante: number;
+  }[]>([]);
 
   const fetchData = async () => {
     try {
@@ -308,10 +321,43 @@ export const Vendas: React.FC = () => {
   const numDesconto = Math.max(0, Number(desconto.replace(',', '.')) || 0);
   const totalPagar = Math.max(0, Math.round((subtotalCart + numTaxa - numDesconto) * 100) / 100);
 
-  const handleSubmitVenda = async () => {
+  const handleSubmitVenda = async (autorizarEstoqueNegativo: boolean = false) => {
     if (cartItems.length === 0) {
       alert('Adicione pelo menos um produto ao carrinho antes de finalizar.');
       return;
+    }
+
+    // Validação preventiva de saldo insuficiente no carrinho
+    if (!autorizarEstoqueNegativo) {
+      const insuficientes: {
+        produto_id: number;
+        nome: string;
+        saldo_disponivel: number;
+        quantidade_solicitada: number;
+        saldo_resultante: number;
+      }[] = [];
+
+      cartItems.forEach((it) => {
+        if (it.produto_id && it.tipo_item === 'PRODUTO') {
+          const prod = produtos.find((p) => p.id === it.produto_id);
+          const saldo = prod?.quantidade_estoque ?? 0;
+          if (saldo < it.quantidade) {
+            insuficientes.push({
+              produto_id: it.produto_id,
+              nome: it.descricao,
+              saldo_disponivel: saldo,
+              quantidade_solicitada: it.quantidade,
+              saldo_resultante: Math.round((saldo - it.quantidade) * 100) / 100,
+            });
+          }
+        }
+      });
+
+      if (insuficientes.length > 0) {
+        setItensSemSaldo(insuficientes);
+        setEstoqueModalOpen(true);
+        return;
+      }
     }
 
     try {
@@ -327,6 +373,7 @@ export const Vendas: React.FC = () => {
         forma_pagamento: formaPagamento,
         desconto: numDesconto,
         observacoes: observacoes.trim() || null,
+        autorizar_estoque_negativo: autorizarEstoqueNegativo,
         itens: cartItems.map((it) => ({
           produto_id: it.produto_id,
           descricao: it.descricao,
@@ -340,9 +387,35 @@ export const Vendas: React.FC = () => {
       const res = await api.post<Venda>('/vendas', payload);
       setRecentVendas((prev) => [res.data, ...prev]);
       handleClearCart();
-      setSuccessToast(`Pedido #${res.data.numero_pedido || res.data.id} registrado com sucesso! (${formatCurrency(res.data.valor_total)})`);
+      setEstoqueModalOpen(false);
+      fetchData(); // Atualiza catálogo de produtos e saldos
+
+      if (autorizarEstoqueNegativo) {
+        setSuccessToast(`Pedido #${res.data.numero_pedido || res.data.id} registrado com sucesso! (Autorizado sob alerta de estoque crítico)`);
+      } else {
+        setSuccessToast(`Pedido #${res.data.numero_pedido || res.data.id} registrado com sucesso! (${formatCurrency(res.data.valor_total)})`);
+      }
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao registrar pedido.');
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'string' && detail.includes('Estoque insuficiente')) {
+        const insuficientes = cartItems
+          .filter((i) => i.produto_id && i.tipo_item === 'PRODUTO')
+          .map((i) => {
+            const prod = produtos.find((p) => p.id === i.produto_id);
+            const saldo = prod?.quantidade_estoque ?? 0;
+            return {
+              produto_id: i.produto_id!,
+              nome: i.descricao,
+              saldo_disponivel: saldo,
+              quantidade_solicitada: i.quantidade,
+              saldo_resultante: Math.round((saldo - i.quantidade) * 100) / 100,
+            };
+          });
+        setItensSemSaldo(insuficientes);
+        setEstoqueModalOpen(true);
+      } else {
+        alert(detail || 'Erro ao registrar pedido.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -836,7 +909,7 @@ export const Vendas: React.FC = () => {
                 color="success"
                 size="large"
                 disabled={cartItems.length === 0 || submitting}
-                onClick={handleSubmitVenda}
+                onClick={() => handleSubmitVenda(false)}
                 startIcon={submitting ? <CircularProgress size={24} color="inherit" /> : <CheckCircle />}
                 sx={{
                   py: 1.5,
@@ -1235,6 +1308,103 @@ export const Vendas: React.FC = () => {
         onConfirm={handleCancelVenda}
         onCancel={() => setCancelVendaId(null)}
       />
+
+      {/* DIÁLOGO INTELIGENTE DE ESTOQUE INSUFICIENTE (BUG-001) */}
+      <Dialog
+        open={estoqueModalOpen}
+        onClose={() => setEstoqueModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Warning color="warning" sx={{ fontSize: 32 }} />
+          <Box>
+            <Typography variant="h6" fontWeight={800} color="warning.dark">
+              Estoque insuficiente para concluir a venda.
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Um ou mais itens do pedido não possuem quantidade suficiente em estoque.
+            </Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 1 }}>
+          <Alert
+            severity={empresa?.permitir_estoque_negativo !== false ? 'warning' : 'error'}
+            sx={{ mb: 2, borderRadius: 2 }}
+          >
+            {empresa?.permitir_estoque_negativo !== false ? (
+              <span>
+                Você pode optar por <b>Cancelar Venda</b> para ajustar os produtos ou <b>Vender Mesmo Assim</b> (o saldo de estoque ficará negativo, um alerta crítico será gerado e a ocorrência será registrada na auditoria).
+              </span>
+            ) : (
+              <span>
+                <b>Atenção:</b> O estabelecimento está configurado para <b>Bloquear estoque negativo</b>. É necessário cancelar a venda e repor o estoque ou ajustar o carrinho.
+              </span>
+            )}
+          </Alert>
+
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, mb: 1 }}>
+            <Table size="small">
+              <TableHead sx={{ bgcolor: 'action.hover' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Produto</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Saldo Atual</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Qtd. Pedido</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Saldo Resultante</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {itensSemSaldo.map((item) => (
+                  <TableRow key={item.produto_id}>
+                    <TableCell sx={{ fontWeight: 600 }}>{item.nome}</TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={`${item.saldo_disponivel} un`}
+                        size="small"
+                        color={item.saldo_disponivel <= 0 ? 'error' : 'default'}
+                        variant="outlined"
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      {item.quantidade_solicitada} un
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: 'error.main' }}>
+                      {item.saldo_resultante} un
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2.5, display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => setEstoqueModalOpen(false)}
+            sx={{ fontWeight: 700 }}
+          >
+            Cancelar Venda
+          </Button>
+
+          {empresa?.permitir_estoque_negativo !== false && (
+            <Button
+              variant="contained"
+              color="warning"
+              disabled={submitting}
+              onClick={() => handleSubmitVenda(true)}
+              startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Warning />}
+              sx={{ fontWeight: 800, px: 2.5 }}
+            >
+              Vender Mesmo Assim
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Feedback Toast */}
       <Snackbar

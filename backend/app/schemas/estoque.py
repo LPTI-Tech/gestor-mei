@@ -24,6 +24,7 @@ class SaidaEstoqueRequest(BaseModel):
     quantidade: float
     motivo: str  # Perda, Consumo Interno, Validade Vencida, Descarte, Outros
     observacao: Optional[str] = None
+    autorizar_estoque_negativo: Optional[bool] = False
 
 class AjusteEstoqueRequest(BaseModel):
     produto_id: int
