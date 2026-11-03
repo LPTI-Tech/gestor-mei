@@ -63,6 +63,7 @@ interface NavItemDef {
   icon: React.ReactNode;
   adminOnly?: boolean;
   consultorOnly?: boolean;
+  adminOrConsultorOnly?: boolean;
   badge?: string;
   moduleKey?: 'modulo_motoboy' | 'modulo_ifood';
 }
@@ -117,33 +118,33 @@ export const Layout: React.FC = () => {
       label: 'Entrada XML NF-e', 
       path: '/nfe', 
       icon: <CloudUpload color="primary" />, 
-      adminOnly: false, 
+      adminOrConsultorOnly: true, 
       badge: 'Sprint 6' 
     },
     { 
       label: 'Compras', 
       path: '/compras', 
       icon: <ShoppingBag color="success" />, 
-      adminOnly: false, 
+      adminOrConsultorOnly: true, 
       badge: 'Sprint 6.5' 
     },
-    { label: 'Despesas', path: '/despesas', icon: <ReceiptLong />, adminOnly: false },
+    { label: 'Despesas', path: '/despesas', icon: <ReceiptLong />, adminOrConsultorOnly: true },
     { 
       label: 'Controle DAS', 
       path: '/das', 
       icon: <RequestQuote color="primary" />, 
-      adminOnly: false, 
+      adminOrConsultorOnly: true, 
       badge: 'Sprint 5' 
     },
-    { label: 'Relatório Entregas', path: '/relatorio-entregas', icon: <TrendingUp color="primary" />, adminOnly: false },
+    { label: 'Relatório Entregas', path: '/relatorio-entregas', icon: <TrendingUp color="primary" />, adminOrConsultorOnly: true },
     { 
       label: 'Relatório MEI (DASN)', 
       path: '/relatorio-mei', 
       icon: <Assessment color="secondary" />, 
-      adminOnly: false, 
+      adminOrConsultorOnly: true, 
       badge: 'Principal' 
     },
-    { label: 'Saúde do Negócio', path: '/saude-negocio', icon: <Favorite color="error" />, adminOnly: false },
+    { label: 'Saúde do Negócio', path: '/saude-negocio', icon: <Favorite color="error" />, adminOrConsultorOnly: true },
     
     // MÓDULOS SATÉLITES OPCIONAIS (Feature Flags por Empresa)
     { label: 'Motoboys', path: '/motoboys', icon: <TwoWheeler />, adminOnly: false, moduleKey: 'modulo_motoboy' },
@@ -165,6 +166,7 @@ export const Layout: React.FC = () => {
   const visibleNavItems = navItems.filter((item) => {
     if (item.consultorOnly && !isConsultor) return false;
     if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOrConsultorOnly && !isAdmin && !isConsultor) return false;
     if (item.moduleKey === 'modulo_motoboy' && empresa?.modulo_motoboy === false) return false;
     if (item.moduleKey === 'modulo_ifood' && empresa?.modulo_ifood === false) return false;
     return true;

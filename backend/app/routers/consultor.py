@@ -7,6 +7,7 @@ from datetime import datetime, date
 from app.database import get_db
 from app.models.empresa import Empresa
 from app.models.user import User, UserRole
+from app.models.empresa_consultor import EmpresaConsultor
 from app.models.venda import Venda
 from app.models.produto import Produto
 from app.models.das import DasMensal
@@ -20,6 +21,30 @@ from app.schemas.consultor import (
 )
 
 router = APIRouter(prefix="/consultor", tags=["Painel do Consultor LPTI Tech"])
+
+
+def _obter_empresas_autorizadas_consultor(current_user: User, db: Session) -> List[Empresa]:
+    """
+    Retorna a lista de empresas autorizadas conforme a hierarquia de RBAC:
+    1. MASTER: visualiza todas as empresas da plataforma.
+    2. OWNER / ADMIN: visualiza estritamente a sua própria empresa.
+    3. CONSULTOR: visualiza apenas as empresas com vínculo ativo na tabela empresa_consultores.
+    """
+    if current_user.role == UserRole.MASTER:
+        return db.query(Empresa).all()
+    elif current_user.role in [UserRole.OWNER, UserRole.ADMIN]:
+        return db.query(Empresa).filter(Empresa.id == current_user.empresa_id).all()
+    elif current_user.role == UserRole.CONSULTOR:
+        vinculos = db.query(EmpresaConsultor).filter(
+            EmpresaConsultor.user_id == current_user.id,
+            EmpresaConsultor.ativo == True
+        ).all()
+        empresa_ids = [v.empresa_id for v in vinculos]
+        if not empresa_ids:
+            return []
+        return db.query(Empresa).filter(Empresa.id.in_(empresa_ids)).all()
+    else:
+        return []
 
 
 def _calcular_metricas_empresa(empresa: Empresa, db: Session, ano_atual: int) -> ClienteConsultorItemResponse:
@@ -159,14 +184,12 @@ def get_resumo_consultor(
     current_user: User = Depends(require_consultor_or_admin),
 ):
     """
-    Retorna o resumo executivo de todos os clientes da carteira do consultor:
-    - Clientes ativos
-    - DAS em atraso
-    - Estoque crítico
-    - Próximos do limite MEI
-    - Totalizadores de scores (Saudável, Atenção, Crítico)
+    Retorna o resumo executivo dos clientes autorizados na carteira:
+    - CONSULTOR: apenas empresas vinculadas ativas.
+    - OWNER: apenas a própria empresa.
+    - MASTER: todas as empresas da plataforma.
     """
-    empresas = db.query(Empresa).all()
+    empresas = _obter_empresas_autorizadas_consultor(current_user, db)
     ano_atual = datetime.utcnow().year
 
     total_clientes_ativos = len(empresas)
@@ -218,10 +241,15 @@ def listar_clientes_consultor(
     current_user: User = Depends(require_consultor_or_admin),
 ):
     """
-    Lista todos os clientes da consultoria com indicadores de saúde,
+    Lista os clientes autorizados da consultoria com indicadores de saúde,
     suportando busca e filtros avançados.
     """
-    query = db.query(Empresa)
+    empresas_autorizadas = _obter_empresas_autorizadas_consultor(current_user, db)
+    if not empresas_autorizadas:
+        return []
+
+    ids_autorizados = [e.id for e in empresas_autorizadas]
+    query = db.query(Empresa).filter(Empresa.id.in_(ids_autorizados))
 
     if busca:
         busca_term = f"%{busca.strip()}%"
@@ -266,7 +294,19 @@ def obter_detalhes_cliente_consultor(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_consultor_or_admin),
 ):
-    """Retorna a visão diagnóstica aprofundada de um cliente da consultoria."""
+    """
+    Retorna a visão diagnóstica aprofundada de um cliente da consultoria.
+    Valida obrigatoriamente se o usuário possui autorização de acesso à empresa solicitada.
+    """
+    empresas_autorizadas = _obter_empresas_autorizadas_consultor(current_user, db)
+    ids_autorizados = {e.id for e in empresas_autorizadas}
+
+    if empresa_id not in ids_autorizados:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso não autorizado para esta empresa cliente. Vínculo não localizado na carteira do consultor."
+        )
+
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(
@@ -276,4 +316,3 @@ def obter_detalhes_cliente_consultor(
 
     ano_atual = datetime.utcnow().year
     return _calcular_metricas_empresa(empresa, db, ano_atual)
-

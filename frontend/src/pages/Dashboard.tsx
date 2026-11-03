@@ -60,7 +60,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, empresa } = useAuth();
+  const { user, empresa, isAdmin, isConsultor } = useAuth();
+  const isGestor = isAdmin || isConsultor;
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [saude, setSaude] = useState<SaudeNegocio | null>(null);
@@ -154,7 +155,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Alertas Aprimorados do Controle DAS Mensal (Sprint 5.1 UX/UI) */}
       {/* 1. Alerta: DAS Venceu / Em atraso */}
-      {Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
+      {isGestor && Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
         <Alert
           severity="error"
           icon={<ReportProblem />}
@@ -391,68 +392,82 @@ export const Dashboard: React.FC = () => {
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Lucro Operacional"
-            value={formatCurrency(metrics.lucro_operacional_mes)}
-            subtitle="Entradas - Despesas (Mês)"
-            icon={<TrendingUp />}
-            color={metrics.lucro_operacional_mes >= 0 ? '#2E7D32' : '#D32F2F'}
-            trend={metrics.lucro_operacional_mes >= 0 ? 'Positivo' : 'Negativo'}
-            trendType={metrics.lucro_operacional_mes >= 0 ? 'positive' : 'negative'}
-            onClick={() => navigate('/saude-negocio')}
-          />
+          {isGestor ? (
+            <StatCard
+              title="Lucro Operacional"
+              value={formatCurrency(metrics.lucro_operacional_mes)}
+              subtitle="Entradas - Despesas (Mês)"
+              icon={<TrendingUp />}
+              color={metrics.lucro_operacional_mes >= 0 ? '#2E7D32' : '#D32F2F'}
+              trend={metrics.lucro_operacional_mes >= 0 ? 'Positivo' : 'Negativo'}
+              trendType={metrics.lucro_operacional_mes >= 0 ? 'positive' : 'negative'}
+              onClick={() => navigate('/saude-negocio')}
+            />
+          ) : (
+            <StatCard
+              title="Estoque em Alerta"
+              value={(metrics.itens_estoque_baixo ?? 0).toString()}
+              subtitle="Produtos abaixo do mínimo"
+              icon={<Inventory2 />}
+              color={metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0 ? '#ED6C02' : '#2E7D32'}
+              onClick={() => navigate('/estoque')}
+            />
+          )}
         </Grid>
       </Grid>
 
-      {/* Row 3: Indicadores Operacionais do Mês (Entradas, Saídas, Sobra) */}
-      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-          Resultado Financeiro do Mês (Entradas x Saídas)
-        </Typography>
+      {/* Row 3: Indicadores Financeiros do Mês (Oculto para OPERATOR) */}
+      {isGestor && (
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+            Resultado Financeiro do Mês (Entradas x Saídas)
+          </Typography>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
-              <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
-                Total Entradas (Vendas)
-              </Typography>
-              <Typography variant="h5" fontWeight={800}>
-                {formatCurrency(metrics.entradas_mes)}
-              </Typography>
-            </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
+                  Total Entradas (Vendas)
+                </Typography>
+                <Typography variant="h5" fontWeight={800}>
+                  {formatCurrency(metrics.entradas_mes)}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
+                <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
+                  Total Saídas (Despesas)
+                </Typography>
+                <Typography variant="h5" fontWeight={800}>
+                  {formatCurrency(metrics.saidas_mes)}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: metrics.lucro_operacional_mes >= 0 ? 'primary.main' : 'warning.main',
+                  color: 'white',
+                }}
+              >
+                <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
+                  Quanto Sobrou (Lucro Líquido)
+                </Typography>
+                <Typography variant="h5" fontWeight={800}>
+                  {formatCurrency(metrics.lucro_operacional_mes)}
+                </Typography>
+              </Box>
+            </Grid>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
-              <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
-                Total Saídas (Despesas)
-              </Typography>
-              <Typography variant="h5" fontWeight={800}>
-                {formatCurrency(metrics.saidas_mes)}
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: metrics.lucro_operacional_mes >= 0 ? 'primary.main' : 'warning.main',
-                color: 'white',
-              }}
-            >
-              <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.9 }}>
-                Quanto Sobrou (Lucro Líquido)
-              </Typography>
-              <Typography variant="h5" fontWeight={800}>
-                {formatCurrency(metrics.lucro_operacional_mes)}
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+        </Paper>
+      )}
 
-      {/* Card Controle DAS Mensal (Sprint 5) com Ações Rápidas (Sprint 5.1 UX/UI) */}
-      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, borderLeft: '6px solid #1976D2' }}>
+      {/* Card Controle DAS Mensal (Oculto para OPERATOR) */}
+      {isGestor && (
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, borderLeft: '6px solid #1976D2' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ReceiptLong color="primary" />
@@ -566,10 +581,12 @@ export const Dashboard: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+      )}
 
       {/* Grid: Saúde do Negócio + Produtos com Estoque Crítico (Sprint 5.1 UX/UI) */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Card 1: Saúde do Negócio */}
+        {/* Card 1: Saúde do Negócio (Oculto para OPERATOR) */}
+        {isGestor && (
         <Grid item xs={12} md={6}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -692,9 +709,10 @@ export const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+        )}
 
-        {/* Card 2: Produtos com Estoque Crítico */}
-        <Grid item xs={12} md={6}>
+        {/* Card 2: Produtos com Estoque Crítico (Ocupa largura total para OPERATOR) */}
+        <Grid item xs={12} md={isGestor ? 6 : 12}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>

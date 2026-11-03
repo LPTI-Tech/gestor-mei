@@ -31,11 +31,16 @@ import { SaudeNegocioPage } from './pages/SaudeNegocio';
 import { Usuarios } from './pages/Usuarios';
 import { Configuracoes } from './pages/Configuracoes';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({
+const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  adminOnly?: boolean;
+  adminOrConsultorOnly?: boolean;
+}> = ({
   children,
   adminOnly = false,
+  adminOrConsultorOnly = false,
 }) => {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isConsultor, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -50,6 +55,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
   }
 
   if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (adminOrConsultorOnly && !isAdmin && !isConsultor) {
     return <Navigate to="/" replace />;
   }
 
@@ -83,16 +92,19 @@ export const App: React.FC = () => {
               <Route path="produtos" element={<Produtos />} />
               <Route path="estoque" element={<Estoque />} />
               <Route path="caixa" element={<Caixa />} />
-              <Route path="despesas" element={<Despesas />} />
-              <Route path="das" element={<ControleDas />} />
-              <Route path="nfe" element={<ImportarNfe />} />
-              <Route path="compras" element={<Compras />} />
-              <Route path="compras/:id" element={<DetalheCompra />} />
-              <Route path="consultor" element={<PainelConsultor />} />
+              {/* Rotas de Gestão Executiva / Consultoria (Bloqueadas para OPERATOR) */}
+              <Route path="despesas" element={<ProtectedRoute adminOrConsultorOnly><Despesas /></ProtectedRoute>} />
+              <Route path="das" element={<ProtectedRoute adminOrConsultorOnly><ControleDas /></ProtectedRoute>} />
+              <Route path="nfe" element={<ProtectedRoute adminOrConsultorOnly><ImportarNfe /></ProtectedRoute>} />
+              <Route path="compras" element={<ProtectedRoute adminOrConsultorOnly><Compras /></ProtectedRoute>} />
+              <Route path="compras/:id" element={<ProtectedRoute adminOrConsultorOnly><DetalheCompra /></ProtectedRoute>} />
+              <Route path="consultor" element={<ProtectedRoute adminOrConsultorOnly><PainelConsultor /></ProtectedRoute>} />
+              <Route path="relatorio-mei" element={<ProtectedRoute adminOrConsultorOnly><RelatorioMei /></ProtectedRoute>} />
+              <Route path="saude-negocio" element={<ProtectedRoute adminOrConsultorOnly><SaudeNegocioPage /></ProtectedRoute>} />
+
+              {/* Módulos Operacionais */}
               <Route path="motoboys" element={<Motoboys />} />
               <Route path="ifood" element={<IFood />} />
-              <Route path="relatorio-mei" element={<RelatorioMei />} />
-              <Route path="saude-negocio" element={<SaudeNegocioPage />} />
 
               {/* Admin Only */}
               <Route
