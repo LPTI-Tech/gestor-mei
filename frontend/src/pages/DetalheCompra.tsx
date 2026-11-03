@@ -24,6 +24,9 @@ import {
 import {
   ArrowBack,
   ShoppingBag,
+  AddShoppingCart,
+  AttachFile,
+  Download,
   ReceiptLong,
   Store,
   CalendarToday,
@@ -115,16 +118,29 @@ export const DetalheCompra: React.FC = () => {
           Voltar para Compras
         </Button>
 
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<CloudUpload />}
-          size="small"
-          onClick={() => navigate('/nfe')}
-          sx={{ borderRadius: 2, fontWeight: 700 }}
-        >
-          + Nova Importação XML
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<AddShoppingCart />}
+            size="small"
+            onClick={() => navigate('/compras/nova')}
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+          >
+            + Nova Compra Manual
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<CloudUpload />}
+            size="small"
+            onClick={() => navigate('/nfe')}
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+          >
+            + Importar XML
+          </Button>
+        </Box>
       </Box>
 
       {/* Cabeçalho da Compra */}
@@ -142,10 +158,15 @@ export const DetalheCompra: React.FC = () => {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               <Typography variant="h5" fontWeight={800}>
-                Nota Fiscal nº {compra.numero_nota}
+                {compra.origem === 'MANUAL' ? 'Documento / Recibo' : 'Nota Fiscal'} nº {compra.numero_nota}
               </Typography>
-              <Chip label={`Série ${compra.serie}`} size="small" color="primary" variant="outlined" />
-              <Chip label="Entrada Efetivada" size="small" color="success" />
+              <Chip
+                label={compra.origem === 'MANUAL' ? 'Compra Manual' : 'NF-e (XML)'}
+                size="small"
+                color={compra.origem === 'MANUAL' ? 'secondary' : 'primary'}
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip label="Entrada no Estoque Efetivada" size="small" color="success" />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Fornecedor: <strong>{compra.fornecedor_nome}</strong> (CNPJ: {compra.fornecedor_cnpj})
@@ -193,6 +214,47 @@ export const DetalheCompra: React.FC = () => {
               </Box>
             </Box>
           </Grid>
+
+          {compra.forma_pagamento && (
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AttachMoney fontSize="small" color="action" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Forma de Pagamento
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {compra.forma_pagamento}
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+          )}
+
+          {compra.anexo_url && (
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AttachFile fontSize="small" color="success" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Comprovante Anexado
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    component="a"
+                    href={compra.anexo_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Ver {compra.anexo_tipo || 'Documento'}
+                  </Button>
+                </Box>
+              </Box>
+            </Grid>
+          )}
 
           <Grid item xs={12} sm={6} md={3}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

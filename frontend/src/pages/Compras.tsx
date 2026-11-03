@@ -27,6 +27,8 @@ import {
   ShoppingBag,
   Search,
   CloudUpload,
+  AddShoppingCart,
+  AttachFile,
   Refresh,
   Visibility,
   ContentCopy,
@@ -127,6 +129,16 @@ export const Compras: React.FC = () => {
 
           <Button
             variant="contained"
+            color="success"
+            startIcon={<AddShoppingCart />}
+            onClick={() => navigate('/compras/nova')}
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+          >
+            + Nova Compra Manual
+          </Button>
+
+          <Button
+            variant="outlined"
             color="primary"
             startIcon={<CloudUpload />}
             onClick={() => navigate('/nfe')}
@@ -336,15 +348,26 @@ export const Compras: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Importe seus arquivos XML de NF-e para alimentar automaticamente o estoque, custos e o histórico de compras.
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<CloudUpload />}
-              onClick={() => navigate('/nfe')}
-              sx={{ borderRadius: 2 }}
-            >
-              Importar Primeiro XML NF-e
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<AddShoppingCart />}
+                onClick={() => navigate('/compras/nova')}
+                sx={{ borderRadius: 2, fontWeight: 700 }}
+              >
+                + Lançar Compra Manual
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<CloudUpload />}
+                onClick={() => navigate('/nfe')}
+                sx={{ borderRadius: 2, fontWeight: 700 }}
+              >
+                Importar XML NF-e
+              </Button>
+            </Box>
           </Box>
         ) : (
           <TableContainer>
@@ -374,11 +397,33 @@ export const Compras: React.FC = () => {
 
                     {/* Nota Fiscal */}
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         <Typography variant="body2" fontWeight={700}>
-                          Nº {c.numero_nota}
+                          {c.origem === 'MANUAL' ? 'Doc' : 'Nº'} {c.numero_nota}
                         </Typography>
-                        <Chip label={`Série ${c.serie}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem', height: 20 }} />
+                        <Chip
+                          label={c.origem === 'MANUAL' ? 'Manual' : 'NF-e'}
+                          size="small"
+                          color={c.origem === 'MANUAL' ? 'secondary' : 'primary'}
+                          sx={{ fontSize: '0.68rem', height: 20, fontWeight: 700 }}
+                        />
+                        {c.anexo_url && (
+                          <Tooltip title={`Comprovante anexado (${c.anexo_nome || 'Arquivo'})`}>
+                            <Chip
+                              icon={<AttachFile sx={{ fontSize: '0.85rem !important' }} />}
+                              label="Anexo"
+                              size="small"
+                              color="success"
+                              variant="outlined"
+                              component="a"
+                              href={c.anexo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              clickable
+                              sx={{ fontSize: '0.68rem', height: 20 }}
+                            />
+                          </Tooltip>
+                        )}
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                         <Typography

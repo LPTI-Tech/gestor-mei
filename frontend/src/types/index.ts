@@ -776,6 +776,50 @@ export interface CompraItemResumo {
   data_importacao: string;
   usuario_nome?: string | null;
   observacao?: string | null;
+  origem?: 'XML_NFE' | 'MANUAL';
+  forma_pagamento?: string | null;
+  anexo_url?: string | null;
+  anexo_nome?: string | null;
+  anexo_tipo?: string | null;
+}
+
+export interface Fornecedor {
+  id: number;
+  empresa_id: number;
+  nome: string;
+  cnpj_cpf?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  ativo: boolean;
+}
+
+export interface ItemCompraManualCreate {
+  produto_id: number;
+  quantidade: number;
+  unidade: string;
+  fator_conversao: number;
+  valor_unitario: number;
+  valor_total: number;
+  atualizar_custo: boolean;
+}
+
+export interface CompraManualCreate {
+  fornecedor_nome: string;
+  fornecedor_cnpj_cpf?: string | null;
+  fornecedor_telefone?: string | null;
+  fornecedor_uf?: string | null;
+  fornecedor_cidade?: string | null;
+  numero_documento?: string | null;
+  serie?: string;
+  data_emissao?: string | null;
+  forma_pagamento?: string;
+  observacao?: string | null;
+  anexo_url?: string | null;
+  anexo_nome?: string | null;
+  anexo_tipo?: string | null;
+  itens: ItemCompraManualCreate[];
 }
 
 export interface CompraDetalhe extends CompraItemResumo {

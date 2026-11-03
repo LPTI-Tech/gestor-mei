@@ -23,6 +23,7 @@ import { ControleDas } from './pages/ControleDas';
 import { ImportarNfe } from './pages/ImportarNfe';
 import { Compras } from './pages/Compras';
 import { DetalheCompra } from './pages/DetalheCompra';
+import { NovaCompraManual } from './pages/NovaCompraManual';
 import { PainelConsultor } from './pages/PainelConsultor';
 import { Motoboys } from './pages/Motoboys';
 import { IFood } from './pages/IFood';
@@ -97,6 +98,7 @@ export const App: React.FC = () => {
               <Route path="das" element={<ProtectedRoute adminOrConsultorOnly><ControleDas /></ProtectedRoute>} />
               <Route path="nfe" element={<ProtectedRoute adminOrConsultorOnly><ImportarNfe /></ProtectedRoute>} />
               <Route path="compras" element={<ProtectedRoute adminOrConsultorOnly><Compras /></ProtectedRoute>} />
+              <Route path="compras/nova" element={<ProtectedRoute adminOrConsultorOnly><NovaCompraManual /></ProtectedRoute>} />
               <Route path="compras/:id" element={<ProtectedRoute adminOrConsultorOnly><DetalheCompra /></ProtectedRoute>} />
               <Route path="consultor" element={<ProtectedRoute adminOrConsultorOnly><PainelConsultor /></ProtectedRoute>} />
               <Route path="relatorio-mei" element={<ProtectedRoute adminOrConsultorOnly><RelatorioMei /></ProtectedRoute>} />

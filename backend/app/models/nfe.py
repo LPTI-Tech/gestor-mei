@@ -33,7 +33,7 @@ class NfeImportada(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)
-    chave_acesso = Column(String(44), nullable=False, index=True)
+    chave_acesso = Column(String(60), nullable=False, index=True)
     numero_nota = Column(String(20), nullable=False)
     serie = Column(String(10), nullable=False, default="1")
     data_emissao = Column(String(30), nullable=True)
@@ -45,6 +45,11 @@ class NfeImportada(Base):
     usuario_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     data_importacao = Column(DateTime, default=datetime.utcnow, nullable=False)
     observacao = Column(Text, nullable=True)
+    origem = Column(String(20), default="XML_NFE", nullable=False)  # XML_NFE, MANUAL
+    forma_pagamento = Column(String(30), nullable=True)             # DINHEIRO, PIX, BOLETO, CARTAO_CREDITO, CARTAO_DEBITO, OUTRO
+    anexo_url = Column(String(255), nullable=True)                  # Caminho do comprovante anexado
+    anexo_nome = Column(String(255), nullable=True)                 # Nome original do arquivo
+    anexo_tipo = Column(String(50), nullable=True)                  # PDF, JPG, PNG, WEBP
 
     empresa = relationship("Empresa")
     usuario = relationship("User")

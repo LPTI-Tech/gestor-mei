@@ -12,6 +12,7 @@ from app.models.ifood import LancamentoIFood
 from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
 from app.models.das import DasMensal
 from app.models.nfe import ProdutoVinculoXML, NfeImportada, ItemNfeImportada
+from app.models.fornecedor import Fornecedor
 from app.models.password_reset import PasswordResetToken, AuditoriaRecuperacaoSenha
 
 __all__ = [
@@ -36,6 +37,7 @@ __all__ = [
     "ProdutoVinculoXML",
     "NfeImportada",
     "ItemNfeImportada",
+    "Fornecedor",
     "PasswordResetToken",
     "AuditoriaRecuperacaoSenha"
 ]

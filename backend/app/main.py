@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.config import settings
@@ -10,6 +12,7 @@ from app.migrate_sprint5 import run_migration as run_migration_sprint5
 from app.migrate_sprint6 import run_migration as run_migration_sprint6
 from app.migrate_sprint7 import run_migration as run_migration_sprint7
 from app.migrate_rbac import run_migration as run_migration_rbac
+from app.migrate_sprint8b import run_migration as run_migration_sprint8b
 
 # Import routers
 from app.routers import (
@@ -63,7 +66,14 @@ def on_startup():
     run_migration_sprint6()
     run_migration_sprint7()
     run_migration_rbac()
+    run_migration_sprint8b()
     seed_database()
+
+# Static uploads directory
+backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+uploads_dir = os.path.join(backend_root, "uploads")
+os.makedirs(os.path.join(uploads_dir, "comprovantes"), exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)
