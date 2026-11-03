@@ -14,7 +14,6 @@ interface AuthContextType {
   isOperator: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
 }
@@ -71,23 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('gestor_mei_empresa', JSON.stringify(profileRes.data.empresa));
   };
 
-  const register = async (regData: any) => {
-    const response = await api.post<AuthToken>('/api/auth/register', regData);
-    const data = response.data;
-    
-    setToken(data.access_token);
-    localStorage.setItem('gestor_mei_token', data.access_token);
-    
-    const profileRes = await api.get('/api/auth/me', {
-      headers: { Authorization: `Bearer ${data.access_token}` },
-    });
-    
-    setUser(profileRes.data.user);
-    setEmpresa(profileRes.data.empresa);
-    localStorage.setItem('gestor_mei_user', JSON.stringify(profileRes.data.user));
-    localStorage.setItem('gestor_mei_empresa', JSON.stringify(profileRes.data.empresa));
-  };
-
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -118,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isOperator,
         isLoading,
         login,
-        register,
         logout,
         refreshUserData,
       }}

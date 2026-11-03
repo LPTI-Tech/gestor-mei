@@ -42,70 +42,15 @@ def _mascarar_email(email: str) -> str:
         return "seu e-mail"
 
 
-@router.post("/register", response_model=Token)
-def register_empresa(data: RegisterRequest, db: Session = Depends(get_db)):
-    # Check if CNPJ already exists
-    existing_empresa = db.query(Empresa).filter(Empresa.cnpj == data.cnpj).first()
-    if existing_empresa:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Já existe uma empresa cadastrada com este CNPJ."
-        )
-    
-    # Check if user email already exists
-    existing_user = db.query(User).filter(User.email == data.email_usuario.lower().strip()).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Este e-mail já está em uso por outro usuário."
-        )
-    
-    # 1. Create Empresa
-    empresa = Empresa(
-        nome_empresarial=data.nome_empresarial,
-        nome_fantasia=data.nome_fantasia,
-        cnpj=data.cnpj,
-        cpf_proprietario=data.cpf_proprietario,
-        endereco=data.endereco,
-        telefone=data.telefone,
-        email=data.email_empresa
-    )
-    db.add(empresa)
-    db.commit()
-    db.refresh(empresa)
-    
-    # 2. Create Owner User (Proprietário Titular da Empresa)
-    owner_user = User(
-        empresa_id=empresa.id,
-        nome=data.nome_usuario,
-        email=data.email_usuario.lower().strip(),
-        hashed_password=hash_password(data.password),
-        role=UserRole.OWNER,
-        ativo=True,
-        ultimo_acesso=datetime.utcnow()
-    )
-    db.add(owner_user)
-    db.commit()
-    db.refresh(owner_user)
-    
-    # Generate token
-    token_payload = {
-        "sub": owner_user.email,
-        "empresa_id": empresa.id,
-        "user_id": owner_user.id,
-        "role": owner_user.role.value
-    }
-    access_token = create_access_token(token_payload)
-    
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        user_id=owner_user.id,
-        empresa_id=empresa.id,
-        nome=owner_user.nome,
-        email=owner_user.email,
-        role=owner_user.role,
-        nome_fantasia=empresa.nome_fantasia
+@router.post("/register", status_code=status.HTTP_403_FORBIDDEN)
+def register_empresa():
+    """
+    Auto-cadastro público desativado por política de segurança RBAC.
+    A criação de novas empresas e titulares é exclusiva da plataforma MASTER via POST /api/empresa.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="O auto-cadastro público está desativado. Novas empresas e proprietários devem ser provisionados exclusivamente pelo perfil MASTER da plataforma."
     )
 
 
