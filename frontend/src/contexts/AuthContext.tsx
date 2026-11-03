@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUserData = async () => {
     try {
-      const response = await api.get('/auth/me');
+      const response = await api.get('/api/auth/me');
       setUser(response.data.user);
       setEmpresa(response.data.empresa);
       localStorage.setItem('gestor_mei_user', JSON.stringify(response.data.user));
@@ -51,14 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post<AuthToken>('/auth/login', { email, password });
+    const response = await api.post<AuthToken>('/api/auth/login', { email, password });
     const data = response.data;
     
     setToken(data.access_token);
     localStorage.setItem('gestor_mei_token', data.access_token);
     
     // Fetch full profile
-    const profileRes = await api.get('/auth/me', {
+    const profileRes = await api.get('/api/auth/me', {
       headers: { Authorization: `Bearer ${data.access_token}` },
     });
     
@@ -69,13 +69,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (regData: any) => {
-    const response = await api.post<AuthToken>('/auth/register', regData);
+    const response = await api.post<AuthToken>('/api/auth/register', regData);
     const data = response.data;
     
     setToken(data.access_token);
     localStorage.setItem('gestor_mei_token', data.access_token);
     
-    const profileRes = await api.get('/auth/me', {
+    const profileRes = await api.get('/api/auth/me', {
       headers: { Authorization: `Bearer ${data.access_token}` },
     });
     

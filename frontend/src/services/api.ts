@@ -1,11 +1,21 @@
 import axios from 'axios';
 
+// Garante que o baseURL aponte para /api mesmo se VITE_API_URL omitir o sufixo (ex: https://gestor-mei-api.onrender.com)
+const rawBaseURL = import.meta.env.VITE_API_URL || '/api';
+const baseURL = rawBaseURL.endsWith('/api')
+  ? rawBaseURL
+  : `${rawBaseURL.replace(/\/+$/, '')}/api`;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL,
   timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
+  // Evita duplicação caso a rota chamada já inclua o prefixo /api/
+  if ((config.baseURL === '/api' || config.baseURL?.endsWith('/api')) && config.url?.startsWith('/api/')) {
+    config.url = config.url.replace(/^\/api/, '');
+  }
   const token = localStorage.getItem('gestor_mei_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
