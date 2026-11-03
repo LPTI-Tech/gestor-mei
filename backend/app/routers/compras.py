@@ -78,8 +78,8 @@ def upload_comprovante_compra(
             detail=f"Formato de arquivo não suportado ({ext}). Envie um arquivo JPG, PNG, WEBP ou PDF."
         )
 
-    # Cria diretório se não existir
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Cria diretório se não existir (backend/uploads/comprovantes)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     target_dir = os.path.join(base_dir, "uploads", "comprovantes")
     os.makedirs(target_dir, exist_ok=True)
 
