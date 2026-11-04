@@ -30,6 +30,7 @@
 | **Sprint 8A/8B**| `1.4.0` | **Compra Manual & RBAC Estrito:** Lançamento de compras sem NF-e, upload de comprovantes, cadastro inline de produtos e blindagem de segurança para operadores. | Homologado |
 | **Sprint 8.5.1**| `1.4.0` | **Refinamento Visual Executivo:** Logo ampliada em 30% no login, hierarquia visual sem vazios, ampliação da Sidebar para 280px com alinhamento vertical balanceado (Logo, GESTOR MEI, ERP). | Homologado |
 | **Sprint UX 1** | `1.4.1` | **Design System Dashboard:** Modernização executiva inspirada em Stripe/Asaas/Conta Azul: KPI cards com icon bubbles e `tnum`, Alertas DAS executivos com borda acentuada, Resultado Financeiro com 3 cards pastel e Gráficos Recharts estilizados. | Homologado |
+| **Sprint UX 2** | `1.4.2` | **Design System Controle de Estoque:** Modernização executiva completa: Page Header padrão Shopify com ações destacadas, Alerta Executivo com borda acentuada e botão de filtro rápido, Tabs modernas com badges de contagem, Tabela SaaS com cabeçalho ardósia e pills de saldo/status, e Modais com raio de 16px e sombra multicamada. | Homologado |
 
 ---
 
