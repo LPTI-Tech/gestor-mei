@@ -45,10 +45,23 @@ O protocolo MCP conecta o agente Antigravity a ferramentas e fontes de dados ext
 
 | MCP Solicitado | Mecanismo Recomendado | Status de Instalação | Finalidade no Gestor MEI |
 | :--- | :--- | :--- | :--- |
-| **Google Developer Knowledge** | Plugin Oficial Antigravity | Disponível via Plugin (`google-developer-knowledge`) | Consulta autoritativa e atualizada sobre APIs Google Cloud, Gemini, Firebase e Web standards. |
+| **Google Developer Knowledge** | Plugin Oficial Antigravity | ✅ **Instalado & Ativo** (`google-developer-knowledge` v1.0.2) | Consulta autoritativa e atualizada sobre APIs Google Cloud, Gemini, Firebase, Android, Antigravity e Web.dev standards. |
 | **GitHub** | MCP Server Stdio via `npx` | Configurável no `mcp_config.json` | Automação de PRs, issues e branches via GitHub API com token PAT. (*Nota: Git CLI local v2.56 já está disponível*). |
-| **Chrome DevTools** | Plugin Oficial Antigravity | Disponível via Plugin (`chrome-devtools-plugin`) | Depuração de frontend, inspeção de console, rede e profiling de performance do React/MUI. |
-| **Browser (Automação)** | Plugin Oficial ou MCP Stdio (Puppeteer) | Disponível via Plugin (`browse`) ou MCP Puppeteer | Navegação end-to-end, testes automatizados de fluxos (PDV, Delivery, Login) e capturas de tela. |
+| **Chrome DevTools** | Plugin Oficial Antigravity | ✅ **Instalado** (`chrome-devtools-plugin`) | Depuração de frontend, inspeção de console, rede e profiling de performance do React/MUI via Chrome CDP. |
+| **Browser (Automação)** | Plugin Oficial ou MCP Stdio (Puppeteer) | ✅ **Instalado** (`browse` Browserbase) | Navegação end-to-end, testes automatizados de fluxos (PDV, Delivery, Login) e capturas de tela. |
+
+#### 3.1.1 Detalhamento: Google Developer Knowledge MCP
+- **Identificador de Catálogo:** `antigravity-plugins-official/plugin/google-developer-knowledge`
+- **Diretório Local:** `%USERPROFILE%\.gemini\config\plugins\google-developer-knowledge\`
+- **Endpoint do Servidor:** `https://developerknowledge.googleapis.com/mcp` (Streamable HTTP)
+- **Ferramentas MCP Expostas:**
+  1. `answer_query`: Síntese conceitual de arquitetura e guias fundamentados na documentação oficial.
+  2. `search_documents`: Busca granular de comandos CLI, flags de configuração e parâmetros de APIs.
+  3. `get_documents`: Recuperação do conteúdo Markdown integral de páginas documentais.
+- **Skill Associada:** `retrieving-developer-knowledge` (ativa no ambiente).
+- **Escopo e Cobertura:** Cobre oficialmente Google Cloud, Gemini AI, Antigravity, Firebase, Android, Flutter, Chrome e padrões Web (`web.dev`). Para frameworks abertos de terceiros (React 18, Vite, Material UI v5, FastAPI, SQLAlchemy e PostgreSQL), a consulta de documentação é complementada em tempo real via `search_web` oficial (ex: `react.dev`, `mui.com`, `fastapi.tiangolo.com`).
+- **Autenticação:** O servidor aceita Google Application Default Credentials (`gcloud auth application-default login`) ou API Key do Google Cloud (`X-Goog-Api-Key` ou variável de ambiente `DEVELOPERKNOWLEDGE_API_KEY`).
+
 
 ### 3.2 Configuração do `mcp_config.json`
 
@@ -131,11 +144,12 @@ O script executará automaticamente as seguintes tarefas:
 3. Cria o `mcp_config.json` inicial em `~/.gemini/config/mcp_config.json` se ainda não houver um.
 4. Sincroniza o diretório `.agents/skills` e o `GEMINI.md` no workspace.
 
-### Passo 3: Configurar Chaves de MCP (Opcional)
-Se for utilizar o MCP do GitHub:
-1. Abra o arquivo `%USERPROFILE%\.gemini\config\mcp_config.json`.
-2. Insira seu token de acesso pessoal em `GITHUB_PERSONAL_ACCESS_TOKEN`.
-3. Reinicie o Antigravity.
+### Passo 3: Configurar Plugins e Chaves de MCP (Opcional)
+1. **Google Developer Knowledge:**
+   No Antigravity, acesse *Customizations > Marketplace* e confirme a presença do plugin **Google Developer Knowledge** (`antigravity-plugins-official/plugin/google-developer-knowledge`). Caso deseje autenticação direta no GCP, execute `gcloud auth application-default login` ou exporte a variável `DEVELOPERKNOWLEDGE_API_KEY`.
+2. **GitHub MCP:**
+   Se for utilizar o MCP do GitHub, abra o arquivo `%USERPROFILE%\.gemini\config\mcp_config.json`, insira seu token em `GITHUB_PERSONAL_ACCESS_TOKEN` e reinicie o Antigravity.
+
 
 ---
 

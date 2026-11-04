@@ -86,8 +86,8 @@ flowchart LR
 ## 🔌 MCPs (Model Context Protocol) Planejados & Disponíveis
 
 1. **Google Developer Knowledge:**
-   - *Status:* Plugin Oficial de Marketplace (`antigravity-plugins-official/plugin/google-developer-knowledge`).
-   - *Função:* Consulta de documentação técnica oficial e grounding de APIs.
+   - *Status:* ✅ **Google Developer Knowledge MCP instalado e ativo** (`antigravity-plugins-official/plugin/google-developer-knowledge`).
+   - *Função:* Consulta de documentação técnica oficial, grounding de APIs (Google Cloud, Gemini, Firebase, Android e Web.dev) e skill `retrieving-developer-knowledge`.
 2. **Chrome DevTools:**
    - *Status:* Plugin Oficial de Marketplace (`antigravity-plugins-official/plugin/chrome-devtools-plugin`).
    - *Função:* Automação e depuração em tempo real no navegador Chrome via Puppeteer.
