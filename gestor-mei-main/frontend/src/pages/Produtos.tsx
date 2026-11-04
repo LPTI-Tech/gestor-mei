@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   TextField,
   Grid,
@@ -30,7 +28,9 @@ import {
   CircularProgress,
   RadioGroup,
   Radio,
-  FormLabel,
+  Tooltip,
+  Divider,
+  Avatar,
 } from '@mui/material';
 import {
   Add,
@@ -42,11 +42,20 @@ import {
   Cancel,
   Build,
   ShoppingBag,
+  Inventory2,
+  Category,
+  Close,
+  TrendingUp,
+  WarningAmber,
+  SellOutlined,
+  WarehouseOutlined,
+  LocalOfferOutlined,
 } from '@mui/icons-material';
 import api from '../services/api';
 import { Produto, TipoItem } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { StatCard } from '../components/StatCard';
 import { useAuth } from '../contexts/AuthContext';
 
 const CATEGORIAS_SUGERIDAS = [
@@ -76,6 +85,7 @@ export const Produtos: React.FC = () => {
   // Filters
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedTipo, setSelectedTipo] = useState<string>('Todos');
+  const [selectedCategoria, setSelectedCategoria] = useState<string>('Todas');
 
   // Modal State
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -99,6 +109,8 @@ export const Produtos: React.FC = () => {
     estoque_minimo: '',
     ativo: true,
   });
+
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Delete Confirm Dialog
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -157,6 +169,7 @@ export const Produtos: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmitting(true);
       const payload: any = {
         nome: formData.nome,
         tipo: formData.tipo,
@@ -178,6 +191,8 @@ export const Produtos: React.FC = () => {
       fetchProdutos();
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Erro ao salvar item.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -203,16 +218,31 @@ export const Produtos: React.FC = () => {
     }
   };
 
+  // KPIs
+  const totalProdutos = produtos.filter((p) => p.tipo === 'PRODUTO');
+  const totalServicos = produtos.filter((p) => p.tipo === 'SERVICO');
+  const totalEstoqueBaixo = totalProdutos.filter((p) => p.estoque_baixo).length;
+  const totalCategorias = new Set(produtos.map((p) => p.categoria)).size;
+
   // Filtered List
   const filteredProdutos = produtos.filter((p) => {
-    const matchesSearch = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.categoria.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTipo = selectedTipo === 'Todos' || p.tipo === selectedTipo;
-    return matchesSearch && matchesTipo;
+    const matchesCategoria = selectedCategoria === 'Todas' || p.categoria === selectedCategoria;
+    return matchesSearch && matchesTipo && matchesCategoria;
   });
+
+  // Calculate live margin in modal
+  const precoNum = Number(formData.preco_venda) || 0;
+  const custoNum = Number(formData.custo_unitario) || 0;
+  const lucroEstimado = precoNum - custoNum;
+  const margemEstimada = precoNum > 0 ? (lucroEstimado / precoNum) * 100 : 0;
 
   return (
     <Box>
-      {/* Header */}
+      {/* Page Header (Shopify Admin Standard) */}
       <Box
         sx={{
           display: 'flex',
@@ -220,15 +250,43 @@ export const Produtos: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: { xs: 'flex-start', sm: 'center' },
           gap: 2,
-          mb: 3,
+          mb: 3.5,
         }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={800}>
-            Catálogo: Produtos & Serviços
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2.5,
+                bgcolor: 'rgba(25, 118, 210, 0.1)',
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Inventory2 sx={{ fontSize: 22 }} />
+            </Box>
+            <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.025em' }}>
+              Produtos & Serviços
+            </Typography>
+            <Chip
+              label="DASN-SIMEI"
+              size="small"
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                bgcolor: 'rgba(25, 118, 210, 0.08)',
+                color: 'primary.main',
+                border: '1px solid rgba(25, 118, 210, 0.2)',
+                height: 22,
+              }}
+            />
+          </Box>
           <Typography variant="body2" color="text.secondary">
-            Itens, refeições ou serviços prestados comercializados no seu MEI
+            Catálogo unificado de itens comercializados, classificação tributária, controle de estoque e margens.
           </Typography>
         </Box>
 
@@ -237,285 +295,957 @@ export const Produtos: React.FC = () => {
           color="primary"
           startIcon={<Add />}
           onClick={() => handleOpenModal()}
-          sx={{ fontWeight: 700, height: 44 }}
+          sx={{
+            fontWeight: 700,
+            height: 42,
+            px: 2.5,
+            borderRadius: 2,
+            boxShadow: '0 4px 14px rgba(25, 118, 210, 0.28)',
+            textTransform: 'none',
+            fontSize: '0.9rem',
+          }}
         >
           Novo Produto / Serviço
         </Button>
       </Box>
 
-      {/* Filter Bar */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Buscar por nome..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search fontSize="small" color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
+      {/* KPI Cards (Stripe / Executive Standard) */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Total no Catálogo"
+            value={produtos.length.toString()}
+            subtitle={`${produtos.filter((p) => p.ativo).length} ativos para venda`}
+            icon={<Inventory2 />}
+            color="#1976D2"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Produtos & Mercadorias"
+            value={totalProdutos.length.toString()}
+            subtitle={
+              totalEstoqueBaixo > 0
+                ? `${totalEstoqueBaixo} item(ns) com estoque baixo`
+                : 'Estoque regularizado'
+            }
+            icon={<ShoppingBag />}
+            color="#2E7D32"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Serviços Prestados"
+            value={totalServicos.length.toString()}
+            subtitle="Mão de obra / ISS"
+            icon={<Build />}
+            color="#7B1FA2"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Categorias Ativas"
+            value={totalCategorias.toString()}
+            subtitle="Segmentos operacionais"
+            icon={<Category />}
+            color="#ED6C02"
+          />
+        </Grid>
+      </Grid>
 
-            {/* Type Filter Chips */}
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Chip
-                  label="Todos os Itens"
-                  clickable
-                  color={selectedTipo === 'Todos' ? 'primary' : 'default'}
-                  onClick={() => setSelectedTipo('Todos')}
-                  sx={{ fontWeight: 600 }}
-                />
-                <Chip
-                  icon={<ShoppingBag fontSize="small" />}
-                  label="Apenas Produtos"
-                  clickable
-                  color={selectedTipo === 'PRODUTO' ? 'primary' : 'default'}
-                  onClick={() => setSelectedTipo('PRODUTO')}
-                  sx={{ fontWeight: 600 }}
-                />
-                <Chip
-                  icon={<Build fontSize="small" />}
-                  label="Apenas Serviços"
-                  clickable
-                  color={selectedTipo === 'SERVICO' ? 'primary' : 'default'}
-                  onClick={() => setSelectedTipo('SERVICO')}
-                  sx={{ fontWeight: 600 }}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Content */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      ) : filteredProdutos.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
-          <RestaurantMenu sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-          <Typography variant="h6" fontWeight={600}>
-            Nenhum item cadastrado
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Cadastre os produtos vendidos ou serviços prestados para lançar vendas rápidas.
-          </Typography>
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenModal()}>
-            Cadastrar Primeiro Item
-          </Button>
-        </Paper>
-      ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
-          <Table>
-            <TableHead sx={{ bgcolor: 'background.default' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Tipo Fiscal (DASN)</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Categoria</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Preço de Venda</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>Estoque</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredProdutos.map((prod) => (
-                <TableRow key={prod.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {prod.nome}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={prod.tipo === 'SERVICO' ? <Build fontSize="small" /> : <ShoppingBag fontSize="small" />}
-                      label={prod.tipo === 'SERVICO' ? 'Serviço (ISS)' : 'Produto (Comércio)'}
-                      size="small"
-                      color={prod.tipo === 'SERVICO' ? 'secondary' : 'default'}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={prod.categoria} size="small" variant="outlined" />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={700} color="primary">
-                      {formatCurrency(prod.preco_venda)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {prod.tipo === 'PRODUTO' ? (
-                      <Chip
-                        label={`${(prod.quantidade_estoque || 0).toFixed(0)} un`}
-                        size="small"
-                        color={prod.estoque_baixo ? 'error' : 'success'}
-                        variant={prod.estoque_baixo ? 'filled' : 'outlined'}
-                        sx={{ fontWeight: 700 }}
-                      />
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        —
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={prod.ativo ? <CheckCircle fontSize="small" /> : <Cancel fontSize="small" />}
-                      label={prod.ativo ? 'Ativo' : 'Inativo'}
-                      size="small"
-                      color={prod.ativo ? 'success' : 'default'}
-                      clickable
-                      onClick={() => handleToggleAtivo(prod)}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="primary" onClick={() => handleOpenModal(prod)}>
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    {isAdmin && (
-                      <IconButton size="small" color="error" onClick={() => setDeleteId(prod.id)}>
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Add / Edit Dialog */}
-      <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="xs" fullWidth>
-        <Box component="form" onSubmit={handleSubmit}>
-          <DialogTitle fontWeight={700}>
-            {editingProduto ? 'Editar Item' : 'Novo Item no Catálogo'}
-          </DialogTitle>
-          <DialogContent>
-            {/* Tipo: Produto ou Serviço */}
-            <FormControl component="fieldset" margin="normal">
-              <FormLabel component="legend" sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                Tipo do Item (Classificação DASN-SIMEI):
-              </FormLabel>
-              <RadioGroup
-                row
-                value={formData.tipo}
-                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
-              >
-                <FormControlLabel value="PRODUTO" control={<Radio size="small" />} label="Produto / Mercadoria" />
-                <FormControlLabel value="SERVICO" control={<Radio size="small" />} label="Serviço / Mão de Obra" />
-              </RadioGroup>
-            </FormControl>
-
+      {/* Toolbar & Filters (Asaas Standard) */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#FFFFFF'),
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={5}>
             <TextField
               fullWidth
-              label="Nome do Item / Serviço"
-              margin="normal"
-              required
-              value={formData.nome}
-              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder={formData.tipo === 'SERVICO' ? 'Ex: Corte Degradê ou Troca de Óleo' : 'Ex: Marmita M Feijoada'}
-              autoFocus
+              size="small"
+              placeholder="Buscar por nome ou categoria..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  borderRadius: 2,
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
+                  '& fieldset': { borderColor: 'divider' },
+                },
+              }}
             />
+          </Grid>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Categoria</InputLabel>
-              <Select
-                value={formData.categoria}
-                label="Categoria"
-                onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+          {/* Segmented Type Filter (Asaas Standard) */}
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                p: 0.5,
+                borderRadius: 2,
+                bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#F1F5F9'),
+                border: '1px solid',
+                borderColor: 'divider',
+                width: '100%',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() => setSelectedTipo('Todos')}
+                sx={{
+                  flex: 1,
+                  px: 1.5,
+                  py: 0.6,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  bgcolor: selectedTipo === 'Todos'
+                    ? (theme) => (theme.palette.mode === 'dark' ? 'primary.main' : '#FFFFFF')
+                    : 'transparent',
+                  color: selectedTipo === 'Todos'
+                    ? (theme) => (theme.palette.mode === 'dark' ? '#fff' : 'primary.main')
+                    : 'text.secondary',
+                  boxShadow: selectedTipo === 'Todos' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}
               >
-                {CATEGORIAS_SUGERIDAS.map((cat) => (
+                Todos ({produtos.length})
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setSelectedTipo('PRODUTO')}
+                sx={{
+                  flex: 1,
+                  px: 1.5,
+                  py: 0.6,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  bgcolor: selectedTipo === 'PRODUTO'
+                    ? (theme) => (theme.palette.mode === 'dark' ? 'primary.main' : '#FFFFFF')
+                    : 'transparent',
+                  color: selectedTipo === 'PRODUTO'
+                    ? (theme) => (theme.palette.mode === 'dark' ? '#fff' : 'primary.main')
+                    : 'text.secondary',
+                  boxShadow: selectedTipo === 'PRODUTO' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}
+              >
+                Produtos ({totalProdutos.length})
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setSelectedTipo('SERVICO')}
+                sx={{
+                  flex: 1,
+                  px: 1.5,
+                  py: 0.6,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  bgcolor: selectedTipo === 'SERVICO'
+                    ? (theme) => (theme.palette.mode === 'dark' ? 'primary.main' : '#FFFFFF')
+                    : 'transparent',
+                  color: selectedTipo === 'SERVICO'
+                    ? (theme) => (theme.palette.mode === 'dark' ? '#fff' : 'primary.main')
+                    : 'text.secondary',
+                  boxShadow: selectedTipo === 'SERVICO' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                }}
+              >
+                Serviços ({totalServicos.length})
+              </Button>
+            </Box>
+          </Grid>
+
+          {/* Category Dropdown Filter */}
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ fontSize: '0.85rem' }}>Filtrar Categoria</InputLabel>
+              <Select
+                value={selectedCategoria}
+                label="Filtrar Categoria"
+                onChange={(e) => setSelectedCategoria(e.target.value)}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
+                  fontSize: '0.85rem',
+                }}
+              >
+                <MenuItem value="Todas">Todas as Categorias</MenuItem>
+                {Array.from(new Set(produtos.map((p) => p.categoria))).map((cat) => (
                   <MenuItem key={cat} value={cat}>
                     {cat}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
 
-            <TextField
-              fullWidth
-              label="Preço de Venda / Cobrado (R$)"
-              type="number"
-              inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
-              margin="normal"
-              required
-              value={formData.preco_venda}
-              onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
-              placeholder="0,00"
-            />
+      {/* Main Table / Empty State */}
+      {loading ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10 }}>
+          <CircularProgress size={36} thickness={4} />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Carregando catálogo de produtos e serviços...
+          </Typography>
+        </Box>
+      ) : filteredProdutos.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            borderRadius: 3,
+            border: '1px dashed',
+            borderColor: 'divider',
+            bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.01)' : '#FBFCFE'),
+          }}
+        >
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              bgcolor: 'rgba(25, 118, 210, 0.08)',
+              color: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <RestaurantMenu sx={{ fontSize: 32 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
+            {searchTerm || selectedCategoria !== 'Todas' || selectedTipo !== 'Todos'
+              ? 'Nenhum item encontrado nos filtros'
+              : 'Nenhum item cadastrado no catálogo'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 460, mx: 'auto' }}>
+            {searchTerm || selectedCategoria !== 'Todas' || selectedTipo !== 'Todos'
+              ? 'Tente ajustar os filtros de busca ou categoria para localizar o produto ou serviço desejado.'
+              : 'Cadastre os produtos vendidos ou serviços prestados para lançar vendas rápidas no PDV, balcão e delivery.'}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={() => handleOpenModal()}
+            sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 3, height: 40 }}
+          >
+            Cadastrar Primeiro Item
+          </Button>
+        </Paper>
+      ) : (
+        <TableContainer
+          component={Paper}
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+          }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow
+                sx={{
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC'),
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Item / Mercadoria
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Classificação Fiscal
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Categoria
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Preço de Venda
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Estoque Atual
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Status
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    py: 1.8,
+                  }}
+                >
+                  Ações
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredProdutos.map((prod) => {
+                const isServico = prod.tipo === 'SERVICO';
+                const hasCusto = prod.custo_unitario !== undefined && prod.custo_unitario > 0;
+                const margem =
+                  hasCusto && prod.preco_venda > 0
+                    ? (((prod.preco_venda - (prod.custo_unitario || 0)) / prod.preco_venda) * 100).toFixed(0)
+                    : null;
 
-            {formData.tipo === 'PRODUTO' && (
-              <Box sx={{ mt: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 2 }}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" sx={{ mb: 1 }}>
-                  📦 Controle de Estoque & Custos (Sprint 4):
-                </Typography>
-                <Grid container spacing={1.5}>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Custo Unit. (R$)"
-                      type="number"
-                      inputProps={{ step: '0.01', min: '0' }}
-                      value={formData.custo_unitario}
-                      onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Estoque Inicial"
-                      type="number"
-                      inputProps={{ step: 'any', min: '0' }}
-                      value={formData.quantidade_estoque}
-                      onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Estoque Mínimo"
-                      type="number"
-                      inputProps={{ step: 'any', min: '0' }}
-                      value={formData.estoque_minimo}
-                      onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
-                    />
-                  </Grid>
-                </Grid>
+                return (
+                  <TableRow
+                    key={prod.id}
+                    hover
+                    sx={{
+                      '&:hover': {
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#FBFDFF',
+                      },
+                      transition: 'background-color 0.15s ease',
+                    }}
+                  >
+                    {/* Item / Mercadoria */}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 2,
+                            bgcolor: isServico
+                              ? 'rgba(123, 31, 162, 0.1)'
+                              : 'rgba(25, 118, 210, 0.1)',
+                            color: isServico ? '#7B1FA2' : 'primary.main',
+                          }}
+                        >
+                          {isServico ? <Build sx={{ fontSize: 18 }} /> : <ShoppingBag sx={{ fontSize: 18 }} />}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary' }}>
+                            {prod.nome}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Ref #{prod.id}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+
+                    {/* Classificação Fiscal */}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Chip
+                        icon={
+                          isServico ? (
+                            <Build sx={{ '&&': { fontSize: 13, color: '#7B1FA2' } }} />
+                          ) : (
+                            <ShoppingBag sx={{ '&&': { fontSize: 13, color: '#1976D2' } }} />
+                          )
+                        }
+                        label={isServico ? 'Serviço (ISS)' : 'Produto (Comércio)'}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          bgcolor: isServico ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                          color: isServico ? '#7B1FA2' : '#1976D2',
+                          border: '1px solid',
+                          borderColor: isServico ? 'rgba(123, 31, 162, 0.2)' : 'rgba(25, 118, 210, 0.2)',
+                          height: 24,
+                        }}
+                      />
+                    </TableCell>
+
+                    {/* Categoria */}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Chip
+                        label={prod.categoria}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          bgcolor: (theme) =>
+                            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                          color: 'text.primary',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          height: 24,
+                        }}
+                      />
+                    </TableCell>
+
+                    {/* Preço de Venda */}
+                    <TableCell align="right" sx={{ py: 1.5 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        sx={{ fontFeatureSettings: '"tnum"', color: '#1B5E20' }}
+                      >
+                        {formatCurrency(prod.preco_venda)}
+                      </Typography>
+                      {hasCusto && margem && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontFeatureSettings: '"tnum"',
+                            color: 'text.secondary',
+                            display: 'block',
+                            fontSize: '0.7rem',
+                          }}
+                        >
+                          Custo {formatCurrency(prod.custo_unitario || 0)} • Margem {margem}%
+                        </Typography>
+                      )}
+                    </TableCell>
+
+                    {/* Estoque */}
+                    <TableCell align="center" sx={{ py: 1.5 }}>
+                      {!isServico ? (
+                        <Chip
+                          icon={
+                            prod.estoque_baixo ? (
+                              <WarningAmber sx={{ '&&': { fontSize: 13, color: '#D32F2F' } }} />
+                            ) : undefined
+                          }
+                          label={`${(prod.quantidade_estoque || 0).toFixed(0)} un`}
+                          size="small"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            fontFeatureSettings: '"tnum"',
+                            bgcolor: prod.estoque_baixo
+                              ? 'rgba(211, 47, 47, 0.08)'
+                              : 'rgba(46, 125, 50, 0.08)',
+                            color: prod.estoque_baixo ? '#D32F2F' : '#2E7D32',
+                            border: '1px solid',
+                            borderColor: prod.estoque_baixo
+                              ? 'rgba(211, 47, 47, 0.22)'
+                              : 'rgba(46, 125, 50, 0.22)',
+                            height: 24,
+                          }}
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Ilimitado
+                        </Typography>
+                      )}
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell align="center" sx={{ py: 1.5 }}>
+                      <Tooltip title="Clique para alternar status do item">
+                        <Chip
+                          icon={
+                            prod.ativo ? (
+                              <CheckCircle sx={{ '&&': { fontSize: 14, color: '#2E7D32' } }} />
+                            ) : (
+                              <Cancel sx={{ '&&': { fontSize: 14, color: '#64748B' } }} />
+                            )
+                          }
+                          label={prod.ativo ? 'Disponível' : 'Inativo'}
+                          size="small"
+                          clickable
+                          onClick={() => handleToggleAtivo(prod)}
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            bgcolor: prod.ativo ? 'rgba(46, 125, 50, 0.08)' : 'rgba(100, 116, 139, 0.08)',
+                            color: prod.ativo ? '#2E7D32' : '#64748B',
+                            border: '1px solid',
+                            borderColor: prod.ativo
+                              ? 'rgba(46, 125, 50, 0.22)'
+                              : 'rgba(100, 116, 139, 0.22)',
+                            height: 24,
+                          }}
+                        />
+                      </Tooltip>
+                    </TableCell>
+
+                    {/* Ações */}
+                    <TableCell align="right" sx={{ py: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+                        <Tooltip title="Editar Item">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenModal(prod)}
+                            sx={{
+                              p: 0.8,
+                              color: 'text.secondary',
+                              '&:hover': { color: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.08)' },
+                            }}
+                          >
+                            <Edit sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        {isAdmin && (
+                          <Tooltip title="Excluir Item">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteId(prod.id)}
+                              sx={{
+                                p: 0.8,
+                                '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.08)' },
+                              }}
+                            >
+                              <Delete sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {/* Modal Add / Edit (Organizado em Seções Executivas) */}
+      <Dialog
+        open={modalOpen}
+        onClose={handleCloseModal}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3.5,
+            boxShadow: '0 24px 60px rgba(7, 25, 51, 0.22)',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmit}>
+          <DialogTitle
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 2.5,
+              pb: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(25, 118, 210, 0.1)',
+                  color: 'primary.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Inventory2 sx={{ fontSize: 20 }} />
               </Box>
-            )}
+              <Box>
+                <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+                  {editingProduto ? 'Editar Item do Catálogo' : 'Novo Item no Catálogo'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {editingProduto
+                    ? 'Atualize preços, estoque e dados cadastrais'
+                    : 'Cadastre um novo produto ou serviço comercializado'}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton size="small" onClick={handleCloseModal} sx={{ color: 'text.secondary' }}>
+              <Close sx={{ fontSize: 20 }} />
+            </IconButton>
+          </DialogTitle>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.ativo}
-                  onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
-                  color="primary"
-                />
-              }
-              label={formData.ativo ? 'Disponível para venda' : 'Inativo'}
-              sx={{ mt: 1 }}
-            />
+          <DialogContent sx={{ p: 3 }}>
+            {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
+                Classificação Tributária (DASN-SIMEI)
+              </Typography>
+              <RadioGroup
+                row
+                value={formData.tipo}
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
+                sx={{
+                  display: 'flex',
+                  gap: 1.5,
+                }}
+              >
+                <Box
+                  onClick={() => setFormData({ ...formData, tipo: 'PRODUTO' })}
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1.5px solid',
+                    borderColor: formData.tipo === 'PRODUTO' ? 'primary.main' : 'divider',
+                    bgcolor: formData.tipo === 'PRODUTO' ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Radio checked={formData.tipo === 'PRODUTO'} size="small" sx={{ p: 0 }} />
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      Produto / Mercadoria
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Comércio (ICMS / DASN)
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box
+                  onClick={() => setFormData({ ...formData, tipo: 'SERVICO' })}
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1.5px solid',
+                    borderColor: formData.tipo === 'SERVICO' ? 'primary.main' : 'divider',
+                    bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.04)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Radio checked={formData.tipo === 'SERVICO'} size="small" sx={{ p: 0 }} />
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      Serviço Prestado
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Mão de Obra (ISS)
+                    </Typography>
+                  </Box>
+                </Box>
+              </RadioGroup>
+            </Box>
+
+            <Divider sx={{ my: 2.5 }} />
+
+            {/* SEÇÃO 2: Identificação do Item */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <LocalOfferOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                  Identificação do Item
+                </Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Nome do Item / Serviço *"
+                    required
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder={
+                      formData.tipo === 'SERVICO'
+                        ? 'Ex: Corte Degradê, Manutenção ou Troca de Óleo'
+                        : 'Ex: Marmita M Feijoada ou Refrigerante Lata'
+                    }
+                    InputProps={{ sx: { borderRadius: 2 } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={7}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Categoria</InputLabel>
+                    <Select
+                      value={formData.categoria}
+                      label="Categoria"
+                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      {CATEGORIAS_SUGERIDAS.map((cat) => (
+                        <MenuItem key={cat} value={cat}>
+                          {cat}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={5} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.ativo}
+                        onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {formData.ativo ? 'Disponível' : 'Inativo'}
+                      </Typography>
+                    }
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 2.5 }} />
+
+            {/* SEÇÃO 3: Precificação & Margem de Lucro */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <SellOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                  Precificação & Margens
+                </Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Preço de Venda (R$) *"
+                    type="number"
+                    inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
+                    required
+                    value={formData.preco_venda}
+                    onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
+                    placeholder="0,00"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                      sx: { borderRadius: 2 },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Custo Unitário (R$)"
+                    type="number"
+                    inputProps={{ step: '0.01', min: '0' }}
+                    value={formData.custo_unitario}
+                    onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
+                    placeholder="0,00"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                      sx: { borderRadius: 2 },
+                    }}
+                  />
+                </Grid>
+
+                {/* Live Profit Margin Card */}
+                {precoNum > 0 && custoNum > 0 && (
+                  <Grid item xs={12}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.06)' : 'rgba(211, 47, 47, 0.06)',
+                        border: '1px solid',
+                        borderColor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(211, 47, 47, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TrendingUp sx={{ fontSize: 18, color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }} />
+                        <Typography variant="caption" fontWeight={700} color="text.primary">
+                          Lucro Bruto Estimado:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          fontWeight={800}
+                          sx={{ fontFeatureSettings: '"tnum"', color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }}
+                        >
+                          {formatCurrency(lucroEstimado)} / un
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${margemEstimada.toFixed(1)}% de Margem`}
+                        size="small"
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: '0.72rem',
+                          fontFeatureSettings: '"tnum"',
+                          bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
+                          color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F',
+                          height: 22,
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+
+            {/* SEÇÃO 4: Controle de Estoque (Apenas Produto) */}
+            {formData.tipo === 'PRODUTO' && (
+              <>
+                <Divider sx={{ my: 2.5 }} />
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <WarehouseOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                    <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                      Controle de Estoque
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Estoque Atual / Inicial"
+                        type="number"
+                        inputProps={{ step: 'any', min: '0' }}
+                        value={formData.quantidade_estoque}
+                        onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Estoque Mínimo (Alerta)"
+                        type="number"
+                        inputProps={{ step: 'any', min: '0' }}
+                        value={formData.estoque_minimo}
+                        onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </>
+            )}
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={handleCloseModal} color="inherit">
+
+          <DialogActions
+            sx={{
+              p: 2.5,
+              pt: 2,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 1.5,
+            }}
+          >
+            <Button
+              onClick={handleCloseModal}
+              color="inherit"
+              sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2 }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" variant="contained" color="primary">
-              Salvar Item
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={submitting}
+              sx={{
+                fontWeight: 700,
+                textTransform: 'none',
+                borderRadius: 2,
+                px: 3,
+                boxShadow: '0 4px 14px rgba(25, 118, 210, 0.25)',
+              }}
+            >
+              {submitting ? <CircularProgress size={20} color="inherit" /> : 'Salvar Item'}
             </Button>
           </DialogActions>
         </Box>
@@ -524,9 +1254,9 @@ export const Produtos: React.FC = () => {
       {/* Delete Confirmation */}
       <ConfirmDialog
         open={Boolean(deleteId)}
-        title="Excluir Item"
-        message="Tem certeza que deseja remover este item do catálogo?"
-        confirmText="Excluir"
+        title="Excluir Item do Catálogo"
+        message="Tem certeza que deseja remover este item? Se ele já possuir histórico de movimentação ou vendas, ele será desativado para garantir a integridade dos relatórios tributários."
+        confirmText="Confirmar Exclusão"
         confirmColor="error"
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
