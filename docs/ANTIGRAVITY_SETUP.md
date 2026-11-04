@@ -46,8 +46,8 @@ O protocolo MCP conecta o agente Antigravity a ferramentas e fontes de dados ext
 | MCP Solicitado | Mecanismo Recomendado | Status de Instalação | Finalidade no Gestor MEI |
 | :--- | :--- | :--- | :--- |
 | **Google Developer Knowledge** | Plugin Oficial Antigravity | ✅ **Instalado & Ativo** (`google-developer-knowledge` v1.0.2) | Consulta autoritativa e atualizada sobre APIs Google Cloud, Gemini, Firebase, Android, Antigravity e Web.dev standards. |
-| **GitHub** | MCP Server Stdio via `npx` | Configurável no `mcp_config.json` | Automação de PRs, issues e branches via GitHub API com token PAT. (*Nota: Git CLI local v2.56 já está disponível*). |
-| **Chrome DevTools** | Plugin Oficial Antigravity | ✅ **Instalado** (`chrome-devtools-plugin`) | Depuração de frontend, inspeção de console, rede e profiling de performance do React/MUI via Chrome CDP. |
+| **GitHub** | Remote MCP Oficial (GitHub Copilot) | ✅ **Conectado & Validado** (`https://api.githubcopilot.com/mcp/`) | Automação de PRs, issues, branches e commits diretamente na conta `LPTI-Tech` e repositório `LPTI-Tech/gestor-mei`. |
+| **Chrome DevTools** | Servidor Local Stdio (`chrome-devtools-mcp`) | ✅ **Instalado, Ativo & Validado** (`chrome-devtools-mcp` v1.12.0) | Inspeção visual de DOM/CSS em tempo real, auditorias de acessibilidade (WCAG), métricas Core Web Vitals (LCP) e Lighthouse. |
 | **Browser (Automação)** | Plugin Oficial ou MCP Stdio (Puppeteer) | ✅ **Instalado** (`browse` Browserbase) | Navegação end-to-end, testes automatizados de fluxos (PDV, Delivery, Login) e capturas de tela. |
 
 #### 3.1.1 Detalhamento: Google Developer Knowledge MCP
@@ -62,36 +62,39 @@ O protocolo MCP conecta o agente Antigravity a ferramentas e fontes de dados ext
 - **Escopo e Cobertura:** Cobre oficialmente Google Cloud, Gemini AI, Antigravity, Firebase, Android, Flutter, Chrome e padrões Web (`web.dev`). Para frameworks abertos de terceiros (React 18, Vite, Material UI v5, FastAPI, SQLAlchemy e PostgreSQL), a consulta de documentação é complementada em tempo real via `search_web` oficial (ex: `react.dev`, `mui.com`, `fastapi.tiangolo.com`).
 - **Autenticação:** O servidor aceita Google Application Default Credentials (`gcloud auth application-default login`) ou API Key do Google Cloud (`X-Goog-Api-Key` ou variável de ambiente `DEVELOPERKNOWLEDGE_API_KEY`).
 
+#### 3.1.2 Detalhamento: Chrome DevTools MCP (Oficial)
+- **Identificador:** `chrome-devtools` (`chrome-devtools-mcp` v1.12.0 da equipe do Google Chrome)
+- **Plugin Oficial Associado:** `antigravity-plugins-official/plugin/chrome-devtools-plugin`
+- **Skills Carregadas:** `chrome-devtools`, `a11y-debugging`, `debug-optimize-lcp`, `memory-leak-debugging`, `cookie-debugging` e `troubleshooting`.
+- **Comando de Execução:** `cmd.exe /c npx -y chrome-devtools-mcp@latest --headless=false`
+- **Ferramentas Expostas (32 ferramentas):** `list_pages`, `navigate_page`, `new_page`, `take_snapshot`, `evaluate_script`, `get_css_styles`, `lighthouse_audit`, `performance_analyze_insight`, `take_heapsnapshot`, `take_screenshot`, `click`, `fill`, etc.
+- **Autenticação:** Nenhuma necessária (comunicação local segura via Chrome DevTools Protocol / CDP).
+- **Validação Operacional:** Validado com sucesso conectando ao Google Chrome Stable (v156), navegando na porta `http://localhost:5173`, extraindo snapshot completo da árvore de acessibilidade do DOM e inspecionando a tela de Login/Dashboard.
 
 ### 3.2 Configuração do `mcp_config.json`
 
 O arquivo global está localizado em:
 `%USERPROFILE%\.gemini\config\mcp_config.json`
 
-Para ativar o MCP do GitHub e o MCP Puppeteer Browser no Windows, utilize a estrutura compatível abaixo:
+Estrutura ativa e homologada:
 
 ```json
 {
   "mcpServers": {
     "github": {
-      "command": "cmd.exe",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "SEU_TOKEN_GITHUB_AQUI"
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer github_pat_..."
       }
     },
-    "puppeteer-browser": {
+    "chrome-devtools": {
       "command": "cmd.exe",
       "args": [
         "/c",
         "npx",
         "-y",
-        "@modelcontextprotocol/server-puppeteer"
+        "chrome-devtools-mcp@latest",
+        "--headless=false"
       ]
     }
   }

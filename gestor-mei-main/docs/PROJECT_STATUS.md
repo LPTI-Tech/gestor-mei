@@ -86,16 +86,17 @@ flowchart LR
 ## 🔌 MCPs (Model Context Protocol) Planejados & Disponíveis
 
 1. **Google Developer Knowledge:**
-   - *Status:* ✅ **Google Developer Knowledge MCP instalado e ativo** (`antigravity-plugins-official/plugin/google-developer-knowledge`).
+   - *Status:* ✅ **Google Developer Knowledge MCP instalado e ativo** (`antigravity-plugins-official/plugin/google-developer-knowledge` v1.0.2).
    - *Função:* Consulta de documentação técnica oficial, grounding de APIs (Google Cloud, Gemini, Firebase, Android e Web.dev) e skill `retrieving-developer-knowledge`.
 2. **Chrome DevTools:**
-   - *Status:* Plugin Oficial de Marketplace (`antigravity-plugins-official/plugin/chrome-devtools-plugin`).
-   - *Função:* Automação e depuração em tempo real no navegador Chrome via Puppeteer.
-3. **Browser (Browserbase):**
+   - *Status:* ✅ **Chrome DevTools MCP instalado, ativo e validado** (`chrome-devtools-mcp` v1.12.0 em `mcp_config.json`).
+   - *Função:* Inspeção visual de DOM, CSS cascade, acessibilidade (WCAG), métricas Core Web Vitals (LCP) e auditorias de performance no Google Chrome.
+3. **GitHub MCP:**
+   - *Status:* ✅ **GitHub MCP conectado e validado** (endpoint oficial `https://api.githubcopilot.com/mcp/` autenticado como `LPTI-Tech` para o repositório `LPTI-Tech/gestor-mei`).
+   - *Função:* Automação de branches, pull requests, revisões e commits diretamente pelo assistente.
+4. **Browser (Browserbase):**
    - *Status:* Plugin Parceiro de Marketplace (`antigravity-plugins-partners/plugin/browse`).
-   - *Função:* Navegação web real e extração de dados.
-4. **GitHub MCP:**
-   - *Status:* Configurado no template local Stdio (`mcp_config.template.json`) via `@modelcontextprotocol/server-github`.
+   - *Função:* Navegação web real e testes automatizados de fluxos.
 
 ---
 
