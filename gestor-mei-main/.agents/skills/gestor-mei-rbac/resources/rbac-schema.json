@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "gestor-mei-rbac-schema",
+  "version": "1.0.0",
+  "roles": {
+    "MASTER": {
+      "level": 1,
+      "description": "Engenharia e Operações LPTI Tech",
+      "can_create_companies": true,
+      "can_create_owners": true,
+      "can_create_operators": true,
+      "financial_access": true,
+      "tenant_override": true
+    },
+    "OWNER": {
+      "level": 2,
+      "description": "Proprietário titular do MEI",
+      "can_create_companies": false,
+      "can_create_owners": false,
+      "can_create_operators": true,
+      "financial_access": true,
+      "tenant_override": false
+    },
+    "CONSULTOR": {
+      "level": 2,
+      "description": "Consultor credenciado LPTI Tech vinculado por empresa",
+      "can_create_companies": false,
+      "can_create_owners": false,
+      "can_create_operators": false,
+      "financial_access": true,
+      "tenant_override": false
+    },
+    "OPERATOR": {
+      "level": 3,
+      "description": "Operador de frente de caixa e balcão",
+      "can_create_companies": false,
+      "can_create_owners": false,
+      "can_create_operators": false,
+      "financial_access": false,
+      "tenant_override": false
+    }
+  },
+  "innegotiable_rules": [
+    "MASTER cria empresa",
+    "MASTER cria OWNER",
+    "OWNER cria OPERATOR",
+    "CONSULTOR vinculado por empresa",
+    "OPERATOR não visualiza financeiro"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "lpti-brand-tokens",
+  "version": "1.0.0",
+  "company": {
+    "name": "LPTI Tech",
+    "role": "Empresa Desenvolvedora e Mantenedora",
+    "signature": "Desenvolvido por LPTI Tech"
+  },
+  "product": {
+    "name": "Gestor MEI",
+    "tagline": "ERP Inteligente para MEIs e Pequenos Negócios",
+    "category": "ERP SaaS B2B"
+  },
+  "colors": {
+    "navyPrimary": "#071933",
+    "techBlue": "#1976D2",
+    "electricBlue": "#42A5F5"
+  },
+  "typography": {
+    "brandWeight": 800,
+    "taglineWeight": 600
+  },
+  "rules": {
+    "prohibit_brand_replacement": true,
+    "mandatory_developer_credit": true,
+    "product_always_primary": true
+  }
+}
+

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "gestor-mei-saas-plans",
+  "version": "1.0.0",
+  "plans": {
+    "START": {
+      "name": "MEI Start",
+      "price_monthly": 39.90,
+      "max_operators": 1,
+      "features": ["pdv", "caixa", "clientes", "produtos", "estoque_basico", "das", "relatorio_mei"]
+    },
+    "DELIVERY_PRO": {
+      "name": "MEI Delivery Pro",
+      "price_monthly": 59.90,
+      "max_operators": 3,
+      "features": ["pdv", "caixa", "clientes", "produtos", "estoque_basico", "das", "relatorio_mei", "delivery", "regioes", "motoboys", "ifood"]
+    },
+    "FULL_MEI": {
+      "name": "MEI Gestão Total",
+      "price_monthly": 89.90,
+      "max_operators": 999,
+      "features": ["pdv", "caixa", "clientes", "produtos", "estoque_avancado", "das", "relatorio_mei", "delivery", "regioes", "motoboys", "ifood", "nfe_xml", "compras", "saude_negocio", "consultor"]
+    }
+  },
+  "statuses": ["TRIAL", "ATIVA", "SUSPENSA", "CANCELADA"],
+  "rules": {
+    "trial_duration_days": 14,
+    "grace_period_days": 5,
+    "soft_lock_on_day": 6,
+    "read_only_during_suspension": true
+  }
+}
+

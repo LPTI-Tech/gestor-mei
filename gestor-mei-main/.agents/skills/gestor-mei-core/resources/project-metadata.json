@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": {
+    "empresa": "LPTI Tech",
+    "produto": "Gestor MEI",
+    "versao": "1.4.0",
+    "tipo": "SaaS Multiempresa B2B"
+  },
+  "stack": {
+    "frontend": {
+      "framework": "React 18",
+      "linguagem": "TypeScript",
+      "bundler": "Vite",
+      "ui": "Material UI (MUI v5)"
+    },
+    "backend": {
+      "framework": "FastAPI",
+      "linguagem": "Python 3.10+",
+      "servidor": "Uvicorn",
+      "orm": "SQLAlchemy 2.0"
+    },
+    "banco": {
+      "producao": "PostgreSQL Neon",
+      "local": "SQLite / PostgreSQL"
+    },
+    "infraestrutura": {
+      "frontend": "Vercel",
+      "backend": "Render"
+    }
+  },
+  "perfis_rbac": [
+    "MASTER",
+    "OWNER",
+    "CONSULTOR",
+    "OPERATOR"
+  ],
+  "regras_inegociaveis": [
+    "MASTER cria empresa",
+    "MASTER cria OWNER",
+    "OWNER cria OPERATOR",
+    "CONSULTOR vinculado por empresa",
+    "OPERATOR não visualiza financeiro"
+  ],
+  "modulos_homologados": [
+    "PDV",
+    "Delivery",
+    "Caixa",
+    "Clientes",
+    "Produtos",
+    "Estoque",
+    "XML NF-e",
+    "Compra Manual",
+    "DAS",
+    "Relatório MEI",
+    "Saúde do Negócio",
+    "Painel Consultor"
+  ],
+  "roadmap": {
+    "sprint_8c": "NFC-e e QR Code",
+    "sprint_9": "Licenciamento SaaS",
+    "sprint_10": "Portal do Cliente",
+    "sprint_11": "Cobrança Recorrente"
+  }
+}

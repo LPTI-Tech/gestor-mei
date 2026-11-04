@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "gestor-mei-executive-palette",
+  "version": "1.0.0",
+  "brand": {
+    "navyPrimary": "#071933",
+    "techBlue": "#1976D2",
+    "electricBlue": "#42A5F5"
+  },
+  "semantic": {
+    "revenueGreen": "#2E7D32",
+    "revenueBg": "rgba(46, 125, 50, 0.08)",
+    "expenseRed": "#D32F2F",
+    "expenseBg": "rgba(211, 47, 47, 0.08)",
+    "meiAlertAmber": "#ED6C02",
+    "meiAlertBg": "rgba(237, 108, 2, 0.08)",
+    "infoBlue": "#0288D1",
+    "infoBg": "rgba(2, 136, 209, 0.08)"
+  },
+  "slateScale": {
+    "slate900": "#0F172A",
+    "slate700": "#334155",
+    "slate500": "#64748B",
+    "slate300": "#CBD5E1",
+    "slate100": "#F1F5F9",
+    "slate50": "#F8FAFC"
+  },
+  "radii": {
+    "badge": "6px",
+    "button": "8px",
+    "card": "12px",
+    "panel": "16px",
+    "modal": "20px"
+  },
+  "shadows": {
+    "subtle": "0 1px 3px rgba(7, 25, 51, 0.05), 0 1px 2px rgba(7, 25, 51, 0.03)",
+    "elevated": "0 10px 25px -5px rgba(7, 25, 51, 0.08), 0 8px 10px -6px rgba(7, 25, 51, 0.04)",
+    "modal": "0 20px 50px rgba(7, 25, 51, 0.22)"
+  }
+}
+
