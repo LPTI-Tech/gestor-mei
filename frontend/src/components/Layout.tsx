@@ -56,7 +56,7 @@ import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 280;
 
 interface NavItemDef {
   label: string;
@@ -176,28 +176,33 @@ export const Layout: React.FC = () => {
   const drawerContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Brand Header Oficial */}
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box
-          component="img"
-          src={logoIcon}
-          alt="Logo Gestor MEI"
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 2.5,
-            boxShadow: '0 4px 14px rgba(7, 25, 51, 0.25)',
-            objectFit: 'cover',
-            flexShrink: 0,
-          }}
-        />
-        <Box sx={{ overflow: 'hidden', minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={800} color="primary" lineHeight={1.1} noWrap>
-            GESTOR MEI
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.68rem', display: 'block' }}>
-            ERP Inteligente
-          </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.5, fontSize: '0.72rem', opacity: 0.85 }}>
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            component="img"
+            src={logoIcon}
+            alt="Logo Gestor MEI"
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2.5,
+              boxShadow: '0 4px 14px rgba(7, 25, 51, 0.25)',
+              objectFit: 'cover',
+              flexShrink: 0,
+            }}
+          />
+          <Box sx={{ overflow: 'hidden', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <Typography variant="h6" fontWeight={800} color="primary" sx={{ lineHeight: 1.15, letterSpacing: '-0.01em' }} noWrap>
+              GESTOR MEI
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.01em', display: 'block', lineHeight: 1.2 }}>
+              ERP Inteligente
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ overflow: 'hidden', minWidth: 0, pl: 0.25 }}>
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.5, fontSize: '0.74rem', fontWeight: 500, opacity: 0.85 }}>
             {empresa?.nome_fantasia || 'Minha Empresa'}
           </Typography>
           <ApiStatusIndicator size="small" />
