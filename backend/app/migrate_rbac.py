@@ -8,6 +8,7 @@ o usuário MASTER global da plataforma LPTI Tech.
 from datetime import datetime
 from sqlalchemy import text
 from app.database import SessionLocal, engine, Base
+from app.config import settings
 from app.models.user import User, UserRole
 from app.models.empresa import Empresa
 from app.models.empresa_consultor import EmpresaConsultor
@@ -52,41 +53,47 @@ def run_migration():
         db.commit()
         print("[MIGRATE RBAC] Roles legados migrados para OWNER e OPERATOR.")
 
-        # 4. Garante a existência do usuário MASTER da plataforma
-        master_user = db.query(User).filter(User.email == "master@lptitech.com.br").first()
+        # 4. Garante a existência do usuário MASTER da plataforma (apenas em desenvolvimento/seed autorizado)
+        master_user = db.query(User).filter(User.role == UserRole.MASTER).first()
         if not master_user:
-            # Se for SQLite com constraint not null em empresa_id na tabela antiga, atribui None ou 0 se necessário
-            # Vamos testar criando com None
-            try:
-                master_user = User(
-                    empresa_id=None,
-                    nome="Administrador MASTER (LPTI Tech)",
-                    email="master@lptitech.com.br",
-                    hashed_password=hash_password("master123"),
-                    role=UserRole.MASTER,
-                    ativo=True,
-                    ultimo_acesso=datetime.utcnow()
+            if not settings.should_seed:
+                print(
+                    "[MIGRATE RBAC] [SEGURANÇA] Nenhum usuário MASTER existente no banco. "
+                    "A criação automática com senha padrão 'master123' foi BLOQUEADA em produção. "
+                    "Execute 'python -m app.scripts.provision_master' para criar o acesso MASTER com senha forte."
                 )
-                db.add(master_user)
-                db.commit()
-                print("[MIGRATE RBAC] Usuário MASTER master@lptitech.com.br criado com sucesso (empresa_id=None).")
-            except Exception as e_master:
-                db.rollback()
-                # Fallback para caso SQLite antigo não permita NULL em empresa_id
-                empresa_primeira = db.query(Empresa).first()
-                primeira_empresa_id = empresa_primeira.id if empresa_primeira else 1
-                master_user = User(
-                    empresa_id=primeira_empresa_id,
-                    nome="Administrador MASTER (LPTI Tech)",
-                    email="master@lptitech.com.br",
-                    hashed_password=hash_password("master123"),
-                    role=UserRole.MASTER,
-                    ativo=True,
-                    ultimo_acesso=datetime.utcnow()
-                )
-                db.add(master_user)
-                db.commit()
-                print(f"[MIGRATE RBAC] Usuário MASTER criado com empresa_id={primeira_empresa_id} (fallback SQLite).")
+            else:
+                # Se for SQLite com constraint not null em empresa_id na tabela antiga, atribui None ou 0 se necessário
+                try:
+                    master_user = User(
+                        empresa_id=None,
+                        nome="Administrador MASTER (LPTI Tech)",
+                        email="master@lptitech.com.br",
+                        hashed_password=hash_password("master123"),
+                        role=UserRole.MASTER,
+                        ativo=True,
+                        ultimo_acesso=datetime.utcnow()
+                    )
+                    db.add(master_user)
+                    db.commit()
+                    print("[MIGRATE RBAC] Usuário MASTER master@lptitech.com.br criado com sucesso (empresa_id=None).")
+                except Exception as e_master:
+                    db.rollback()
+                    # Fallback para caso SQLite antigo não permita NULL em empresa_id
+                    empresa_primeira = db.query(Empresa).first()
+                    primeira_empresa_id = empresa_primeira.id if empresa_primeira else 1
+                    master_user = User(
+                        empresa_id=primeira_empresa_id,
+                        nome="Administrador MASTER (LPTI Tech)",
+                        email="master@lptitech.com.br",
+                        hashed_password=hash_password("master123"),
+                        role=UserRole.MASTER,
+                        ativo=True,
+                        ultimo_acesso=datetime.utcnow()
+                    )
+                    db.add(master_user)
+                    db.commit()
+                    print(f"[MIGRATE RBAC] Usuário MASTER criado com empresa_id={primeira_empresa_id} (fallback SQLite).")
 
         # 5. Garante vínculos para o CONSULTOR padrão com as empresas clientes
         consultor = db.query(User).filter(User.role == UserRole.CONSULTOR).first()

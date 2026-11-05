@@ -13,28 +13,28 @@ class BreakdownItem(BaseModel):
     percentual: float
 
 class DashboardMetricsResponse(BaseModel):
-    venda_dia: float
-    venda_semana: float
-    venda_mes: float
-    venda_ano: float
-    caixa_atual: float
-    qtd_vendas_mes: int
-    ticket_medio_mes: float
+    venda_dia: float = 0.0
+    venda_semana: float = 0.0
+    venda_mes: float = 0.0
+    venda_ano: float = 0.0
+    caixa_atual: float = 0.0
+    qtd_vendas_mes: int = 0
+    ticket_medio_mes: float = 0.0
     
-    # Indicadores financeiros
-    entradas_mes: float
-    saidas_mes: float
-    lucro_operacional_mes: float
+    # Indicadores financeiros (Mascarados para perfil OPERATOR)
+    entradas_mes: float = 0.0
+    saidas_mes: float = 0.0
+    lucro_operacional_mes: float = 0.0
     
     # Gráficos
-    vendas_por_dia: List[ChartPoint]
-    vendas_por_mes: List[ChartPoint]
+    vendas_por_dia: List[ChartPoint] = []
+    vendas_por_mes: List[ChartPoint] = []
     
     # Meios de pagamento
-    pagamentos_breakdown: List[BreakdownItem]
+    pagamentos_breakdown: List[BreakdownItem] = []
     
     # Origens de venda
-    origens_breakdown: List[BreakdownItem]
+    origens_breakdown: List[BreakdownItem] = []
 
     # Indicadores de Estoque (Sprint 4)
     total_itens_estoque: Optional[int] = 0
@@ -51,3 +51,7 @@ class DashboardMetricsResponse(BaseModel):
     das_qtd_pagos: Optional[int] = 0
     das_alerta_tipo: Optional[str] = None
     das_alerta_mensagem: Optional[str] = None
+
+    # Controle de Visibilidade RBAC (Sprint Security 2)
+    is_restricted: Optional[bool] = False
+    role: Optional[str] = None

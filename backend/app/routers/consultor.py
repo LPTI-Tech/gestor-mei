@@ -301,17 +301,17 @@ def obter_detalhes_cliente_consultor(
     empresas_autorizadas = _obter_empresas_autorizadas_consultor(current_user, db)
     ids_autorizados = {e.id for e in empresas_autorizadas}
 
-    if empresa_id not in ids_autorizados:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso não autorizado para esta empresa cliente. Vínculo não localizado na carteira do consultor."
-        )
-
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente / Empresa não encontrada.",
+        )
+
+    if empresa_id not in ids_autorizados:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso não autorizado para esta empresa cliente. Vínculo não localizado na carteira do consultor."
         )
 
     ano_atual = datetime.utcnow().year

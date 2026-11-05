@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.despesa import Despesa
 from app.models.user import User
 from app.schemas.despesa import DespesaCreate, DespesaUpdate, DespesaResponse
-from app.dependencies import get_current_user, require_admin
+from app.dependencies import get_current_user, require_admin, require_consultor_or_admin
 
 router = APIRouter(prefix="/despesas", tags=["Despesas"])
 
@@ -21,7 +21,7 @@ def list_despesas(
     forma_pagamento: Optional[str] = None,
     limit: int = Query(default=100, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_consultor_or_admin)
 ):
     query = db.query(Despesa).filter(Despesa.empresa_id == current_user.empresa_id)
     
@@ -49,7 +49,7 @@ def get_resumo_despesas(
     mes: Optional[int] = None,
     ano: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_consultor_or_admin)
 ):
     query = db.query(Despesa.categoria, func.sum(Despesa.valor).label("total")).filter(
         Despesa.empresa_id == current_user.empresa_id
@@ -82,7 +82,7 @@ def get_resumo_despesas(
 def create_despesa(
     data: DespesaCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     despesa = Despesa(
         empresa_id=current_user.empresa_id,
@@ -103,7 +103,7 @@ def update_despesa(
     despesa_id: int,
     data: DespesaUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     despesa = db.query(Despesa).filter(
         Despesa.id == despesa_id,

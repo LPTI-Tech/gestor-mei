@@ -12,9 +12,9 @@ from app.schemas.saude_negocio import (
     EvolucaoMensalSaude,
     InsightSaude
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_consultor_or_admin
 
-router = APIRouter(prefix="/saude-negocio", tags=["Saúde do Negócio"])
+router = APIRouter(prefix="/saude-negocio", tags=["Saúde do Negócio"], dependencies=[Depends(require_consultor_or_admin)])
 
 MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 

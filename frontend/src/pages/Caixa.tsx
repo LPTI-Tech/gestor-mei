@@ -26,6 +26,11 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Snackbar,
+  Tabs,
+  Tab,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   AccountBalanceWallet,
@@ -37,13 +42,18 @@ import {
   TrendingUp,
   TrendingDown,
   CheckCircle,
+  SwapVert,
+  Receipt,
+  PointOfSale,
+  InfoOutlined,
+  Refresh,
 } from '@mui/icons-material';
 import api from '../services/api';
-import { CaixaStatus, CaixaTurno } from '../types';
+import { CaixaStatus, CaixaTurno, CaixaLancamento } from '../types';
 import { formatCurrency, formatDateTime } from '../services/exportUtils';
 import { StatCard } from '../components/StatCard';
 
-const CATEGORIAS_ENTRADA = ['Recebimentos diversos', 'Ajustes positivos', 'Outros'];
+const CATEGORIAS_ENTRADA = ['Recebimentos diversos', 'Ajustes positivos', 'Suprimento de troco', 'Outros'];
 const CATEGORIAS_SAIDA = [
   'Compra de gás',
   'Compra de mercadorias',
@@ -53,6 +63,7 @@ const CATEGORIAS_SAIDA = [
   'Energia',
   'Internet',
   'Manutenção',
+  'Sangria de segurança',
   'Outros',
 ];
 
@@ -60,38 +71,58 @@ export const Caixa: React.FC = () => {
   const [caixaStatus, setCaixaStatus] = useState<CaixaStatus | null>(null);
   const [historico, setHistorico] = useState<CaixaTurno[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'ENTRADA' | 'SAIDA'>('TODOS');
+
+  // Feedback Snackbar (substitui todo alert nativo)
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
+
+  const showNotification = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   // Modals
   const [openAbrirModal, setOpenAbrirModal] = useState<boolean>(false);
   const [valorInicial, setValorInicial] = useState<string>('100.00');
   const [obsAbertura, setObsAbertura] = useState<string>('');
+  const [submittingAbertura, setSubmittingAbertura] = useState<boolean>(false);
 
   const [openLancamentoModal, setOpenLancamentoModal] = useState<boolean>(false);
   const [tipoLancamento, setTipoLancamento] = useState<'ENTRADA' | 'SAIDA'>('SAIDA');
   const [categoriaLancamento, setCategoriaLancamento] = useState<string>('Compra de mercadorias');
   const [descricaoLancamento, setDescricaoLancamento] = useState<string>('');
   const [valorLancamento, setValorLancamento] = useState<string>('');
+  const [submittingLancamento, setSubmittingLancamento] = useState<boolean>(false);
 
   const [openFecharModal, setOpenFecharModal] = useState<boolean>(false);
   const [valorInformado, setValorInformado] = useState<string>('');
   const [obsFechamento, setObsFechamento] = useState<string>('');
+  const [submittingFechamento, setSubmittingFechamento] = useState<boolean>(false);
 
-  // Result of closing
+  // Resultado de fechamento e auditoria
   const [fechamentoResultado, setFechamentoResultado] = useState<CaixaTurno | null>(null);
 
-  const fetchCaixa = async () => {
+  const fetchCaixa = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [statusRes, histRes] = await Promise.all([
         api.get<CaixaStatus>('/caixa/status'),
         api.get<CaixaTurno[]>('/caixa/historico'),
       ]);
       setCaixaStatus(statusRes.data);
       setHistorico(histRes.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification('Não foi possível sincronizar o estado do caixa.', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -102,20 +133,25 @@ export const Caixa: React.FC = () => {
   const handleAbrirCaixa = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmittingAbertura(true);
       await api.post('/caixa/abrir', {
         valor_inicial: Number(valorInicial) || 0,
         observacoes: obsAbertura,
       });
       setOpenAbrirModal(false);
-      fetchCaixa();
+      showNotification('Turno de caixa aberto com sucesso!', 'success');
+      fetchCaixa(true);
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao abrir caixa.');
+      showNotification(err.response?.data?.detail || 'Erro ao abrir turno de caixa.', 'error');
+    } finally {
+      setSubmittingAbertura(false);
     }
   };
 
   const handleAddLancamento = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmittingLancamento(true);
       await api.post('/caixa/lancamento', {
         tipo: tipoLancamento,
         categoria: categoriaLancamento,
@@ -125,246 +161,452 @@ export const Caixa: React.FC = () => {
       setOpenLancamentoModal(false);
       setDescricaoLancamento('');
       setValorLancamento('');
-      fetchCaixa();
+      showNotification(
+        `${tipoLancamento === 'ENTRADA' ? 'Suprimento' : 'Sangria'} registrado com sucesso!`,
+        'success'
+      );
+      fetchCaixa(true);
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao registrar lançamento.');
+      showNotification(err.response?.data?.detail || 'Erro ao registrar movimentação.', 'error');
+    } finally {
+      setSubmittingLancamento(false);
     }
   };
 
   const handleFecharCaixa = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmittingFechamento(true);
       const res = await api.post<CaixaTurno>('/caixa/fechar', {
         valor_informado: Number(valorInformado) || 0,
         observacoes: obsFechamento,
       });
       setOpenFecharModal(false);
       setFechamentoResultado(res.data);
-      fetchCaixa();
+      showNotification('Caixa encerrado e auditado com sucesso.', 'success');
+      fetchCaixa(true);
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao fechar caixa.');
+      showNotification(err.response?.data?.detail || 'Erro ao fechar caixa.', 'error');
+    } finally {
+      setSubmittingFechamento(false);
     }
   };
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 12 }}>
+        <CircularProgress size={44} />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 500 }}>
+          Sincronizando livro caixa...
+        </Typography>
       </Box>
     );
   }
 
-  const isAberto = caixaStatus?.is_aberto;
+  const isAberto = Boolean(caixaStatus?.is_aberto);
   const turno = caixaStatus?.turno_atual;
+
+  // Filtragem dos lançamentos do turno para o extrato estilo Stripe Balance
+  const lancamentosFiltrados = (turno?.lancamentos || []).filter((l) => {
+    if (filtroTipo === 'ENTRADA') return l.tipo === 'ENTRADA';
+    if (filtroTipo === 'SAIDA') return l.tipo === 'SAIDA';
+    return true;
+  });
 
   return (
     <Box>
-      {/* Title & Status */}
-      <Box
+      {/* 1. Header Executivo de Turno (Design System SaaS) */}
+      <Paper
+        elevation={0}
         sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: 2,
+          p: { xs: 2.5, sm: 3 },
           mb: 3,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: isAberto ? 'success.light' : 'divider',
+          bgcolor: isAberto
+            ? 'background.paper'
+            : 'background.paper',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'center' },
+          gap: 2.5,
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Typography variant="h5" fontWeight={800}>
-              Controle de Caixa
+        <Box sx={{ minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.8, flexWrap: 'wrap' }}>
+            <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
+              Caixa do Dia
             </Typography>
+
+            {/* Badge de Status Tátil com Pulso */}
             <Chip
               icon={isAberto ? <LockOpen fontSize="small" /> : <Lock fontSize="small" />}
-              label={isAberto ? 'Caixa Aberto' : 'Caixa Fechado'}
+              label={isAberto ? 'CAIXA ABERTO' : 'CAIXA FECHADO'}
               color={isAberto ? 'success' : 'default'}
-              sx={{ fontWeight: 700 }}
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                letterSpacing: '0.04em',
+                px: 0.5,
+                height: 26,
+                boxShadow: isAberto ? '0 0 12px rgba(46, 125, 50, 0.25)' : 'none',
+              }}
             />
+
+            <Tooltip title="Atualizar dados do caixa">
+              <IconButton size="small" onClick={() => fetchCaixa(true)} sx={{ color: 'text.secondary' }}>
+                <Refresh fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
-          <Typography variant="body2" color="text.secondary">
-            Acompanhe o saldo físico em dinheiro, sangrias, suprimentos e conferência cega no fechamento.
+
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 640 }}>
+            {isAberto && turno ? (
+              <>
+                Turno iniciado em <strong>{formatDateTime(turno.data_abertura)}</strong> com troco inicial de{' '}
+                <strong>{formatCurrency(turno.valor_inicial)}</strong>. As vendas em dinheiro do PDV entram automaticamente neste saldo.
+              </>
+            ) : (
+              'Nenhum turno em andamento no momento. Abra o caixa informando o fundo de troco para autorizar vendas em dinheiro.'
+            )}
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+        {/* Barra de Ações Rápidas do Caixa */}
+        <Box sx={{ display: 'flex', gap: 1.2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           {!isAberto ? (
             <Button
               variant="contained"
               color="primary"
+              size="medium"
               startIcon={<LockOpen />}
-              onClick={() => setOpenAbrirModal(true)}
-              sx={{ fontWeight: 700, height: 44 }}
+              onClick={() => {
+                setValorInicial('100.00');
+                setObsAbertura('');
+                setOpenAbrirModal(true);
+              }}
+              sx={{
+                fontWeight: 700,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+              }}
             >
               Abrir Caixa
             </Button>
           ) : (
             <>
+              {/* + Suprimento */}
               <Button
                 variant="outlined"
                 color="secondary"
+                size="small"
                 startIcon={<AddCircleOutline />}
                 onClick={() => {
                   setTipoLancamento('ENTRADA');
-                  setCategoriaLancamento('Recebimentos diversos');
+                  setCategoriaLancamento('Suprimento de troco');
+                  setDescricaoLancamento('');
+                  setValorLancamento('');
                   setOpenLancamentoModal(true);
                 }}
-                sx={{ fontWeight: 700, height: 44 }}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: 1.8,
+                  py: 0.8,
+                  textTransform: 'none',
+                }}
               >
-                + Entrada
+                + Suprimento
               </Button>
+
+              {/* - Sangria / Saída */}
               <Button
                 variant="outlined"
                 color="error"
+                size="small"
                 startIcon={<RemoveCircleOutline />}
                 onClick={() => {
                   setTipoLancamento('SAIDA');
-                  setCategoriaLancamento('Compra de mercadorias');
+                  setCategoriaLancamento('Compra de gás');
+                  setDescricaoLancamento('');
+                  setValorLancamento('');
                   setOpenLancamentoModal(true);
                 }}
-                sx={{ fontWeight: 700, height: 44 }}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: 1.8,
+                  py: 0.8,
+                  textTransform: 'none',
+                }}
               >
-                - Saída (Gás / Despesa)
+                - Sangria / Saída
               </Button>
+
+              {/* Fechar e Auditar Caixa */}
               <Button
                 variant="contained"
                 color="error"
+                size="small"
                 startIcon={<Lock />}
                 onClick={() => {
                   setValorInformado('');
                   setObsFechamento('');
                   setOpenFecharModal(true);
                 }}
-                sx={{ fontWeight: 700, height: 44 }}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.8,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: 'error.dark' },
+                }}
               >
                 Fechar Caixa
               </Button>
             </>
           )}
         </Box>
-      </Box>
+      </Paper>
 
-      {/* Audit Result Banner after Closing */}
+      {/* 2. Banner de Auditoria e Conferência Cega Pós-Fechamento */}
       {fechamentoResultado && (
-        <Alert
-          severity={
-            (fechamentoResultado.diferenca || 0) === 0
-              ? 'success'
-              : (fechamentoResultado.diferenca || 0) > 0
-              ? 'info'
-              : 'warning'
-          }
-          onClose={() => setFechamentoResultado(null)}
-          sx={{ mb: 3 }}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            mb: 3,
+            borderRadius: 2.5,
+            border: '1px solid',
+            borderColor:
+              (fechamentoResultado.diferenca || 0) === 0
+                ? 'success.main'
+                : (fechamentoResultado.diferenca || 0) > 0
+                ? 'info.main'
+                : 'error.main',
+            bgcolor:
+              (fechamentoResultado.diferenca || 0) === 0
+                ? 'rgba(46, 125, 50, 0.06)'
+                : (fechamentoResultado.diferenca || 0) > 0
+                ? 'rgba(2, 136, 209, 0.06)'
+                : 'rgba(211, 47, 47, 0.06)',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+          }}
         >
-          <Typography variant="subtitle2" fontWeight={700}>
-            Turno de Caixa Fechado com Sucesso!
-          </Typography>
-          Valor Contado: <b>{formatCurrency(fechamentoResultado.valor_informado)}</b> | Valor Esperado:{' '}
-          <b>{formatCurrency(fechamentoResultado.valor_esperado)}</b> | Diferença:{' '}
-          <b>{formatCurrency(fechamentoResultado.diferenca)}</b>{' '}
-          {fechamentoResultado.diferenca && fechamentoResultado.diferenca > 0
-            ? '(Sobra de Caixa)'
-            : fechamentoResultado.diferenca && fechamentoResultado.diferenca < 0
-            ? '(Falta de Caixa)'
-            : '(Caixa bateu 100%)'}
-        </Alert>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <CheckCircle color="success" />
+              <Typography variant="subtitle2" fontWeight={800}>
+                Conferência de Fechamento Auditada com Sucesso!
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Valor Contado: <strong>{formatCurrency(fechamentoResultado.valor_informado)}</strong> • Valor Esperado pelo Sistema:{' '}
+              <strong>{formatCurrency(fechamentoResultado.valor_esperado)}</strong> • Diferença:{' '}
+              <strong
+                style={{
+                  color:
+                    (fechamentoResultado.diferenca || 0) === 0
+                      ? '#2E7D32'
+                      : (fechamentoResultado.diferenca || 0) > 0
+                      ? '#0288D1'
+                      : '#D32F2F',
+                }}
+              >
+                {formatCurrency(fechamentoResultado.diferenca)}{' '}
+                {(fechamentoResultado.diferenca || 0) === 0
+                  ? '(Caixa Bateu 100%)'
+                  : (fechamentoResultado.diferenca || 0) > 0
+                  ? '(Sobra de Caixa)'
+                  : '(Falta de Caixa)'}
+              </strong>
+            </Typography>
+          </Box>
+          <Button size="small" variant="text" onClick={() => setFechamentoResultado(null)}>
+            Dispensar
+          </Button>
+        </Paper>
       )}
 
-      {/* Active Shift Dashboard */}
+      {/* 3. Cards KPI do Turno Ativo (Design System Executivo) */}
       {isAberto && turno && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
+          {/* Card Principal: Saldo Físico Esperado */}
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
-              title="Troco Inicial"
+              title="Saldo em Dinheiro na Gaveta"
+              value={formatCurrency(caixaStatus?.saldo_dinheiro_atual || 0)}
+              subtitle="Valor físico total conferível agora"
+              icon={<AccountBalanceWallet />}
+              color="#0284C7"
+            />
+          </Grid>
+
+          {/* Troco Inicial */}
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Troco Inicial (Abertura)"
               value={formatCurrency(turno.valor_inicial)}
               subtitle={`Aberto às ${formatDateTime(turno.data_abertura)}`}
-              icon={<AccountBalanceWallet />}
-              color="#1976D2"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Vendas em Dinheiro"
-              value={formatCurrency(caixaStatus.vendas_dinheiro_no_turno)}
-              subtitle="Entradas de vendas físicas"
-              icon={<TrendingUp />}
-              color="#2E7D32"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Saídas / Despesas"
-              value={formatCurrency(caixaStatus.total_saidas_dinheiro)}
-              subtitle="Gás, ajudantes, insumos no turno"
-              icon={<TrendingDown />}
-              color="#D32F2F"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Saldo Esperado no Caixa"
-              value={formatCurrency(caixaStatus.saldo_dinheiro_atual)}
-              subtitle="Dinheiro que deve estar na gaveta"
               icon={<CheckCircle />}
-              color="#0288D1"
+              color="#64748B"
+            />
+          </Grid>
+
+          {/* Vendas em Dinheiro */}
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Vendas em Dinheiro (PDV)"
+              value={formatCurrency(caixaStatus?.vendas_dinheiro_no_turno || 0)}
+              subtitle="Entradas acumuladas de vendas"
+              icon={<TrendingUp />}
+              color="#10B981"
+            />
+          </Grid>
+
+          {/* Saídas / Sangrias do Turno */}
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Saídas & Sangrias"
+              value={formatCurrency(caixaStatus?.total_saidas_dinheiro || 0)}
+              subtitle="Retiradas, despesas e insumos pagos"
+              icon={<TrendingDown />}
+              color="#EF4444"
             />
           </Grid>
         </Grid>
       )}
 
-      {/* Active Shift Transactions */}
+      {/* 4. Extrato e Timeline de Movimentações (Estilo Stripe Balance) */}
       {isAberto && turno && (
-        <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Card sx={{ mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
           <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-              Movimentações do Turno Atual
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              Lançamentos avulsos de suprimento (entradas) e sangrias (saídas)
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                gap: 1.5,
+                mb: 2,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" fontWeight={700} sx={{ letterSpacing: '-0.01em' }}>
+                  Extrato de Movimentações do Turno
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Lançamentos manuais de suprimento e sangria registrados durante o turno corrente
+                </Typography>
+              </Box>
 
-            {turno.lancamentos.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" py={2}>
-                Nenhum lançamento avulso registrado neste turno até o momento.
-              </Typography>
+              {/* Filtro de Extrato (Todas, Entradas, Saídas) */}
+              <Tabs
+                value={filtroTipo}
+                onChange={(_, val) => setFiltroTipo(val)}
+                sx={{
+                  minHeight: 34,
+                  '& .MuiTab-root': {
+                    minHeight: 34,
+                    py: 0.5,
+                    px: 1.5,
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: 1.5,
+                  },
+                }}
+              >
+                <Tab label={`Todas (${turno.lancamentos.length})`} value="TODOS" />
+                <Tab
+                  label={`Suprimentos (${turno.lancamentos.filter((l) => l.tipo === 'ENTRADA').length})`}
+                  value="ENTRADA"
+                />
+                <Tab
+                  label={`Sangrias (${turno.lancamentos.filter((l) => l.tipo === 'SAIDA').length})`}
+                  value="SAIDA"
+                />
+              </Tabs>
+            </Box>
+
+            <Divider sx={{ mb: 2 }} />
+
+            {lancamentosFiltrados.length === 0 ? (
+              <Box sx={{ py: 6, textAlign: 'center' }}>
+                <SwapVert sx={{ fontSize: 44, color: 'text.disabled', mb: 1, opacity: 0.6 }} />
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Nenhuma movimentação manual encontrada para o filtro selecionado.
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Utilize os botões "+ Suprimento" ou "- Sangria" no topo para lançar despesas ou aportes.
+                </Typography>
+              </Box>
             ) : (
-              <TableContainer>
+              <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2 }}>
                 <Table size="small">
-                  <TableHead sx={{ bgcolor: 'background.default' }}>
+                  <TableHead sx={{ bgcolor: 'action.hover' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Horário</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Tipo</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Categoria</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Descrição</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>Valor</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Horário</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Tipo</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Categoria</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Descrição / Finalidade</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem' }}>
+                        Valor
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {turno.lancamentos.map((l) => (
-                      <TableRow key={l.id}>
-                        <TableCell>{formatDateTime(l.data_hora)}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={l.tipo}
-                            size="small"
-                            color={l.tipo === 'ENTRADA' ? 'success' : 'error'}
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        </TableCell>
-                        <TableCell>{l.categoria}</TableCell>
-                        <TableCell>{l.descricao}</TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 700,
-                            color: l.tipo === 'ENTRADA' ? 'success.main' : 'error.main',
-                          }}
-                        >
-                          {l.tipo === 'ENTRADA' ? '+' : '-'} {formatCurrency(l.valor)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {lancamentosFiltrados.map((l) => {
+                      const isEntrada = l.tipo === 'ENTRADA';
+                      return (
+                        <TableRow key={l.id} hover>
+                          <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary', width: 140 }}>
+                            {formatDateTime(l.data_hora)}
+                          </TableCell>
+                          <TableCell sx={{ width: 130 }}>
+                            <Chip
+                              icon={isEntrada ? <TrendingUp sx={{ fontSize: '14px !important' }} /> : <TrendingDown sx={{ fontSize: '14px !important' }} />}
+                              label={isEntrada ? 'Suprimento' : 'Sangria'}
+                              size="small"
+                              color={isEntrada ? 'success' : 'error'}
+                              variant="outlined"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{l.categoria}</TableCell>
+                          <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>
+                            {l.descricao || '-'}
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontSize: '0.88rem',
+                              fontWeight: 700,
+                              color: isEntrada ? 'success.main' : 'error.main',
+                              width: 140,
+                            }}
+                          >
+                            {isEntrada ? '+' : '-'} {formatCurrency(l.valor)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -373,52 +615,71 @@ export const Caixa: React.FC = () => {
         </Card>
       )}
 
-      {/* History of Past Shifts */}
-      <Card sx={{ borderRadius: 3 }}>
+      {/* 5. Histórico e Relatório de Fechamentos Anteriores */}
+      <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
         <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-          <Typography variant="h6" fontWeight={700} display="flex" alignItems="center" gap={1} mb={0.5}>
-            <History /> Histórico de Fechamentos de Caixa
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-            Relatório de turnos fechados e conferências anteriores
-          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h6" fontWeight={700} display="flex" alignItems="center" gap={1} sx={{ letterSpacing: '-0.01em' }}>
+              <History fontSize="small" color="primary" /> Histórico de Turnos Fechados
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Relatório de auditoria de turnos encerrados e conciliação cega de gaveta
+            </Typography>
+          </Box>
 
           {historico.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" py={3} textAlign="center">
-              Nenhum turno anterior registrado.
-            </Typography>
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <Receipt sx={{ fontSize: 44, color: 'text.disabled', mb: 1, opacity: 0.6 }} />
+              <Typography variant="body2" color="text.secondary">
+                Nenhum turno anterior registrado nesta empresa.
+              </Typography>
+            </Box>
           ) : (
             <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2 }}>
-              <Table>
-                <TableHead sx={{ bgcolor: 'background.default' }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: 'action.hover' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700 }}>Abertura</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Fechamento</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Valor Inicial</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Valor Esperado</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Valor Contado</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Diferença</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Abertura</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fechamento</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fundo Inicial</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor Esperado</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor Contado</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Diferença</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {historico.map((h) => {
                     const diff = h.diferenca || 0;
+                    const isFechado = h.status === 'FECHADO';
                     return (
                       <TableRow key={h.id} hover>
-                        <TableCell>{formatDateTime(h.data_abertura)}</TableCell>
-                        <TableCell>{h.data_fechamento ? formatDateTime(h.data_fechamento) : 'Em aberto'}</TableCell>
-                        <TableCell>{formatCurrency(h.valor_inicial)}</TableCell>
-                        <TableCell>{h.valor_esperado !== null ? formatCurrency(h.valor_esperado) : '-'}</TableCell>
-                        <TableCell>{h.valor_informado !== null ? formatCurrency(h.valor_informado) : '-'}</TableCell>
-                        <TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>{formatDateTime(h.data_abertura)}</TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>
+                          {h.data_fechamento ? formatDateTime(h.data_fechamento) : 'Em aberto'}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>{formatCurrency(h.valor_inicial)}</TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>
+                          {h.valor_esperado !== null ? formatCurrency(h.valor_esperado) : '-'}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                          {h.valor_informado !== null ? formatCurrency(h.valor_informado) : '-'}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>
                           {h.diferenca !== null ? (
                             <Typography
                               variant="body2"
                               fontWeight={700}
-                              color={diff === 0 ? 'success.main' : diff > 0 ? 'info.main' : 'error.main'}
+                              sx={{
+                                color:
+                                  diff === 0 ? 'success.main' : diff > 0 ? 'info.main' : 'error.main',
+                              }}
                             >
-                              {diff > 0 ? `+${formatCurrency(diff)} (Sobra)` : diff < 0 ? `${formatCurrency(diff)} (Falta)` : 'R$ 0,00'}
+                              {diff > 0
+                                ? `+${formatCurrency(diff)} (Sobra)`
+                                : diff < 0
+                                ? `${formatCurrency(diff)} (Falta)`
+                                : 'R$ 0,00 (Exato)'}
                             </Typography>
                           ) : (
                             '-'
@@ -428,7 +689,8 @@ export const Caixa: React.FC = () => {
                           <Chip
                             label={h.status}
                             size="small"
-                            color={h.status === 'ABERTO' ? 'success' : 'default'}
+                            color={isFechado ? 'default' : 'success'}
+                            sx={{ height: 22, fontSize: '0.66rem', fontWeight: 700 }}
                           />
                         </TableCell>
                       </TableRow>
@@ -442,18 +704,20 @@ export const Caixa: React.FC = () => {
       </Card>
 
       {/* DIALOG: ABRIR CAIXA */}
-      <Dialog open={openAbrirModal} onClose={() => setOpenAbrirModal(false)} maxWidth="xs" fullWidth>
+      <Dialog open={openAbrirModal} onClose={() => !submittingAbertura && setOpenAbrirModal(false)} maxWidth="xs" fullWidth>
         <Box component="form" onSubmit={handleAbrirCaixa}>
-          <DialogTitle fontWeight={700}>Abertura de Caixa</DialogTitle>
+          <DialogTitle fontWeight={800} sx={{ pb: 1 }}>
+            Abertura de Caixa
+          </DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Informe o valor em dinheiro com o qual você está iniciando o dia (troco inicial):
+              Informe o valor em dinheiro físico (fundo de troco) com o qual o operador iniciará o turno:
             </Typography>
             <TextField
               fullWidth
               label="Troco Inicial (R$)"
               type="number"
-              inputProps={{ step: '0.01', min: '0', style: { fontSize: '1.2rem', fontWeight: 700 } }}
+              inputProps={{ step: '0.01', min: '0', style: { fontSize: '1.25rem', fontWeight: 800 } }}
               required
               value={valorInicial}
               onChange={(e) => setValorInicial(e.target.value)}
@@ -466,25 +730,32 @@ export const Caixa: React.FC = () => {
               margin="normal"
               value={obsAbertura}
               onChange={(e) => setObsAbertura(e.target.value)}
-              placeholder="Ex: R$ 50 em moedas e notas de R$ 5 e R$ 10"
+              placeholder="Ex: R$ 50 em notas de 5 e moedas"
+              helperText="Opcional. Registrado no livro de auditoria."
             />
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setOpenAbrirModal(false)} color="inherit">
+          <DialogActions sx={{ p: 2.5, pt: 0 }}>
+            <Button onClick={() => setOpenAbrirModal(false)} color="inherit" disabled={submittingAbertura}>
               Cancelar
             </Button>
-            <Button type="submit" variant="contained" color="primary">
-              Confirmar Abertura
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={submittingAbertura}
+              sx={{ fontWeight: 700 }}
+            >
+              {submittingAbertura ? <CircularProgress size={20} color="inherit" /> : 'Confirmar Abertura'}
             </Button>
           </DialogActions>
         </Box>
       </Dialog>
 
-      {/* DIALOG: LANÇAMENTO AVULSO */}
-      <Dialog open={openLancamentoModal} onClose={() => setOpenLancamentoModal(false)} maxWidth="xs" fullWidth>
+      {/* DIALOG: LANÇAMENTO AVULSO (SUPRIMENTO OU SANGRIA) */}
+      <Dialog open={openLancamentoModal} onClose={() => !submittingLancamento && setOpenLancamentoModal(false)} maxWidth="xs" fullWidth>
         <Box component="form" onSubmit={handleAddLancamento}>
-          <DialogTitle fontWeight={700}>
-            {tipoLancamento === 'ENTRADA' ? '+ Entrada de Dinheiro' : '- Saída / Pagamento de Despesa'}
+          <DialogTitle fontWeight={800} sx={{ pb: 1 }}>
+            {tipoLancamento === 'ENTRADA' ? '+ Suprimento de Dinheiro' : '- Sangria / Saída de Caixa'}
           </DialogTitle>
           <DialogContent>
             <FormControl fullWidth margin="normal">
@@ -509,14 +780,14 @@ export const Caixa: React.FC = () => {
               margin="normal"
               value={descricaoLancamento}
               onChange={(e) => setDescricaoLancamento(e.target.value)}
-              placeholder={tipoLancamento === 'SAIDA' ? 'Ex: Botijão de gás P13' : 'Ex: Troco reposto'}
+              placeholder={tipoLancamento === 'SAIDA' ? 'Ex: Troco reposto na gaveta' : 'Ex: Compra de botijão P13'}
             />
 
             <TextField
               fullWidth
               label="Valor (R$)"
               type="number"
-              inputProps={{ step: '0.01', min: '0.01', style: { fontWeight: 700 } }}
+              inputProps={{ step: '0.01', min: '0.01', style: { fontWeight: 800, fontSize: '1.2rem' } }}
               required
               margin="normal"
               value={valorLancamento}
@@ -524,41 +795,50 @@ export const Caixa: React.FC = () => {
               placeholder="0,00"
             />
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setOpenLancamentoModal(false)} color="inherit">
+          <DialogActions sx={{ p: 2.5, pt: 0 }}>
+            <Button onClick={() => setOpenLancamentoModal(false)} color="inherit" disabled={submittingLancamento}>
               Cancelar
             </Button>
             <Button
               type="submit"
               variant="contained"
               color={tipoLancamento === 'ENTRADA' ? 'success' : 'error'}
+              disabled={submittingLancamento}
+              sx={{ fontWeight: 700 }}
             >
-              Registrar Lançamento
+              {submittingLancamento ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                `Registrar ${tipoLancamento === 'ENTRADA' ? 'Suprimento' : 'Sangria'}`
+              )}
             </Button>
           </DialogActions>
         </Box>
       </Dialog>
 
       {/* DIALOG: FECHAR CAIXA */}
-      <Dialog open={openFecharModal} onClose={() => setOpenFecharModal(false)} maxWidth="xs" fullWidth>
+      <Dialog open={openFecharModal} onClose={() => !submittingFechamento && setOpenFecharModal(false)} maxWidth="xs" fullWidth>
         <Box component="form" onSubmit={handleFecharCaixa}>
-          <DialogTitle fontWeight={700}>Fechamento de Caixa</DialogTitle>
+          <DialogTitle fontWeight={800} sx={{ pb: 1 }}>
+            Fechamento de Caixa
+          </DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Faça a contagem das cédulas e moedas físicas na sua gaveta e informe o valor total encontrado:
+              Faça a contagem cega de todas as cédulas e moedas físicas na gaveta e informe o valor apurado:
             </Typography>
 
             <TextField
               fullWidth
-              label="Valor Encontrado em Caixa (R$)"
+              label="Valor Físico Apurado (R$)"
               type="number"
-              inputProps={{ step: '0.01', min: '0', style: { fontSize: '1.3rem', fontWeight: 800 } }}
+              inputProps={{ step: '0.01', min: '0', style: { fontSize: '1.35rem', fontWeight: 800 } }}
               required
               value={valorInformado}
               onChange={(e) => setValorInformado(e.target.value)}
               margin="normal"
               autoFocus
               placeholder="0,00"
+              helperText="O sistema comparará com as vendas e calculará sobras ou faltas."
             />
 
             <TextField
@@ -569,19 +849,42 @@ export const Caixa: React.FC = () => {
               margin="normal"
               value={obsFechamento}
               onChange={(e) => setObsFechamento(e.target.value)}
-              placeholder="Ex: Notas entregues ao motoboy, sem pendências"
+              placeholder="Ex: Sem ocorrências, dinheiro guardado no cofre"
             />
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setOpenFecharModal(false)} color="inherit">
+          <DialogActions sx={{ p: 2.5, pt: 0 }}>
+            <Button onClick={() => setOpenFecharModal(false)} color="inherit" disabled={submittingFechamento}>
               Cancelar
             </Button>
-            <Button type="submit" variant="contained" color="error">
-              Fechar e Auditar Caixa
+            <Button
+              type="submit"
+              variant="contained"
+              color="error"
+              disabled={submittingFechamento}
+              sx={{ fontWeight: 700 }}
+            >
+              {submittingFechamento ? <CircularProgress size={20} color="inherit" /> : 'Fechar e Auditar Caixa'}
             </Button>
           </DialogActions>
         </Box>
       </Dialog>
+
+      {/* Feedback Toast / Snackbar Global */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%', fontWeight: 600, borderRadius: 2 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

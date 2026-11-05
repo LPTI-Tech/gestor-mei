@@ -7,6 +7,7 @@ from datetime import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
@@ -17,7 +18,13 @@ from app.models.produto import Produto
 from app.models.fornecedor import Fornecedor
 from app.models.nfe import NfeImportada, ItemNfeImportada
 from app.models.estoque import MovimentacaoEstoque
-from app.dependencies import get_current_user, get_current_empresa
+from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
+from app.utils.security_upload import (
+    MAX_COMPROVANTE_SIZE_BYTES,
+    read_file_sync_with_size_limit,
+    validate_magic_bytes_comprovante,
+    generate_secure_comprovante_filename,
+)
 from app.schemas.compras import (
     CompraItemResumo,
     CompraDetalheResponse,
@@ -42,18 +49,8 @@ def _clean_digits(val: Optional[str]) -> str:
 
 
 # =======================================================
-# Upload de Comprovantes (JPG, PNG, WEBP, PDF)
+# Upload e Download Seguro de Comprovantes (JPG, PNG, WEBP, PDF)
 # =======================================================
-
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
-ALLOWED_MIME_TYPES = {
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "application/pdf",
-    "application/octet-stream"  # alguns clientes enviam octet-stream para pdfs
-}
-
 
 @router.post("/upload-comprovante", response_model=UploadComprovanteResponse)
 def upload_comprovante_compra(
@@ -63,7 +60,7 @@ def upload_comprovante_compra(
 ):
     """
     Realiza o upload seguro de comprovante de compra manual (recibo, cupom ou nota).
-    Formatos aceitos: JPG, PNG, WEBP, PDF. Limite: 10MB.
+    Valida assinatura binária (Magic Bytes), limita tamanho a 10MB via streaming e gera nome UUID.
     """
     if not file or not file.filename:
         raise HTTPException(
@@ -71,33 +68,25 @@ def upload_comprovante_compra(
             detail="Nenhum arquivo enviado."
         )
 
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Formato de arquivo não suportado ({ext}). Envie um arquivo JPG, PNG, WEBP ou PDF."
-        )
+    # 1. Gera nome seguro e valida extensão
+    safe_name, ext = generate_secure_comprovante_filename(empresa.id, file.filename)
 
-    # Cria diretório se não existir (backend/uploads/comprovantes)
+    # 2. Lê conteúdo em streaming com teto de 10 MB (evita DoS de memória)
+    content = read_file_sync_with_size_limit(file, MAX_COMPROVANTE_SIZE_BYTES)
+
+    # 3. Validação estrita por assinatura de Magic Bytes
+    validate_magic_bytes_comprovante(content, ext)
+
+    # 4. Salva no diretório protegido (backend/uploads/comprovantes)
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     target_dir = os.path.join(base_dir, "uploads", "comprovantes")
     os.makedirs(target_dir, exist_ok=True)
-
-    # Gera nome seguro com UUID e empresa
-    unique_id = uuid.uuid4().hex[:12]
-    safe_name = f"emp_{empresa.id}_{unique_id}{ext}"
     target_path = os.path.join(target_dir, safe_name)
-
-    content = file.file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tamanho do arquivo excede o limite permitido de 10 MB."
-        )
 
     with open(target_path, "wb") as f:
         f.write(content)
 
+    # URL relativa protegida
     relative_url = f"/uploads/comprovantes/{safe_name}"
     tipo_formatado = ext.replace(".", "").upper()
 
@@ -105,6 +94,59 @@ def upload_comprovante_compra(
         url=relative_url,
         nome_original=file.filename,
         tipo=tipo_formatado
+    )
+
+
+@router.get("/comprovantes/{filename}")
+def download_comprovante_compra(
+    filename: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Download seguro e autenticado de comprovante de compra.
+    Impede Path Traversal e valida isolamento multi-tenant por empresa_id.
+    """
+    safe_filename = os.path.basename(filename)
+    if safe_filename != filename or ".." in filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome de arquivo inválido.")
+
+    # Validação multi-tenant: o comprovante deve pertencer à empresa do usuário autenticado (ou perfil MASTER)
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_str.upper() != "MASTER":
+        prefix_expected = f"emp_{current_user.empresa_id}_"
+        if not safe_filename.startswith(prefix_expected):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso não autorizado a este comprovante."
+            )
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    file_path = os.path.join(base_dir, "uploads", "comprovantes", safe_filename)
+
+    if not os.path.isfile(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comprovante não encontrado."
+        )
+
+    ext = os.path.splitext(safe_filename)[1].lower()
+    media_types = {
+        ".pdf": "application/pdf",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }
+    media_type = media_types.get(ext, "application/octet-stream")
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f"inline; filename={safe_filename}",
+            "X-Content-Type-Options": "nosniff",
+        }
     )
 
 
@@ -331,7 +373,7 @@ def criar_compra_manual(
 @router.get("/resumo", response_model=ResumoComprasResponse)
 def get_resumo_compras(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_consultor_or_admin),
     empresa: Empresa = Depends(get_current_empresa),
 ):
     """

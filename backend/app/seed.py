@@ -1,6 +1,8 @@
+import logging
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, Base, engine
+from app.config import settings
 from app.models.empresa import Empresa
 from app.models.user import User, UserRole
 from app.models.produto import Produto
@@ -11,18 +13,40 @@ from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.ifood import LancamentoIFood
 from app.security import hash_password
 
+logger = logging.getLogger("gestor_mei.seed")
+
 def seed_database():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     
     try:
-        # Check if company exists
+        # Check if database already contains data
         empresa = db.query(Empresa).first()
-        if empresa:
-            print("Database already contains data. Skipping seed.")
+        users_count = db.query(User).count()
+        if empresa or users_count > 0:
+            print("[SEED] O banco de dados já contém registros. Seed ignorado.")
             return
             
-        print("Seeding initial data for GESTOR MEI...")
+        # SECURITY POLICY (Sprint Security 1 - Fase 1)
+        if not settings.should_seed:
+            error_banner = (
+                "\n" + "=" * 80 + "\n"
+                "[SEGURANÇA - PRODUÇÃO] BANCO DE DADOS VAZIO DETECTADO!\n"
+                f"Ambiente ativo: '{settings.ENVIRONMENT.upper()}'.\n"
+                "A criação automática de usuários e senhas padrão (admin123/operador123) foi BLOQUEADA.\n"
+                "Nenhum usuário ou senha padrão foi inserido no banco.\n"
+                "Para provisionar o primeiro usuário MASTER de forma segura, execute:\n"
+                "  python -m app.scripts.provision_master --email <email> --nome <nome> --password <senha>\n"
+                "ou interativamente no terminal:\n"
+                "  python -m app.scripts.provision_master\n"
+                "Consulte a documentação oficial em: docs/PROVISIONAMENTO_MASTER.md\n"
+                "=" * 80 + "\n"
+            )
+            print(error_banner)
+            logger.error(error_banner)
+            return
+
+        print(f"[SEED] Ambiente '{settings.ENVIRONMENT}' detectado. Semeando dados iniciais de demonstração...")
         
         # 1. Create Demo Empresa (Marmitaria & Comida Caseira)
         empresa = Empresa(

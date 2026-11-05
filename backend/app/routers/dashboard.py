@@ -269,6 +269,47 @@ def get_dashboard_metrics(
         das_alerta_tipo = "info"
         das_alerta_mensagem = f"DAS de {MESES_NOMES[today.month - 1]} a vencer em {das_venc_mes_str}."
 
+    # Verificação RBAC: operador tem dados financeiros e fiscais estritamente mascarados
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    is_operator = role_str.upper() in ("OPERATOR", "OPERADOR")
+
+    if is_operator:
+        # Mascaramento no backend para proteger faturamento, lucro e DAS da empresa
+        vendas_operador_dia = [
+            ChartPoint(label=p.label, valor=0.0, quantidade=p.quantidade)
+            for p in vendas_por_dia
+        ]
+        return DashboardMetricsResponse(
+            venda_dia=0.0,
+            venda_semana=0.0,
+            venda_mes=0.0,
+            venda_ano=0.0,
+            caixa_atual=round(caixa_atual, 2),
+            qtd_vendas_mes=qtd_vendas_mes,
+            ticket_medio_mes=0.0,
+            entradas_mes=0.0,
+            saidas_mes=0.0,
+            lucro_operacional_mes=0.0,
+            vendas_por_dia=vendas_operador_dia,
+            vendas_por_mes=[],
+            pagamentos_breakdown=[],
+            origens_breakdown=[],
+            total_itens_estoque=total_itens_est,
+            itens_estoque_baixo=itens_baixo_est,
+            valor_estoque_custo=0.0,
+            das_status_mes_atual=None,
+            das_valor_mes_atual=0.0,
+            das_vencimento_mes_atual=None,
+            das_dias_restantes=None,
+            das_qtd_atrasados=0,
+            das_qtd_pendentes=0,
+            das_qtd_pagos=0,
+            das_alerta_tipo=None,
+            das_alerta_mensagem=None,
+            is_restricted=True,
+            role="OPERATOR"
+        )
+
     return DashboardMetricsResponse(
         venda_dia=round(venda_dia, 2),
         venda_semana=round(venda_semana, 2),
@@ -295,5 +336,7 @@ def get_dashboard_metrics(
         das_qtd_pendentes=das_qtd_pendentes,
         das_qtd_pagos=das_qtd_pagos,
         das_alerta_tipo=das_alerta_tipo,
-        das_alerta_mensagem=das_alerta_mensagem
+        das_alerta_mensagem=das_alerta_mensagem,
+        is_restricted=False,
+        role=role_str
     )

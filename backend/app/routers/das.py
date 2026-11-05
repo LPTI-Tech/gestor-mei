@@ -7,7 +7,7 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models.das import DasMensal
 from app.models.user import User
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_consultor_or_admin
 from app.schemas.das import (
     DasMensalCreate,
     DasMensalUpdate,
@@ -19,7 +19,7 @@ from app.schemas.das import (
     DasVencimentosResponse,
 )
 
-router = APIRouter(prefix="/das", tags=["Controle DAS Mensal"])
+router = APIRouter(prefix="/das", tags=["Controle DAS Mensal"], dependencies=[Depends(require_consultor_or_admin)])
 
 MESES_NOMES = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",

@@ -21,9 +21,9 @@ from app.schemas.relatorio_mei import (
     FormaPagamentoReceitaItem,
     CanalReceitaItem
 )
-from app.dependencies import get_current_user, get_current_empresa
+from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
 
-router = APIRouter(prefix="/relatorio-mei", tags=["Relatório MEI"])
+router = APIRouter(prefix="/relatorio-mei", tags=["Relatório MEI"], dependencies=[Depends(require_consultor_or_admin)])
 
 MESES_NOMES = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",

@@ -23,6 +23,7 @@ from app.schemas.empresa import EmpresaResponse
 from app.security import verify_password, hash_password, create_access_token
 from app.dependencies import get_current_user, get_current_empresa, require_admin
 from app.services.email_service import enviar_email_recuperacao
+from app.rate_limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
@@ -55,7 +56,8 @@ def register_empresa():
 
 
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     email_clean = data.email.lower().strip()
     user = db.query(User).filter(User.email == email_clean).first()
     if not user or not verify_password(data.password, user.hashed_password):
@@ -126,9 +128,10 @@ def get_me(
 # ============================================================================
 
 @router.post("/esqueci-senha", response_model=EsqueciSenhaResponse)
+@limiter.limit("3/15minute")
 def solicitar_recuperacao_senha(
-    data: EsqueciSenhaRequest,
     request: Request,
+    data: EsqueciSenhaRequest,
     db: Session = Depends(get_db)
 ):
     """

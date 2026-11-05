@@ -2,22 +2,30 @@ import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
   Alert,
   CircularProgress,
   Link,
+  InputAdornment,
+  useTheme,
 } from '@mui/material';
-import { ArrowBack, EmailOutlined, CheckCircleOutline } from '@mui/icons-material';
+import {
+  ArrowBack,
+  EmailOutlined,
+  CheckCircle,
+  MailOutline,
+  Send,
+} from '@mui/icons-material';
 import api from '../services/api';
-import { ApiStatusIndicator } from '../components/ApiStatusIndicator';
-import logoOficial from '../assets/branding/gestor-mei-logo-tight.png';
+import { AuthLayout } from '../components/AuthLayout';
 
 export const EsqueciSenha: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const [email, setEmail] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -25,7 +33,7 @@ export const EsqueciSenha: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || !email.trim()) return;
     setErrorMessage(null);
     setSuccessMessage(null);
     setLoading(true);
@@ -37,12 +45,21 @@ export const EsqueciSenha: React.FC = () => {
           'Se existir uma conta vinculada a este e-mail, você receberá instruções para redefinir sua senha.'
       );
     } catch (err: any) {
-      // Mesmo em erro não 500, a política anti-enumeração do backend garante a resposta padrão
+      const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      if (err.response?.status >= 500) {
+
+      if (status === 429) {
+        setErrorMessage(
+          'Muitas solicitações de recuperação detectadas para este IP. Por segurança, aguarde alguns instantes antes de tentar novamente.'
+        );
+      } else if (status && status >= 500) {
         setErrorMessage('Erro interno do servidor. Tente novamente em instantes.');
       } else {
-        setErrorMessage(typeof detail === 'string' ? detail : 'Erro ao processar solicitação. Tente novamente.');
+        setErrorMessage(
+          typeof detail === 'string'
+            ? detail
+            : 'Erro ao processar solicitação. Verifique se o e-mail está correto e tente novamente.'
+        );
       }
     } finally {
       setLoading(false);
@@ -50,166 +67,193 @@ export const EsqueciSenha: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'background.default',
-        p: { xs: 2, sm: 4 },
-      }}
+    <AuthLayout
+      title="Recuperar Senha"
+      subtitle="Informe o e-mail cadastrado na sua conta para enviarmos o link seguro de redefinição."
+      badgeText="Recuperação Segura • Expiração em 15min"
+      backTo="/login"
+      backText="← Voltar ao login"
     >
-      <Box sx={{ maxWidth: 460, width: '100%' }}>
-        {/* Branding Oficial Gestor MEI */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box
+      {successMessage ? (
+        <Box sx={{ py: 1 }}>
+          <Alert
+            severity="success"
+            icon={<CheckCircle sx={{ color: '#10b981', fontSize: 24 }} />}
             sx={{
-              display: 'inline-block',
-              p: 1,
-              borderRadius: 4,
-              bgcolor: '#071933',
-              boxShadow: '0 12px 32px rgba(7, 25, 51, 0.25)',
-              mb: 2,
+              mb: 3,
+              borderRadius: 3,
+              borderLeft: '4px solid #10b981',
+              bgcolor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ecfdf5',
+              color: isDark ? '#6ee7b7' : '#065f46',
+              p: 2,
             }}
           >
-            <Box
-              component="img"
-              src={logoOficial}
-              alt="Logo Oficial Gestor MEI"
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.6 }}>
+              Solicitação Enviada com Sucesso
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.88rem', lineHeight: 1.5 }}>
+              {successMessage}
+            </Typography>
+            <Typography
+              variant="caption"
               sx={{
-                width: { xs: 140, sm: 160 },
-                height: 'auto',
                 display: 'block',
-                borderRadius: 2,
+                mt: 1.5,
+                color: isDark ? '#a7f3d0' : '#047857',
+                fontWeight: 600,
+              }}
+            >
+              • Verifique sua caixa de entrada e pasta de spam.<br />
+              • Por segurança, o link tem validade estrita de <strong>15 minutos</strong>.
+            </Typography>
+          </Alert>
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            onClick={() => navigate('/login')}
+            startIcon={<ArrowBack />}
+            sx={{
+              height: 48,
+              fontWeight: 800,
+              borderRadius: 2.5,
+              textTransform: 'none',
+              background: 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+            }}
+          >
+            Voltar para o Login
+          </Button>
+        </Box>
+      ) : (
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          {errorMessage && (
+            <Alert
+              severity="error"
+              onClose={() => setErrorMessage(null)}
+              sx={{
+                mb: 3,
+                borderRadius: 2.5,
+                borderLeft: '4px solid #ef4444',
+                bgcolor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
+                color: isDark ? '#fca5a5' : '#991b1b',
+              }}
+            >
+              {errorMessage}
+            </Alert>
+          )}
+
+          <Box sx={{ mb: 2.5 }}>
+            <Typography
+              component="label"
+              htmlFor="recovery-email"
+              variant="caption"
+              sx={{
+                display: 'block',
+                mb: 0.8,
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                color: isDark ? '#cbd5e1' : '#334155',
+              }}
+            >
+              E-mail da sua Conta
+            </Typography>
+            <TextField
+              id="recovery-email"
+              fullWidth
+              placeholder="exemplo@gestormei.com.br"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MailOutline sx={{ fontSize: 20, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2.5,
+                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
+                  '& fieldset': {
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.25)' : '#cbd5e1',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                    borderWidth: 1.5,
+                  },
+                  '&.Mui-focused': {
+                    boxShadow: '0 0 0 3px rgba(2, 132, 199, 0.15)',
+                  },
+                },
               }}
             />
           </Box>
-          <Typography
-            variant="body2"
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            size="large"
+            disabled={loading || !email.trim()}
+            endIcon={!loading ? <Send sx={{ fontSize: 18 }} /> : undefined}
             sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              fontSize: { xs: '0.85rem', sm: '0.92rem' },
-              mb: 1,
+              mt: 1.5,
+              mb: 3,
+              height: 48,
+              fontWeight: 800,
+              fontSize: '0.96rem',
+              borderRadius: 2.5,
+              textTransform: 'none',
+              background: 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              '&:hover': {
+                background: 'linear-gradient(180deg, #0369a1 0%, #075985 100%)',
+                boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+                transform: 'translateY(-1px)',
+              },
             }}
           >
-            ERP Inteligente para MEIs e Pequenos Negócios
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, opacity: 0.85 }}>
-            Recuperação de Acesso & Redefinição de Senha
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <ApiStatusIndicator size="small" />
-          </Box>
-        </Box>
-
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-              Esqueceu sua senha?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Digite o e-mail cadastrado na sua conta. Se houver um cadastro correspondente, enviaremos um link seguro para redefinição.
-            </Typography>
-
-            {successMessage ? (
-              <Box>
-                <Alert
-                  severity="success"
-                  icon={<CheckCircleOutline fontSize="inherit" />}
-                  sx={{ mb: 3, borderRadius: 2 }}
-                >
-                  <Typography variant="body2" fontWeight={600}>
-                    {successMessage}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                    Verifique sua caixa de entrada e pasta de spam. O link expira em <b>15 minutos</b>.
-                  </Typography>
-                </Alert>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={() => navigate('/login')}
-                  startIcon={<ArrowBack />}
-                  sx={{ height: 48, fontWeight: 700 }}
-                >
-                  Voltar para o Login
-                </Button>
+            {loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.2 }}>
+                <CircularProgress size={20} color="inherit" thickness={4} />
+                <span>Enviando Instruções...</span>
               </Box>
             ) : (
-              <Box component="form" onSubmit={handleSubmit}>
-                {errorMessage && (
-                  <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }}>
-                    {errorMessage}
-                  </Alert>
-                )}
-
-                <TextField
-                  fullWidth
-                  label="E-mail Cadastrado"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemplo@gestormei.com.br"
-                  required
-                  autoFocus
-                  disabled={loading}
-                  margin="normal"
-                />
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  disabled={loading || !email.trim()}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <EmailOutlined />}
-                  sx={{ mt: 2.5, mb: 2, height: 48, fontWeight: 700 }}
-                >
-                  {loading ? 'Enviando Instruções...' : 'Enviar Link de Recuperação'}
-                </Button>
-
-                <Box sx={{ textAlign: 'center', mt: 2 }}>
-                  <Link
-                    component={RouterLink}
-                    to="/login"
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                    }}
-                  >
-                    <ArrowBack fontSize="small" /> Voltar para o Login
-                  </Link>
-                </Box>
-              </Box>
+              'Enviar Link de Recuperação'
             )}
-          </CardContent>
-        </Card>
+          </Button>
 
-        {/* Assinatura Oficial Discreta */}
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              fontSize: '0.75rem',
-              letterSpacing: '0.02em',
-              opacity: 0.85,
-            }}
-          >
-            Desenvolvido por <strong>LPTI Tech</strong> • Todos os direitos reservados
-          </Typography>
+          <Box sx={{ textAlign: 'center' }}>
+            <Link
+              component={RouterLink}
+              to="/login"
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.6,
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+              }}
+            >
+              <ArrowBack sx={{ fontSize: 16 }} /> Voltar para o Login
+            </Link>
+          </Box>
         </Box>
-      </Box>
-    </Box>
+      )}
+    </AuthLayout>
   );
 };
-

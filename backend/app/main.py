@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Depends
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.config import settings
@@ -38,28 +38,38 @@ from app.routers import (
     compras,
     consultor
 )
+from app.rate_limiter import limiter, rate_limit_exceeded_handler, RateLimitExceeded
+
+docs_enabled = settings.should_enable_docs
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Sistema web SaaS profissional para Microempreendedores Individuais (MEI) do ramo de alimentação e pequeno comércio.",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
 )
 
-# CORS Middleware
+# Rate Limiter State & Exception Handler (Sprint Security 1)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# CORS Middleware (Sprint Security 1 - Hardened: sem wildcard '*', apenas origens autorizadas)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
 
 # Startup event to initialize DB tables and seed initial data
 @app.on_event("startup")
 def on_startup():
+    # 0. Validação de Segurança Mandatória para Produção
+    settings.validate_production_security()
+
     Base.metadata.create_all(bind=engine)
     run_migration_sprint4()
     run_migration_sprint5()
@@ -69,11 +79,16 @@ def on_startup():
     run_migration_sprint8b()
     seed_database()
 
-# Static uploads directory
+# Diretório de uploads (Sprint Security 2: montagem estática pública DESATIVADA)
+# Arquivos são servidos com autenticação e validação multi-tenant via /api/compras/comprovantes/{filename}
 backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 uploads_dir = os.path.join(backend_root, "uploads")
 os.makedirs(os.path.join(uploads_dir, "comprovantes"), exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+@app.get("/uploads/comprovantes/{filename}")
+def legacy_comprovantes_redirect(filename: str):
+    """Redirecionamento retrocompatível para a rota de download protegida da API."""
+    return RedirectResponse(url=f"/api/compras/comprovantes/{filename}", status_code=307)
 
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)
@@ -104,7 +119,7 @@ def root():
         "app": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "status": "online",
-        "docs": "/docs",
+        "docs": "/docs" if settings.should_enable_docs else None,
         "message": "GESTOR MEI API pronta para conexão."
     }
 

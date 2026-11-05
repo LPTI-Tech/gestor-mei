@@ -9,12 +9,18 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
+      - key: ENVIRONMENT
+        value: production
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: DATABASE_URL
         sync: false
       - key: SECRET_KEY
         generateValue: true
+      - key: CORS_ORIGINS
+        value: '["https://gestor-mei.vercel.app","https://gestormei.com.br","https://www.gestormei.com.br"]'
+      - key: SEED_DATABASE
+        value: "false"
       - key: MEI_DEFAULT_ANNUAL_LIMIT
         value: "81000.00"
 

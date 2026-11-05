@@ -24,6 +24,11 @@ from app.schemas.nfe import (
     NfeImportadaResponse,
     ItemNfeImportadaResponse,
 )
+from app.utils.security_upload import (
+    MAX_XML_SIZE_BYTES,
+    read_file_with_size_limit,
+    validate_magic_bytes_xml,
+)
 
 router = APIRouter(prefix="/nfe", tags=["XML NF-e - Entrada de Mercadorias"])
 
@@ -52,18 +57,31 @@ async def preview_nfe_xml(
     xml_bytes: bytes = b""
 
     if file is not None:
-        xml_bytes = await file.read()
+        xml_bytes = await read_file_with_size_limit(file, MAX_XML_SIZE_BYTES)
     elif xml_text:
         xml_bytes = xml_text.encode("utf-8")
+        if len(xml_bytes) > MAX_XML_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Conteúdo XML excede o limite máximo permitido de 5 MB."
+            )
     else:
         body = await request.body()
         if body:
             xml_bytes = body
+            if len(xml_bytes) > MAX_XML_SIZE_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="Conteúdo XML excede o limite máximo permitido de 5 MB."
+                )
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Nenhum arquivo XML ou conteúdo foi enviado para análise."
             )
+
+    # Validação estrita de Magic Bytes e prevenção contra XML Bomb / XXE
+    validate_magic_bytes_xml(xml_bytes)
 
     try:
         parsed = parse_nfe_xml(xml_bytes)

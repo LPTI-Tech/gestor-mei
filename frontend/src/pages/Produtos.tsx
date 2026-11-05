@@ -51,6 +51,7 @@ import {
   WarehouseOutlined,
   LocalOfferOutlined,
 } from '@mui/icons-material';
+import { PackageSearch, Plus, Trash2, Edit3, Search as SearchLucide } from 'lucide-react';
 import api from '../services/api';
 import { Produto, TipoItem } from '../types';
 import { formatCurrency } from '../services/exportUtils';
@@ -532,7 +533,7 @@ export const Produtos: React.FC = () => {
               mb: 2,
             }}
           >
-            <RestaurantMenu sx={{ fontSize: 32 }} />
+            <PackageSearch size={32} strokeWidth={1.75} />
           </Box>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
             {searchTerm || selectedCategoria !== 'Todas' || selectedTipo !== 'Todos'
