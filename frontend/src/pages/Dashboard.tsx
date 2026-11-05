@@ -23,25 +23,29 @@ import {
   ButtonGroup,
 } from '@mui/material';
 import {
-  Today,
-  DateRange,
-  CalendarMonth,
-  EventNote,
-  AccountBalanceWallet,
-  ShoppingBag,
-  TrendingUp,
-  ArrowForward,
-  WarningAmber,
-  CheckCircle,
-  ReportProblem,
-  ReceiptLong,
-  Favorite,
-  OpenInNew,
-  ContentCopy,
-  Inventory2,
-  ShowChart,
-  BarChart as BarChartIcon,
-} from '@mui/icons-material';
+  Calendar,
+  CalendarRange,
+  CalendarDays,
+  CalendarCheck,
+  Clock,
+  TrendingUp as TrendingUpLucide,
+  Activity as ActivityLucide,
+  Wallet,
+  Receipt,
+  Warehouse,
+  TriangleAlert,
+  AlertTriangle,
+  ArrowRight,
+  ExternalLink,
+  Copy,
+  CircleCheckBig,
+  ReceiptText,
+  LineChart as LineChartLucide,
+  BarChart3,
+  PackageSearch,
+} from 'lucide-react';
+import { FiscalLimitIndicator } from '../components/FiscalLimitIndicator';
+
 import {
   ResponsiveContainer,
   AreaChart,
@@ -191,7 +195,7 @@ export const Dashboard: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <ReportProblem sx={{ fontSize: '1.4rem' }} />
+              <TriangleAlert size={22} strokeWidth={1.75} />
             </Box>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -236,7 +240,7 @@ export const Dashboard: React.FC = () => {
               variant="outlined"
               size="small"
               onClick={handleOpenPgmei}
-              startIcon={<OpenInNew />}
+              startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
@@ -252,7 +256,7 @@ export const Dashboard: React.FC = () => {
               variant="outlined"
               size="small"
               onClick={handleCopyDasData}
-              startIcon={<ContentCopy />}
+              startIcon={<Copy size={16} strokeWidth={1.75} />}
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
@@ -307,7 +311,7 @@ export const Dashboard: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <CalendarMonth sx={{ fontSize: '1.4rem' }} />
+              <CalendarDays size={22} strokeWidth={1.75} />
             </Box>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -353,7 +357,7 @@ export const Dashboard: React.FC = () => {
               variant="outlined"
               size="small"
               onClick={handleOpenPgmei}
-              startIcon={<OpenInNew />}
+              startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
@@ -369,7 +373,7 @@ export const Dashboard: React.FC = () => {
               variant="outlined"
               size="small"
               onClick={handleCopyDasData}
-              startIcon={<ContentCopy />}
+              startIcon={<Copy size={16} strokeWidth={1.75} />}
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
@@ -420,7 +424,7 @@ export const Dashboard: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <CheckCircle sx={{ fontSize: '1.4rem' }} />
+              <CircleCheckBig size={22} strokeWidth={1.75} />
             </Box>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -465,7 +469,7 @@ export const Dashboard: React.FC = () => {
               variant="outlined"
               size="small"
               onClick={handleOpenPgmei}
-              startIcon={<OpenInNew />}
+              startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
@@ -516,7 +520,7 @@ export const Dashboard: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <WarningAmber sx={{ fontSize: '1.35rem' }} />
+              <AlertTriangle size={20} strokeWidth={1.75} />
             </Box>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
@@ -552,7 +556,7 @@ export const Dashboard: React.FC = () => {
             title="Venda do Dia"
             value={formatCurrency(metrics.venda_dia)}
             subtitle="Hoje"
-            icon={<Today />}
+            icon={<Clock size={20} strokeWidth={1.75} />}
             color="#1976D2"
             onClick={() => navigate('/vendas')}
           />
@@ -562,7 +566,7 @@ export const Dashboard: React.FC = () => {
             title="Venda da Semana"
             value={formatCurrency(metrics.venda_semana)}
             subtitle="Últimos 7 dias"
-            icon={<DateRange />}
+            icon={<CalendarRange size={20} strokeWidth={1.75} />}
             color="#0288D1"
             onClick={() => navigate('/vendas')}
           />
@@ -572,7 +576,7 @@ export const Dashboard: React.FC = () => {
             title="Venda do Mês"
             value={formatCurrency(metrics.venda_mes)}
             subtitle="Mês corrente"
-            icon={<CalendarMonth />}
+            icon={<CalendarDays size={20} strokeWidth={1.75} />}
             color="#2E7D32"
             onClick={() => navigate('/vendas')}
           />
@@ -582,7 +586,7 @@ export const Dashboard: React.FC = () => {
             title="Venda do Ano"
             value={formatCurrency(metrics.venda_ano)}
             subtitle="Ano corrente"
-            icon={<EventNote />}
+            icon={<CalendarCheck size={20} strokeWidth={1.75} />}
             color="#7B1FA2"
             onClick={() => navigate('/relatorio-mei')}
           />
@@ -596,7 +600,7 @@ export const Dashboard: React.FC = () => {
             title="Caixa Físico Atual"
             value={formatCurrency(metrics.caixa_atual)}
             subtitle="Saldo em espécie no turno"
-            icon={<AccountBalanceWallet />}
+            icon={<Wallet size={20} strokeWidth={1.75} />}
             color={metrics.caixa_atual > 0 ? '#2E7D32' : '#757575'}
             onClick={() => navigate('/caixa')}
           />
@@ -606,7 +610,7 @@ export const Dashboard: React.FC = () => {
             title="Vendas Realizadas"
             value={String(metrics.qtd_vendas_mes)}
             subtitle="Pedidos no mês"
-            icon={<ShoppingBag />}
+            icon={<Receipt size={20} strokeWidth={1.75} />}
             color="#ED6C02"
           />
         </Grid>
@@ -615,7 +619,7 @@ export const Dashboard: React.FC = () => {
             title="Ticket Médio"
             value={formatCurrency(metrics.ticket_medio_mes)}
             subtitle="Média por venda no mês"
-            icon={<TrendingUp />}
+            icon={<TrendingUpLucide size={20} strokeWidth={1.75} />}
             color="#00897B"
           />
         </Grid>
@@ -625,7 +629,7 @@ export const Dashboard: React.FC = () => {
               title="Lucro Operacional"
               value={formatCurrency(metrics.lucro_operacional_mes)}
               subtitle="Entradas - Despesas (Mês)"
-              icon={<TrendingUp />}
+              icon={<ActivityLucide size={20} strokeWidth={1.75} />}
               color={metrics.lucro_operacional_mes >= 0 ? '#2E7D32' : '#D32F2F'}
               trend={metrics.lucro_operacional_mes >= 0 ? 'Positivo' : 'Negativo'}
               trendType={metrics.lucro_operacional_mes >= 0 ? 'positive' : 'negative'}
@@ -636,13 +640,24 @@ export const Dashboard: React.FC = () => {
               title="Estoque em Alerta"
               value={(metrics.itens_estoque_baixo ?? 0).toString()}
               subtitle="Produtos abaixo do mínimo"
-              icon={<Inventory2 />}
+              icon={<Warehouse size={20} strokeWidth={1.75} />}
               color={metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0 ? '#ED6C02' : '#2E7D32'}
               onClick={() => navigate('/estoque')}
             />
           )}
         </Grid>
       </Grid>
+
+      {/* Indicador Fiscal Proprietário LPTI Tech (Teto Anual R$ 81.000) */}
+      {isGestor && (
+        <Box sx={{ mb: 3 }}>
+          <FiscalLimitIndicator
+            faturamentoAcumulado={metrics.venda_ano || 0}
+            limiteAnual={81000}
+            anoReferencia={new Date().getFullYear()}
+          />
+        </Box>
+      )}
 
       {/* Row 3: Indicadores Financeiros do Mês (Oculto para OPERATOR) */}
       {isGestor && (
@@ -683,7 +698,7 @@ export const Dashboard: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <TrendingUp sx={{ fontSize: '1.2rem' }} />
+                  <TrendingUpLucide size={18} strokeWidth={1.75} />
                 </Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-0.01em', color: 'text.primary' }}>
                   Resultado Financeiro do Mês (Entradas x Saídas)
@@ -744,7 +759,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <TrendingUp sx={{ fontSize: '1.2rem' }} />
+                    <TrendingUpLucide size={18} strokeWidth={1.75} />
                   </Box>
                 </Box>
                 <Typography
@@ -808,7 +823,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <AccountBalanceWallet sx={{ fontSize: '1.2rem' }} />
+                    <Wallet size={18} strokeWidth={1.75} />
                   </Box>
                 </Box>
                 <Typography
@@ -888,7 +903,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <TrendingUp sx={{ fontSize: '1.2rem' }} />
+                    <TrendingUpLucide size={18} strokeWidth={1.75} />
                   </Box>
                 </Box>
                 <Typography
@@ -955,7 +970,7 @@ export const Dashboard: React.FC = () => {
                   flexShrink: 0,
                 }}
               >
-                <ReceiptLong sx={{ fontSize: '1.35rem' }} />
+                <ReceiptText size={20} strokeWidth={1.75} />
               </Box>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-0.01em', color: 'text.primary' }}>
@@ -972,7 +987,7 @@ export const Dashboard: React.FC = () => {
                 size="small"
                 variant="outlined"
                 onClick={handleOpenPgmei}
-                startIcon={<OpenInNew />}
+                startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
                 sx={{
                   fontWeight: 600,
                   borderRadius: 2,
@@ -988,7 +1003,7 @@ export const Dashboard: React.FC = () => {
                 size="small"
                 variant="outlined"
                 onClick={handleCopyDasData}
-                startIcon={<ContentCopy />}
+                startIcon={<Copy size={16} strokeWidth={1.75} />}
                 sx={{
                   fontWeight: 600,
                   borderRadius: 2,
@@ -1004,7 +1019,7 @@ export const Dashboard: React.FC = () => {
                 size="small"
                 variant="contained"
                 onClick={() => navigate('/das')}
-                endIcon={<ArrowForward />}
+                endIcon={<ArrowRight size={16} strokeWidth={1.75} />}
                 sx={{
                   fontWeight: 700,
                   borderRadius: 2,
@@ -1262,7 +1277,7 @@ export const Dashboard: React.FC = () => {
                         justifyContent: 'center',
                       }}
                     >
-                      <Favorite sx={{ fontSize: '1.25rem' }} />
+                      <ActivityLucide size={20} strokeWidth={1.75} />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
                       Saúde do Negócio
@@ -1460,7 +1475,7 @@ export const Dashboard: React.FC = () => {
                         fullWidth
                         size="small"
                         onClick={() => navigate('/saude-negocio')}
-                        endIcon={<ArrowForward />}
+                        endIcon={<ArrowRight size={16} strokeWidth={1.75} />}
                         sx={{
                           fontWeight: 700,
                           borderRadius: 2,
@@ -1518,7 +1533,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <Inventory2 sx={{ fontSize: '1.25rem' }} />
+                    <Warehouse size={20} strokeWidth={1.75} />
                   </Box>
                   <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
                     Produtos em Estoque Crítico
@@ -1688,7 +1703,7 @@ export const Dashboard: React.FC = () => {
                       fullWidth
                       size="small"
                       onClick={() => navigate('/estoque')}
-                      endIcon={<ArrowForward />}
+                      endIcon={<ArrowRight size={16} strokeWidth={1.75} />}
                       sx={{
                         fontWeight: 700,
                         borderRadius: 2,
@@ -1704,7 +1719,7 @@ export const Dashboard: React.FC = () => {
                 </Box>
               ) : (
                 <Box sx={{ py: 4, textAlign: 'center', my: 'auto' }}>
-                  <CheckCircle sx={{ fontSize: 44, color: '#2E7D32', mb: 1, opacity: 0.9 }} />
+                  <CircleCheckBig size={44} color="#2E7D32" strokeWidth={1.75} style={{ marginBottom: 8, opacity: 0.9 }} />
                   <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
                     Estoque 100% equilibrado!
                   </Typography>
@@ -1749,7 +1764,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <ShowChart sx={{ fontSize: '1.25rem' }} />
+                    <LineChartLucide size={20} strokeWidth={1.75} />
                   </Box>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
@@ -1853,7 +1868,7 @@ export const Dashboard: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <BarChartIcon sx={{ fontSize: '1.25rem' }} />
+                    <BarChart3 size={20} strokeWidth={1.75} />
                   </Box>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
@@ -1945,7 +1960,7 @@ export const Dashboard: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <AccountBalanceWallet sx={{ fontSize: '1.25rem' }} />
+                  <Wallet size={20} strokeWidth={1.75} />
                 </Box>
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
@@ -2030,7 +2045,7 @@ export const Dashboard: React.FC = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <ShoppingBag sx={{ fontSize: '1.25rem' }} />
+                  <PackageSearch size={20} strokeWidth={1.75} />
                 </Box>
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>

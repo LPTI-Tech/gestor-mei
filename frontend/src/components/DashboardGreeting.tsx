@@ -1,15 +1,15 @@
 import React from 'react';
 import { Box, Typography, Button, Paper, useTheme, alpha, Chip } from '@mui/material';
 import {
-  CalendarMonth,
-  WarningAmber,
-  ReportProblem,
+  CalendarDays,
+  AlertTriangle,
+  TriangleAlert,
   TrendingUp,
-  PointOfSale,
-  Storefront,
-  ArrowForward,
-  Assessment,
-} from '@mui/icons-material';
+  Receipt,
+  Store,
+  ArrowRight,
+  BarChart3,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
 import { DashboardMetrics, Produto, User, Empresa } from '../types';
@@ -82,7 +82,7 @@ export const getDynamicInsight = (
           ? 'Olá! Notamos uma pendência na guia do DAS. Que tal quitar hoje para manter seu CNPJ regular e sem juros?'
           : `Olá! Notamos ${qtd} guias do DAS em atraso. Vamos regularizar para garantir seus benefícios previdenciários e manter seu negócio 100% seguro?`,
       severity: 'error',
-      icon: <ReportProblem fontSize="small" />,
+      icon: <TriangleAlert size={18} strokeWidth={1.75} />,
       actionLink: '/das',
       actionLabel: 'Regularizar DAS',
     };
@@ -106,7 +106,7 @@ export const getDynamicInsight = (
       tipo: 'DAS',
       mensagem: textoDas,
       severity: 'warning',
-      icon: <CalendarMonth fontSize="small" />,
+      icon: <CalendarDays size={18} strokeWidth={1.75} />,
       actionLink: '/das',
       actionLabel: 'Ver Guia DAS',
     };
@@ -125,7 +125,7 @@ export const getDynamicInsight = (
           ? 'Aviso de vendas: identificamos 1 produto com estoque zerado. Hora de reabastecer para não perder pedidos!'
           : `Aviso de vendas: há ${qtdSemEstoque} produtos com estoque zerado no momento. Seus clientes podem procurar por eles hoje!`,
       severity: 'error',
-      icon: <ReportProblem fontSize="small" />,
+      icon: <TriangleAlert size={18} strokeWidth={1.75} />,
       actionLink: '/estoque',
       actionLabel: 'Repor Estoque',
     };
@@ -149,7 +149,7 @@ export const getDynamicInsight = (
           ? 'Dica de reposição: 1 produto está atingindo o nível mínimo. Vale a pena planejar a próxima compra!'
           : `Dica de reposição: ${qtdEstoqueBaixo} produtos estão próximos do mínimo. Antecipe os pedidos aos fornecedores!`,
       severity: 'warning',
-      icon: <WarningAmber fontSize="small" />,
+      icon: <AlertTriangle size={18} strokeWidth={1.75} />,
       actionLink: '/estoque',
       actionLabel: 'Ver Estoque',
     };
@@ -161,7 +161,7 @@ export const getDynamicInsight = (
       tipo: 'DAS',
       mensagem: 'Tudo certo com a Receita Federal! A guia do DAS deste mês já está quitada e sua empresa segue 100% regular.',
       severity: 'success',
-      icon: <CalendarMonth fontSize="small" />,
+      icon: <CalendarDays size={18} strokeWidth={1.75} />,
       actionLink: '/das',
       actionLabel: 'Ver Comprovantes',
     };
@@ -181,7 +181,7 @@ export const getDynamicInsight = (
         tipo: 'CRESCIMENTO',
         mensagem: `Parabéns pela dedicação! Seu faturamento cresceu ${crescimento}% em relação ao mês anterior. Seu esforço está dando resultado!`,
         severity: 'success',
-        icon: <TrendingUp fontSize="small" />,
+        icon: <TrendingUp size={18} strokeWidth={1.75} />,
         actionLink: '/relatorio-mei',
         actionLabel: 'Ver Desempenho',
       };
@@ -204,7 +204,7 @@ export const getDynamicInsight = (
         valorVendasHoje
       )}. Continue nesse ritmo!`,
       severity: 'info',
-      icon: <PointOfSale fontSize="small" />,
+      icon: <Receipt size={18} strokeWidth={1.75} />,
       actionLink: '/vendas',
       actionLabel: 'Ver Vendas',
     };
@@ -215,7 +215,7 @@ export const getDynamicInsight = (
     tipo: 'PADRAO',
     mensagem: 'Que seu dia de trabalho seja excelente, produtivo e cheio de clientes satisfeitos!',
     severity: 'info',
-    icon: <Storefront fontSize="small" />,
+    icon: <Store size={18} strokeWidth={1.75} />,
   };
 };
 
@@ -462,7 +462,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
             <Chip
               size="small"
               label={insight.actionLabel}
-              deleteIcon={<ArrowForward style={{ fontSize: 14 }} />}
+              deleteIcon={<ArrowRight size={14} strokeWidth={1.75} />}
               onDelete={insight.actionLink ? () => navigate(insight.actionLink!) : undefined}
               sx={{
                 height: 22,
@@ -495,7 +495,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
         <Button
           variant="contained"
           color="primary"
-          startIcon={<PointOfSale />}
+          startIcon={<Receipt size={18} strokeWidth={1.75} />}
           onClick={() => navigate('/vendas')}
           sx={{ fontWeight: 700, px: 3, height: 44, whiteSpace: 'nowrap' }}
         >
@@ -504,7 +504,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
         <Button
           variant="outlined"
           color="secondary"
-          startIcon={<Assessment />}
+          startIcon={<BarChart3 size={18} strokeWidth={1.75} />}
           onClick={() => navigate('/relatorio-mei')}
           sx={{ fontWeight: 700, px: 2.5, height: 44, whiteSpace: 'nowrap' }}
         >
