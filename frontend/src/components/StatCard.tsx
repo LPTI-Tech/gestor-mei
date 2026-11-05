@@ -1,5 +1,6 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box, Chip } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import { StatusPill } from './StatusPill';
 
 interface StatCardProps {
   title: string;
@@ -17,11 +18,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   subtitle,
   icon,
-  color = '#1976D2',
+  color = '#2563EB',
   trend,
   trendType = 'neutral',
   onClick,
 }) => {
+  const getPillVariant = () => {
+    if (trendType === 'positive') return 'success';
+    if (trendType === 'negative') return 'error';
+    return 'neutral';
+  };
+
   return (
     <Card
       elevation={0}
@@ -29,23 +36,29 @@ export const StatCard: React.FC<StatCardProps> = ({
       sx={{
         height: '100%',
         cursor: onClick ? 'pointer' : 'default',
-        borderRadius: 3,
+        borderRadius: 2.5,
         border: '1px solid',
         borderColor: (theme) =>
-          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(7, 25, 51, 0.07)',
+          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
         bgcolor: 'background.paper',
-        boxShadow: '0 1px 3px rgba(7, 25, 51, 0.04), 0 1px 2px rgba(7, 25, 51, 0.02)',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 1px 3px rgba(0, 0, 0, 0.3)'
+            : '0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02)',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         overflow: 'hidden',
         '&:hover': {
           transform: 'translateY(-2px)',
-          boxShadow: '0 8px 24px -4px rgba(7, 25, 51, 0.08), 0 4px 8px -2px rgba(7, 25, 51, 0.03)',
+          boxShadow: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '0 8px 24px -4px rgba(0, 0, 0, 0.4)'
+              : '0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.03)',
           borderColor: onClick
             ? (theme) =>
                 theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.16)'
-                  : 'rgba(25, 118, 210, 0.3)'
+                  ? 'rgba(255, 255, 255, 0.18)'
+                  : 'rgba(37, 99, 235, 0.35)'
             : undefined,
           '& .stat-icon-bubble': {
             transform: 'scale(1.05)',
@@ -82,15 +95,16 @@ export const StatCard: React.FC<StatCardProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 42,
-              height: 42,
-              borderRadius: 2.5,
+              width: 38,
+              height: 38,
+              borderRadius: 2,
               backgroundColor: `${color}14`,
               color: color,
               flexShrink: 0,
               transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               '& svg': {
-                fontSize: '1.35rem',
+                width: 20,
+                height: 20,
               },
             }}
           >
@@ -139,34 +153,10 @@ export const StatCard: React.FC<StatCardProps> = ({
           )}
 
           {trend && (
-            <Chip
+            <StatusPill
               label={trend}
+              variant={getPillVariant()}
               size="small"
-              sx={{
-                fontWeight: 800,
-                fontSize: '0.7rem',
-                height: 22,
-                borderRadius: 1.5,
-                bgcolor:
-                  trendType === 'positive'
-                    ? 'rgba(46, 125, 50, 0.08)'
-                    : trendType === 'negative'
-                    ? 'rgba(211, 47, 47, 0.08)'
-                    : 'rgba(7, 25, 51, 0.04)',
-                color:
-                  trendType === 'positive'
-                    ? '#2E7D32'
-                    : trendType === 'negative'
-                    ? '#D32F2F'
-                    : 'text.secondary',
-                border: '1px solid',
-                borderColor:
-                  trendType === 'positive'
-                    ? 'rgba(46, 125, 50, 0.2)'
-                    : trendType === 'negative'
-                    ? 'rgba(211, 47, 47, 0.2)'
-                    : 'rgba(7, 25, 51, 0.08)',
-              }}
             />
           )}
         </Box>
