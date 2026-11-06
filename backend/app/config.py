@@ -27,6 +27,7 @@ OFFICIAL_PROD_ORIGINS = [
     "https://gestormei.com.br",
     "https://www.gestormei.com.br",
     "https://gestor-mei.vercel.app",
+    "https://gestor-mei-beta.vercel.app",
 ]
 
 DEV_ORIGINS = [

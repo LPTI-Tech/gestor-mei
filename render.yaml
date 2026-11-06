@@ -18,7 +18,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: '["https://gestor-mei.vercel.app","https://gestormei.com.br","https://www.gestormei.com.br"]'
+        value: '["https://gestor-mei.vercel.app","https://gestor-mei-beta.vercel.app","https://gestormei.com.br","https://www.gestormei.com.br"]'
       - key: SEED_DATABASE
         value: "false"
       - key: MEI_DEFAULT_ANNUAL_LIMIT
