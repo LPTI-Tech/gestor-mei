@@ -10,7 +10,7 @@
 
 - **Empresa Mantenedora:** LPTI Tech
 - **Produto:** GESTOR MEI
-- **Versão Atual:** `1.5.0` (LPTI Sentinel Phase 2 & Sprints UX 7A.2, 7C, 8 Homologadas)
+- **Versão Atual:** `1.4.0` (Refinamento Visual 8.5.1 Homologado)
 - **Tipo de Aplicação:** SaaS Multiempresa B2B (Foco em MEIs e Pequenos Negócios)
 
 ---
@@ -34,12 +34,6 @@
 | **Sprint UX 3** | `1.4.3` | **Design System Módulo Clientes:** Page Header padrão Shopify Admin com ações alinhadas à direita, Toolbar de busca Asaas com filtros segmentados, Tabela de Clientes padrão Stripe com cabeçalho ardósia, avatar circular com iniciais, botões rápidos WhatsApp/Telefone, valores em `tnum` e pills de status, Empty State executivo com ícone e CTA, e Modal Novo/Editar categorizado em 4 seções (Identificação, Contato, Endereço e Preferências) com raio de 16px. | Homologado |
 | **Sprint UX 4** | `1.4.4` | **Design System Produtos & Serviços:** Page Header padrão Shopify Admin com badge DASN-SIMEI, 4 KPI cards executivos (Total no Catálogo, Produtos & Mercadorias, Serviços Prestados e Categorias Ativas), Toolbar Asaas com busca rápida, seletor segmentado de tipos e filtro por categoria, Tabela de Produtos padrão Stripe com cabeçalho ardósia, avatar temático por tipo fiscal, preços em `tnum` com detalhamento de custo e margem percentual, pills de estoque com alerta de reposição, e Modal Novo/Editar Item categorizado em 4 seções executivas (Tributação DASN, Identificação, Precificação com cálculo em tempo real de margem bruta, e Controle de Estoque) com raio de 16px. | Homologado |
 | **Sprint UX 5** | `1.4.5` | **Design System PDV / Terminal de Vendas:** Page Header padrão Shopify Admin com indicador de terminal ativo, catálogo estilo Shopify POS com cards táteis e pills de saldo de estoque, seletor segmentado Balcão vs Delivery padrão Asaas, carrinho ágil com steppers de quantidade, breakdown de subtotais e taxas, Totalizador de alto impacto visual (32px em `tnum`), seletor de Formas de Pagamento em botões táteis padrão Stripe Terminal (Dinheiro, PIX, Débito, Crédito) com estados ativos em alto contraste, checkout em 1 clique, tabela de vendas recentes com cabeçalho ardósia e modais refinados (comanda térmica, item avulso e estoque insuficiente) com raio de 16px. | Homologado |
-| **Sprint Security 1** | `1.4.7` | **Hardening Integral de Segurança do SaaS:**<br/>1. **Seed & Senhas Padrão:** Bloqueio em produção; provisionamento seguro via CLI (`provision_master.py`) com senhas de alta entropia.<br/>2. **Gerenciamento de SECRET_KEY:** Validação estrita no startup em produção (bloqueio se ausente, fraca ou menor que 32 chars).<br/>3. **Hardening de CORS:** Remoção de `*` e regex permissiva Vercel; apenas localhost em dev, domínio oficial e origens whitelist estritas.<br/>4. **Rate Limiting (SlowAPI):** 5 req/min em `/api/auth/login` e 3 req/15min em `/api/auth/esqueci-senha` por IP com HTTP 429 e `Retry-After: 60`.<br/>5. **Suíte de Testes Automatizados:** 19 testes unitários de segurança passando (100%). | Homologado |
-| **UX Sprint 6** | `1.4.8` | **Design System Autenticação & Split Screen:** Redesenho completo das telas de acesso (`Login.tsx`, `EsqueciSenha.tsx`, `RedefinirSenha.tsx`) inspirado em Stripe, Clerk e Linear. Layout Split Screen com gradiente institucional LPTI Tech, cards de recursos reais do produto (PDV em &lt;10s, Estoque Kardex, XML NF-e SEFAZ e Guia DAS Fiscal), card de acesso com glassmorphism, badge discreta de versão (`v1.4.7`), integração fluida com `ApiStatusIndicator`, seletor de demonstração segmentado e tratamento amigável de rate limiting (HTTP 429). | Homologado |
-| **UX Sprint 7A.2** | `1.4.9` | **Eliminação Total de Ícones MUI no Dashboard:** Substituição dos 24 ícones legados `@mui/icons-material` por ícones semânticos `lucide-react` em `Dashboard.tsx` e `DashboardGreeting.tsx`. Validação via CDP (`muiCount: 0`). | Homologado |
-| **UX Sprint 7C** | `1.4.9` | **Saúde do Negócio & Despesas Padrão Stripe/Sentinel:** Modernização de `SaudeNegocio.tsx` e `Despesas.tsx` com `FiscalLimitIndicator`, `StatusPill`, `MetricSurface` e 100% `lucide-react`. Validação via CDP (`muiCount: 0`). | Homologado |
-| **UX Sprint 8** | `1.4.9` | **Hub de Suprimentos Premium & Onboarding XML NF-e:** `Compras.tsx` como Centro de Gestão de Fornecedores (Header Sentinel, 4 KPIs, Avatares coloridos, chaves fiscais em blocos, valores `tnum`) e `ImportarNfe.tsx` como fluxo de onboarding em 6 etapas (*Upload, Leitura, Validação, De-Para, Estoque, Confirmação*) com destaque a novos produtos e custos. | Homologado |
-| **Sentinel Foundation** | `1.5.0` | **Fundação Visual LPTI Sentinel & Phase 2:** Criação dos 4 componentes proprietários oficiais (`FiscalShieldCapsule`, `VitalityRing`, `ProtectiveCard`, `ClearSignalKPI`) e aplicação no `Dashboard.tsx` (Hero Escudo Fiscal tri-zona, 8 Clear Signals e superfícies cerâmicas com borda mineral). Build 100% aprovado. | Homologado |
 
 ---
 
@@ -120,4 +114,3 @@ flowchart LR
 - **Swagger / OpenAPI (Local):** [http://localhost:8001/docs](http://localhost:8001/docs)
 - **Banco Local:** SQLite (`gestor_mei.db`) com inicialização zero-config.
 - **Script de Inicialização Rápida:** [`iniciar-gestor-mei.bat`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/iniciar-gestor-mei.bat) (na raiz do projeto).
-
