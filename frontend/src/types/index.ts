@@ -21,6 +21,8 @@ export interface VinculoConsultor {
   email_consultor?: string | null;
   nome_empresa?: string | null;
   ativo: boolean;
+  imagem_url?: string;
+  imagem_nome?: string;
   created_at: string;
 }
 
@@ -40,6 +42,7 @@ export interface Empresa {
   modulo_ifood?: boolean;
   modulo_estoque?: boolean;
   permitir_estoque_negativo?: boolean;
+  logo_url?: string;
   data_inicio_atividades: string;
   created_at: string;
   updated_at: string;
@@ -71,6 +74,8 @@ export interface Produto {
   estoque_minimo?: number;
   estoque_baixo?: boolean;
   ativo: boolean;
+  imagem_url?: string;
+  imagem_nome?: string;
   created_at: string;
 }
 
@@ -362,6 +367,8 @@ export interface Motoboy {
   telefone?: string | null;
   valor_por_entrega: number;
   ativo: boolean;
+  imagem_url?: string;
+  imagem_nome?: string;
   created_at: string;
 }
 

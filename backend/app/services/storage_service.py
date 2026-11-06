@@ -364,6 +364,211 @@ class StorageService:
 
         return None
 
+    # ==========================================================================
+    # IMAGENS DE PRODUTOS (Sprint Operação Real 1)
+    # ==========================================================================
+
+    def save_product_image(
+        self,
+        content: bytes,
+        filename: str,
+        empresa_id: int,
+        produto_id: int,
+        content_type: Optional[str] = "image/webp"
+    ) -> str:
+        """
+        Salva a imagem do produto no Cloudflare R2 e/ou disco local com particionamento por tenant.
+        """
+        safe_filename = os.path.basename(filename)
+        c_type = content_type or "image/webp"
+
+        tenant_path = f"empresas/{empresa_id}/produtos/{safe_filename}"
+        flat_path = f"produtos/{safe_filename}"
+
+        if self.r2_provider:
+            self.r2_provider.save_file(content, tenant_path, content_type=c_type)
+            self.r2_provider.save_file(content, flat_path, content_type=c_type)
+            try:
+                self.local_provider.save_file(content, flat_path, content_type=c_type)
+            except Exception as e:
+                logger.warning(f"[STORAGE SERVICE] Falha no espelhamento local da imagem do produto: {e}")
+            return tenant_path
+
+        return self.local_provider.save_file(content, flat_path, content_type=c_type)
+
+    def get_product_image_stream(
+        self,
+        filename: str,
+        empresa_id: Optional[int] = None
+    ) -> Optional[Tuple[BinaryIO, str, int, str]]:
+        """
+        Recupera o stream da imagem do produto (R2 prioritário -> Fallback Local).
+        Retorna (stream, content_type, tamanho, provider_name).
+        """
+        safe_filename = os.path.basename(filename)
+        candidate_paths = []
+        if empresa_id:
+            candidate_paths.append(f"empresas/{empresa_id}/produtos/{safe_filename}")
+        candidate_paths.append(f"produtos/{safe_filename}")
+        candidate_paths.append(safe_filename)
+
+        if self.r2_provider:
+            for p in candidate_paths:
+                try:
+                    res = self.r2_provider.get_file_stream(p)
+                    if res:
+                        stream, c_type, size = res
+                        return stream, c_type, size, "Cloudflare R2"
+                except Exception as e:
+                    logger.warning(f"[STORAGE SERVICE] Erro ao consultar R2 no path '{p}': {e}")
+
+        for p in candidate_paths:
+            res = self.local_provider.get_file_stream(p)
+            if res:
+                stream, c_type, size = res
+                return stream, c_type, size, "Local Storage"
+
+        return None
+
+    def delete_product_image(
+        self,
+        filename: str,
+        empresa_id: Optional[int] = None
+    ) -> bool:
+        """
+        Remove imagem do produto do Cloudflare R2 e do disco local.
+        """
+        safe_filename = os.path.basename(filename)
+        candidate_paths = []
+        if empresa_id:
+            candidate_paths.append(f"empresas/{empresa_id}/produtos/{safe_filename}")
+        candidate_paths.append(f"produtos/{safe_filename}")
+        candidate_paths.append(safe_filename)
+
+        success = False
+        if self.r2_provider:
+            for p in candidate_paths:
+                try:
+                    if self.r2_provider.file_exists(p):
+                        self.r2_provider.delete_file(p)
+                        success = True
+                except Exception as e:
+                    logger.warning(f"[STORAGE SERVICE] Erro ao deletar R2 '{p}': {e}")
+
+        for p in candidate_paths:
+            try:
+                if self.local_provider.file_exists(p):
+                    self.local_provider.delete_file(p)
+                    success = True
+            except Exception as e:
+                logger.warning(f"[STORAGE SERVICE] Erro ao deletar local '{p}': {e}")
+
+        return success
+
+    # ==========================================================================
+    # LOGOTIPO DA EMPRESA (Sprint Operação Real 1)
+    # ==========================================================================
+
+    def save_company_logo(
+        self,
+        content: bytes,
+        empresa_id: int,
+        filename: Optional[str] = None,
+        content_type: Optional[str] = "image/webp"
+    ) -> str:
+        """
+        Salva o logotipo da empresa no Cloudflare R2 e/ou disco local.
+        """
+        safe_name = f"logo_{empresa_id}.webp"
+        c_type = content_type or "image/webp"
+
+        tenant_path = f"empresas/{empresa_id}/logo/{safe_name}"
+        flat_path = f"logos/emp_{empresa_id}_logo.webp"
+
+        if self.r2_provider:
+            self.r2_provider.save_file(content, tenant_path, content_type=c_type)
+            self.r2_provider.save_file(content, flat_path, content_type=c_type)
+            try:
+                self.local_provider.save_file(content, flat_path, content_type=c_type)
+            except Exception as e:
+                logger.warning(f"[STORAGE SERVICE] Falha no espelhamento local do logotipo: {e}")
+            return tenant_path
+
+        return self.local_provider.save_file(content, flat_path, content_type=c_type)
+
+    def get_company_logo_stream(
+        self,
+        empresa_id: int,
+        filename: Optional[str] = None
+    ) -> Optional[Tuple[BinaryIO, str, int, str]]:
+        """
+        Recupera o stream do logotipo da empresa (R2 prioritário -> Fallback Local).
+        Retorna (stream, content_type, tamanho, provider_name).
+        """
+        candidate_paths = [
+            f"empresas/{empresa_id}/logo/logo_{empresa_id}.webp",
+            f"logos/emp_{empresa_id}_logo.webp",
+            f"logos/logo_{empresa_id}.webp",
+        ]
+        if filename:
+            candidate_paths.insert(0, f"empresas/{empresa_id}/logo/{os.path.basename(filename)}")
+            candidate_paths.insert(1, f"logos/{os.path.basename(filename)}")
+
+        if self.r2_provider:
+            for p in candidate_paths:
+                try:
+                    res = self.r2_provider.get_file_stream(p)
+                    if res:
+                        stream, c_type, size = res
+                        return stream, c_type, size, "Cloudflare R2"
+                except Exception as e:
+                    logger.warning(f"[STORAGE SERVICE] Erro ao consultar R2 no path '{p}': {e}")
+
+        for p in candidate_paths:
+            res = self.local_provider.get_file_stream(p)
+            if res:
+                stream, c_type, size = res
+                return stream, c_type, size, "Local Storage"
+
+        return None
+
+    def delete_company_logo(
+        self,
+        empresa_id: int,
+        filename: Optional[str] = None
+    ) -> bool:
+        """
+        Remove o logotipo da empresa do Cloudflare R2 e do disco local.
+        """
+        candidate_paths = [
+            f"empresas/{empresa_id}/logo/logo_{empresa_id}.webp",
+            f"logos/emp_{empresa_id}_logo.webp",
+            f"logos/logo_{empresa_id}.webp",
+        ]
+        if filename:
+            candidate_paths.insert(0, f"empresas/{empresa_id}/logo/{os.path.basename(filename)}")
+            candidate_paths.insert(1, f"logos/{os.path.basename(filename)}")
+
+        success = False
+        if self.r2_provider:
+            for p in candidate_paths:
+                try:
+                    if self.r2_provider.file_exists(p):
+                        self.r2_provider.delete_file(p)
+                        success = True
+                except Exception as e:
+                    logger.warning(f"[STORAGE SERVICE] Erro ao deletar R2 logo '{p}': {e}")
+
+        for p in candidate_paths:
+            try:
+                if self.local_provider.file_exists(p):
+                    self.local_provider.delete_file(p)
+                    success = True
+            except Exception as e:
+                logger.warning(f"[STORAGE SERVICE] Erro ao deletar local logo '{p}': {e}")
+
+        return success
+
 
 # Instância compartilhada singleton
 storage_service = StorageService()

@@ -16,6 +16,8 @@ class Produto(Base):
     quantidade_estoque = Column(Float, nullable=False, default=0.0)
     estoque_minimo = Column(Float, nullable=False, default=0.0)
     ativo = Column(Boolean, default=True)
+    imagem_url = Column(String(255), nullable=True)
+    imagem_nome = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     empresa = relationship("Empresa", backref="produtos")

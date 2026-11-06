@@ -1,11 +1,16 @@
+import os
+import time
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.produto import Produto
 from app.models.user import User
 from app.schemas.produto import ProdutoCreate, ProdutoUpdate, ProdutoResponse
 from app.dependencies import get_current_user, require_admin
+from app.services.storage_service import storage_service
+from app.services.image_service import validate_image_upload, optimize_and_convert_to_webp
 
 router = APIRouter(prefix="/produtos", tags=["Produtos"])
 
@@ -119,6 +124,139 @@ def delete_produto(
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
         
+    if produto.imagem_nome:
+        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+
     db.delete(produto)
     db.commit()
     return {"message": "Produto excluído com sucesso."}
+
+
+# ============================================================================
+# ENDPOINTS DE IMAGEM DO PRODUTO (Sprint Operação Real 1)
+# ============================================================================
+
+@router.post("/{produto_id}/imagem", response_model=ProdutoResponse)
+def upload_produto_imagem(
+    produto_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload de foto principal do produto.
+    Valida a imagem, redimensiona e converte automaticamente para WebP de alta eficiência,
+    e persiste no Cloudflare R2 com fallback local transparente.
+    """
+    produto = db.query(Produto).filter(
+        Produto.id == produto_id,
+        Produto.empresa_id == current_user.empresa_id
+    ).first()
+
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+
+    content = file.file.read()
+    valido, msg_erro = validate_image_upload(content, file.content_type)
+    if not valido:
+        raise HTTPException(status_code=400, detail=msg_erro)
+
+    # Converte e otimiza para WebP
+    try:
+        webp_bytes, content_type = optimize_and_convert_to_webp(content, max_size=(800, 800), quality=85)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar imagem: {str(e)}")
+
+    # Remove imagem antiga do storage se existir
+    if produto.imagem_nome:
+        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+
+    # Gera nome seguro: prod_{id}_{timestamp}.webp
+    safe_name = f"prod_{produto_id}_{int(time.time())}.webp"
+    storage_service.save_product_image(
+        webp_bytes,
+        safe_name,
+        empresa_id=current_user.empresa_id,
+        produto_id=produto_id,
+        content_type=content_type
+    )
+
+    produto.imagem_nome = safe_name
+    produto.imagem_url = f"/api/produtos/{produto_id}/imagem"
+    db.commit()
+    db.refresh(produto)
+    produto.estoque_baixo = (produto.tipo == "PRODUTO" and (produto.quantidade_estoque or 0.0) <= (produto.estoque_minimo or 0.0))
+    return produto
+
+
+@router.get("/{produto_id}/imagem")
+def get_produto_imagem(
+    produto_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o stream da imagem do produto (Cloudflare R2 ou fallback local).
+    Público para renderização de catálogos e PDV com cache de navegador.
+    """
+    produto = db.query(Produto).filter(Produto.id == produto_id).first()
+    if not produto or not produto.imagem_nome:
+        raise HTTPException(status_code=404, detail="Imagem não encontrada para este produto.")
+
+    res = storage_service.get_product_image_stream(produto.imagem_nome, empresa_id=produto.empresa_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Arquivo de imagem não encontrado no armazenamento.")
+
+    stream, content_type, size, provider_name = res
+
+    headers = {
+        "Cache-Control": "public, max-age=86400",
+        "Content-Security-Policy": "default-src 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "X-Storage-Provider": provider_name,
+    }
+    if size:
+        headers["Content-Length"] = str(size)
+
+    def iter_stream():
+        try:
+            while True:
+                chunk = stream.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            if hasattr(stream, "close"):
+                stream.close()
+
+    return StreamingResponse(iter_stream(), media_type=content_type, headers=headers)
+
+
+@router.delete("/{produto_id}/imagem", response_model=ProdutoResponse)
+def delete_produto_imagem(
+    produto_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Remove a imagem do produto do storage e limpa a referência no banco de dados.
+    """
+    produto = db.query(Produto).filter(
+        Produto.id == produto_id,
+        Produto.empresa_id == current_user.empresa_id
+    ).first()
+
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+    if produto.imagem_nome:
+        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+
+    produto.imagem_nome = None
+    produto.imagem_url = None
+    db.commit()
+    db.refresh(produto)
+    produto.estoque_baixo = (produto.tipo == "PRODUTO" and (produto.quantidade_estoque or 0.0) <= (produto.estoque_minimo or 0.0))
+    return produto

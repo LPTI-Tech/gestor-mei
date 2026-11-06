@@ -17,6 +17,7 @@ class EmpresaBase(BaseModel):
     modulo_ifood: Optional[bool] = True
     modulo_estoque: Optional[bool] = False
     permitir_estoque_negativo: Optional[bool] = True
+    logo_url: Optional[str] = None
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -44,6 +45,7 @@ class EmpresaUpdate(BaseModel):
     modulo_ifood: Optional[bool] = None
     modulo_estoque: Optional[bool] = None
     permitir_estoque_negativo: Optional[bool] = None
+    logo_url: Optional[str] = None
 
 class ModulosConfigUpdate(BaseModel):
     modulo_delivery: bool

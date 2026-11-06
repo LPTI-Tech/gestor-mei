@@ -23,6 +23,7 @@ class Empresa(Base):
     modulo_ifood = Column(Boolean, default=True)
     modulo_estoque = Column(Boolean, default=False)
     permitir_estoque_negativo = Column(Boolean, default=True)
+    logo_url = Column(String(255), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

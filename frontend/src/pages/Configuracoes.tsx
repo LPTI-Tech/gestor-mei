@@ -19,6 +19,8 @@ import {
   Select,
   MenuItem,
   Radio,
+  Avatar,
+  Tooltip,
 } from '@mui/material';
 import {
   Settings,
@@ -30,6 +32,11 @@ import {
   DeliveryDining,
   Inventory,
   LocalShipping,
+  PhotoCamera,
+  Delete,
+  Business,
+  CloudQueue,
+  CheckCircle,
 } from '@mui/icons-material';
 import api from '../services/api';
 import { Empresa } from '../types';
@@ -59,6 +66,80 @@ export const Configuracoes: React.FC = () => {
   const [permitirEstoqueNegativo, setPermitirEstoqueNegativo] = useState<boolean>(true);
   const [savingEstoque, setSavingEstoque] = useState<boolean>(false);
   const [exportingBackup, setExportingBackup] = useState<boolean>(false);
+
+  const [uploadingLogo, setUploadingLogo] = useState<boolean>(false);
+
+
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    if (!e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+
+    const uploadData = new FormData();
+
+    uploadData.append('file', file);
+
+
+
+    setUploadingLogo(true);
+
+    setSuccessMsg(null);
+
+    try {
+
+      await api.post('/empresa/logo', uploadData, {
+
+        headers: { 'Content-Type': 'multipart/form-data' },
+
+      });
+
+      await refreshUserData();
+
+      setSuccessMsg('Logotipo da empresa atualizado com sucesso e sincronizado no Cloudflare R2!');
+
+    } catch (err: any) {
+
+      alert(err.response?.data?.detail || 'Erro ao enviar logotipo.');
+
+    } finally {
+
+      setUploadingLogo(false);
+
+    }
+
+  };
+
+
+
+  const handleLogoDelete = async () => {
+
+    if (!window.confirm('Tem certeza que deseja remover o logotipo da sua empresa?')) return;
+
+    setUploadingLogo(true);
+
+    setSuccessMsg(null);
+
+    try {
+
+      await api.delete('/empresa/logo');
+
+      await refreshUserData();
+
+      setSuccessMsg('Logotipo da empresa removido com sucesso.');
+
+    } catch (err: any) {
+
+      alert(err.response?.data?.detail || 'Erro ao remover logotipo.');
+
+    } finally {
+
+      setUploadingLogo(false);
+
+    }
+
+  };
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -428,6 +509,115 @@ export const Configuracoes: React.FC = () => {
               </Paper>
             </Grid>
           </Grid>
+        </CardContent>
+      </Card>
+
+      {/* IDENTIDADE VISUAL & LOGOTIPO OFICIAL (Sprint Operação Real 1) */}
+      <Card sx={{ borderRadius: 3, mb: 3, border: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Business color="primary" />
+              <Typography variant="h6" fontWeight={800}>
+                Identidade Visual & Logotipo da Empresa
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                icon={<CloudQueue sx={{ '&&': { fontSize: 16 } }} />}
+                label="Cloudflare R2"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip
+                label="WebP 90% Otimizado"
+                size="small"
+                sx={{ fontWeight: 700, bgcolor: 'rgba(46, 125, 50, 0.08)', color: '#2E7D32' }}
+              />
+            </Box>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+            Personalize a marca da sua empresa nos menus do sistema e em futuros documentos fiscais (DANFE NFC-e e Relatórios Gerenciais).
+          </Typography>
+
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              borderRadius: 2.5,
+              bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#F8FAFC'),
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 3,
+            }}
+          >
+            <Box sx={{ position: 'relative' }}>
+              <Avatar
+                src={empresa?.logo_url || undefined}
+                variant="rounded"
+                sx={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: 2.5,
+                  border: '1.5px solid',
+                  borderColor: 'divider',
+                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#FFFFFF'),
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  objectFit: 'contain',
+                }}
+              >
+                <Business sx={{ fontSize: 44, color: 'text.secondary', opacity: 0.5 }} />
+              </Avatar>
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                {empresa?.logo_url ? 'Logotipo Atual Ativo' : 'Nenhum logotipo personalizado configurado'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 520 }}>
+                {empresa?.logo_url
+                  ? 'Este logotipo é exibido no topo da barra de navegação e será inserido nas impressões de comandas e relatórios.'
+                  : 'Envie uma imagem quadrada ou proporcional da sua marca nos formatos PNG, JPG ou WEBP (máx. 10 MB).'}
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  component="label"
+                  disabled={uploadingLogo}
+                  startIcon={uploadingLogo ? <CircularProgress size={16} color="inherit" /> : <PhotoCamera />}
+                  sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 2.5, height: 38 }}
+                >
+                  {uploadingLogo ? 'Enviando...' : empresa?.logo_url ? 'Substituir Logotipo' : 'Enviar Logotipo'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={handleLogoUpload}
+                  />
+                </Button>
+
+                {empresa?.logo_url && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disabled={uploadingLogo}
+                    onClick={handleLogoDelete}
+                    startIcon={<Delete />}
+                    sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', height: 38 }}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Paper>
         </CardContent>
       </Card>
 

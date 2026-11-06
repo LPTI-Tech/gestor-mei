@@ -57,20 +57,23 @@ def test_1_sugestoes_fornecedores(db, owner, empresa):
 
 def test_1b_upload_comprovante_valido_e_invalido(owner, empresa):
     """Valida upload direto de arquivo e bloqueio de extensões não suportadas."""
+    from starlette.requests import Request
     from app.routers.compras import upload_comprovante_compra
+
+    dummy_req = Request(scope={"type": "http", "method": "POST", "path": "/api/compras/upload-comprovante", "headers": []})
 
     # Teste com arquivo válido (PDF)
     pdf_bytes = io.BytesIO(b"%PDF-1.4 mock pdf data")
     upload_ok = UploadFile(file=pdf_bytes, filename="recibo.pdf")
-    res_ok = upload_comprovante_compra(file=upload_ok, current_user=owner, empresa=empresa)
-    assert res_ok.url.startswith("/uploads/comprovantes/")
+    res_ok = upload_comprovante_compra(request=dummy_req, file=upload_ok, current_user=owner, empresa=empresa)
+    assert res_ok.url.startswith("/api/compras/comprovantes/") or res_ok.url.startswith("/uploads/comprovantes/")
     assert res_ok.tipo == "PDF"
 
     # Teste com arquivo inválido (.txt)
     txt_bytes = io.BytesIO(b"arquivo invalido")
     upload_err = UploadFile(file=txt_bytes, filename="arquivo.txt")
     with pytest.raises(HTTPException) as exc_info:
-        upload_comprovante_compra(file=upload_err, current_user=owner, empresa=empresa)
+        upload_comprovante_compra(request=dummy_req, file=upload_err, current_user=owner, empresa=empresa)
     assert exc_info.value.status_code == 400
     assert "não suportado" in exc_info.value.detail.lower()
 

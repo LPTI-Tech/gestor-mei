@@ -315,14 +315,18 @@ export const Layout: React.FC = () => {
           >
             <Box
               component="img"
-              src={logoIcon}
-              alt="Logo Gestor MEI"
+              src={empresa?.logo_url || logoIcon}
+              alt={empresa?.nome_fantasia || "Logo Gestor MEI"}
+              onError={(e: any) => {
+                e.currentTarget.src = logoIcon;
+              }}
               sx={{
                 width: 38,
                 height: 38,
                 borderRadius: 2,
                 boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
-                objectFit: 'cover',
+                objectFit: empresa?.logo_url ? 'contain' : 'cover',
+                bgcolor: empresa?.logo_url ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : '#FFFFFF' : 'transparent',
                 flexShrink: 0,
               }}
             />
@@ -335,7 +339,7 @@ export const Layout: React.FC = () => {
                   sx={{ lineHeight: 1.15, letterSpacing: '-0.02em', fontSize: '0.95rem' }}
                   noWrap
                 >
-                  GESTOR MEI
+                  {empresa?.nome_fantasia || 'GESTOR MEI'}
                 </Typography>
                 <Typography
                   variant="caption"

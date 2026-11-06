@@ -10,7 +10,7 @@
 
 - **Empresa Mantenedora:** LPTI Tech
 - **Produto:** GESTOR MEI
-- **Versão Atual:** `1.4.0` (Refinamento Visual 8.5.1 Homologado)
+- **Versão Atual:** `1.6.0` (Sprint Operação Real 1 Homologada)
 - **Tipo de Aplicação:** SaaS Multiempresa B2B (Foco em MEIs e Pequenos Negócios)
 
 ---
@@ -29,88 +29,38 @@
 | **Sprint 7** | `1.4.0` | **Painel do Consultor LPTI Tech:** Perfil `CONSULTOR`, visão multi-carteira, termômetro de saúde do negócio (Saudável, Atenção, Crítico) e parecer consultivo. | Homologado |
 | **Sprint 8A/8B**| `1.4.0` | **Compra Manual & RBAC Estrito:** Lançamento de compras sem NF-e, upload de comprovantes, cadastro inline de produtos e blindagem de segurança para operadores. | Homologado |
 | **Sprint 8.5.1**| `1.4.0` | **Refinamento Visual Executivo:** Logo ampliada em 30% no login, hierarquia visual sem vazios, ampliação da Sidebar para 280px com alinhamento vertical balanceado (Logo, GESTOR MEI, ERP). | Homologado |
-| **Sprint UX 1** | `1.4.1` | **Design System Dashboard:** Modernização executiva inspirada em Stripe/Asaas/Conta Azul: KPI cards com icon bubbles e `tnum`, Alertas DAS executivos com borda acentuada, Resultado Financeiro com 3 cards pastel e Gráficos Recharts estilizados. | Homologado |
-| **Sprint UX 2** | `1.4.2` | **Design System Controle de Estoque:** Modernização executiva completa: Page Header padrão Shopify com ações destacadas, Alerta Executivo com borda acentuada e botão de filtro rápido, Tabs modernas com badges de contagem, Tabela SaaS com cabeçalho ardósia e pills de saldo/status, e Modais com raio de 16px e sombra multicamada. | Homologado |
-| **Sprint UX 3** | `1.4.3` | **Design System Módulo Clientes:** Page Header padrão Shopify Admin com ações alinhadas à direita, Toolbar de busca Asaas com filtros segmentados, Tabela de Clientes padrão Stripe com cabeçalho ardósia, avatar circular com iniciais, botões rápidos WhatsApp/Telefone, valores em `tnum` e pills de status, Empty State executivo com ícone e CTA, e Modal Novo/Editar categorizado em 4 seções (Identificação, Contato, Endereço e Preferências) com raio de 16px. | Homologado |
-| **Sprint UX 4** | `1.4.4` | **Design System Produtos & Serviços:** Page Header padrão Shopify Admin com badge DASN-SIMEI, 4 KPI cards executivos (Total no Catálogo, Produtos & Mercadorias, Serviços Prestados e Categorias Ativas), Toolbar Asaas com busca rápida, seletor segmentado de tipos e filtro por categoria, Tabela de Produtos padrão Stripe com cabeçalho ardósia, avatar temático por tipo fiscal, preços em `tnum` com detalhamento de custo e margem percentual, pills de estoque com alerta de reposição, e Modal Novo/Editar Item categorizado em 4 seções executivas (Tributação DASN, Identificação, Precificação com cálculo em tempo real de margem bruta, e Controle de Estoque) com raio de 16px. | Homologado |
-| **Sprint UX 5** | `1.4.5` | **Design System PDV / Terminal de Vendas:** Page Header padrão Shopify Admin com indicador de terminal ativo, catálogo estilo Shopify POS com cards táteis e pills de saldo de estoque, seletor segmentado Balcão vs Delivery padrão Asaas, carrinho ágil com steppers de quantidade, breakdown de subtotais e taxas, Totalizador de alto impacto visual (32px em `tnum`), seletor de Formas de Pagamento em botões táteis padrão Stripe Terminal (Dinheiro, PIX, Débito, Crédito) com estados ativos em alto contraste, checkout em 1 clique, tabela de vendas recentes com cabeçalho ardósia e modais refinados (comanda térmica, item avulso e estoque insuficiente) com raio de 16px. | Homologado |
+| **Sprint UX 1 a 5** | `1.4.5` | **Design System Executivo:** Modernização completa de Dashboard, Estoque, Clientes, Produtos e PDV. | Homologado |
+| **Sprint Security 1** | `1.4.7` | **Hardening Integral de Segurança:** Seed controlado, validação estrita de SECRET_KEY, remoção de CORS wildcard, Rate Limiting SlowAPI em login e recuperação de senha. | Homologado |
+| **Sprint UX 6 a 9** | `1.5.0` | **Sentinel Foundation & Modernização Total:** Componentes oficiais `FiscalShieldCapsule`, `VitalityRing`, `ProtectiveCard`, `ClearSignalKPI`, modernização de Consultor, Controle DAS e Relatório MEI. | Homologado |
+| **Cloudflare R2** | `1.5.1` | **Storage Híbrido Zero Egress:** Provedor Cloudflare R2 com fallback local transparente, particionamento por tenant e suporte a comprovantes e XMLs. | Homologado |
+| **Sprint 8C.0** | `1.5.2` | **Estudo Técnico NFC-e SEFAZ MG:** Estudo regulatório e arquitetural aprovado para modelo 65. (Sprint 8C.1 adiada para foco operacional). | Homologado |
+| **Sprint Operação Real 1** | `1.6.0` | **Prontidão Operacional de Piloto com Cliente Real:**<br/>1. **Produtos com Imagem:** Upload, conversão automática para WebP via Pillow (LANCZOS e EXIF transpose), persistência híbrida Cloudflare R2 / local, avatar 44px na tabela e modal com preview e remoção.<br/>2. **Logotipo Oficial da Empresa:** Upload de logotipo institucional, WebP 90% (máx 600x600), Cloudflare R2 / local, exibição na Sidebar, Topbar, Configurações e pronto para DANFE/Relatórios fiscais.<br/>3. **PDV Visual:** Catálogo com fotos dos produtos e placeholder Sentinel elegante, busca rápida integrada e thumbnails visuais no carrinho de compras.<br/>4. **Validação Operacional:** 32 testes unitários e de integração passando (100%), build de frontend e backend aprovados sem regressões. | Homologado |
 
 ---
 
-## 🎯 Próxima Sprint (Em Execução / Imediata)
+## 🎯 Próximos Passos no Roadmap
 
-### 📌 **Sprint 8C — NFC-e e QR Code**
-- **Objetivo:** Habilitar a emissão de Nota Fiscal de Consumidor Eletrônica (modelo 65) diretamente no PDV, homologada junto à SEFAZ.
-- **Entregáveis:**
-  1. Configuração dos parâmetros fiscais da empresa (Inscrição Estadual, Certificado A1 PKCS#12, Senha, CSC e IdCSC).
-  2. Assinatura digital do XML da NFC-e e transmissão síncrona para a SEFAZ estadual.
-  3. Geração do QR Code oficial de conferência pública.
-  4. Impressão do DANFE simplificado em impressoras térmicas ESC/POS (58mm e 80mm).
-
----
-
-## 🗺️ Backlog Aprovado
-
-```mermaid
-flowchart LR
-    A["Sprint 8C<br/><b>NFC-e e QR Code</b><br/><i>(Atual)</i>"] --> B["Sprint 9<br/><b>Licenciamento SaaS</b>"]
-    B --> C["Sprint 10<br/><b>Portal do Cliente</b>"]
-    C --> D["Sprint 11<br/><b>Cobrança Recorrente</b>"]
-```
-
-1. **Sprint 9 — Licenciamento SaaS:**
-   - Planos comerciais: **START** (R$ 39,90), **DELIVERY PRO** (R$ 59,90) e **FULL MEI** (R$ 89,90).
-   - Gestão automatizada de ciclo de vida: `TRIAL` (14 dias), `ATIVA`, `SUSPENSA` (somente leitura) e `CANCELADA`.
-   - Período de carência de 5 dias corridos pós-vencimento (Grace Period) e suspensão no 6º dia.
-2. **Sprint 10 — Portal do Cliente:**
-   - Cardápio/catálogo digital público para clientes finais realizarem pedidos online pelo navegador ou celular.
-   - Consulta de status de entrega e 2ª via de comprovantes/XMLs.
-3. **Sprint 11 — Cobrança Recorrente:**
-   - Integração com gateway Asaas para emissão automática de PIX e boletos recorrentes.
-   - Geração de QR Code PIX dinâmico na tela do PDV com conciliação automática.
+1. **Sprint Operação Real 2 / Piloto em Produção:**
+   - Validação com cliente real piloto no ambiente de homologação/produção.
+2. **Sprint 8C.1 — Emissão NFC-e e QR Code:**
+   - Homologação SEFAZ-MG modelo 65.
+3. **OAuth Google & Microsoft (Descoberta Concluída):**
+   - Autenticação social para OWNER e CONSULTOR.
+4. **Sprint 9 — Licenciamento SaaS:**
+   - Planos comerciais (START, DELIVERY PRO, FULL MEI).
 
 ---
 
-## 🛠️ Skills Instaladas no Antigravity
-
-| Skill | Escopo de Atuação | Localização no Repositório |
-| :--- | :--- | :--- |
-| **`gestor-mei-core`** | Identidade oficial LPTI Tech, stack, módulos homologados e arquitetura. | [`.agents/skills/gestor-mei-core/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-core/) |
-| **`gestor-mei-ui-system`** | Sistema de design executivo padrão Stripe/Asaas, eliminando layouts genéricos. | [`.agents/skills/gestor-mei-ui-system/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-ui-system/) |
-| **`gestor-mei-rbac`** | Blindagem das regras de acesso (MASTER, OWNER, CONSULTOR e OPERATOR). | [`.agents/skills/gestor-mei-rbac/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-rbac/) |
-| **`gestor-mei-saas`** | Arquitetura de monetização, planos e ciclo de licenças da Sprint 9. | [`.agents/skills/gestor-mei-saas/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-saas/) |
-| **`lpti-brand-guidelines`** | Proteção da propriedade intelectual: Gestor MEI (Produto) e LPTI Tech (Desenvolvedora). | [`.agents/skills/lpti-brand-guidelines/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/lpti-brand-guidelines/) |
-
----
-
-## 🔌 MCPs (Model Context Protocol) Planejados & Disponíveis
-
-1. **Google Developer Knowledge:**
-   - *Status:* ✅ **Google Developer Knowledge MCP instalado e ativo** (`antigravity-plugins-official/plugin/google-developer-knowledge` v1.0.2).
-   - *Função:* Consulta de documentação técnica oficial, grounding de APIs (Google Cloud, Gemini, Firebase, Android e Web.dev) e skill `retrieving-developer-knowledge`.
-2. **Chrome DevTools:**
-   - *Status:* ✅ **Chrome DevTools MCP instalado, ativo e validado** (`chrome-devtools-mcp` v1.12.0 em `mcp_config.json`).
-   - *Função:* Inspeção visual de DOM, CSS cascade, acessibilidade (WCAG), métricas Core Web Vitals (LCP) e auditorias de performance no Google Chrome.
-3. **GitHub MCP:**
-   - *Status:* ✅ **GitHub MCP conectado e validado** (endpoint oficial `https://api.githubcopilot.com/mcp/` autenticado como `LPTI-Tech` para o repositório `LPTI-Tech/gestor-mei`).
-   - *Função:* Automação de branches, pull requests, revisões e commits diretamente pelo assistente.
-4. **Browser (Browserbase):**
-   - *Status:* Plugin Parceiro de Marketplace (`antigravity-plugins-partners/plugin/browse`).
-   - *Função:* Navegação web real e testes automatizados de fluxos.
-
----
-
-## 🌐 Infraestrutura & URLs Oficiais
+## 🛠️ Infraestrutura & URLs Oficiais
 
 ### Ambientes de Produção (Nuvem)
 - **Frontend (Vercel):** `https://gestor-mei.vercel.app` *(ou domínio oficial `https://gestormei.com.br`)*
 - **Backend (Render):** `https://gestor-mei-backend.onrender.com`
-- **Documentação Swagger (Produção):** `https://gestor-mei-backend.onrender.com/docs`
+- **Armazenamento de Objetos (Cloudflare R2):** Endpoint compatível S3 com Zero Egress Fees e particionamento multi-tenant (`empresas/{id}/produtos/`, `empresas/{id}/logo/`, `empresas/{id}/comprovantes/`).
 - **Banco de Dados (Neon):** PostgreSQL 16 Serverless com pool de conexões e SSL obrigatório.
 
 ### Ambiente Local de Desenvolvimento
 - **Frontend (Vite):** [http://localhost:5173](http://localhost:5173)
 - **Backend (FastAPI / Uvicorn):** [http://localhost:8001](http://localhost:8001)
 - **Swagger / OpenAPI (Local):** [http://localhost:8001/docs](http://localhost:8001/docs)
-- **Banco Local:** SQLite (`gestor_mei.db`) com inicialização zero-config.
-- **Script de Inicialização Rápida:** [`iniciar-gestor-mei.bat`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/iniciar-gestor-mei.bat) (na raiz do projeto).
+- **Banco Local:** SQLite (`gestor_mei.db`) com migrações automáticas no startup.

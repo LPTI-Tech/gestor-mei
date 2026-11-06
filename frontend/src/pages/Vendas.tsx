@@ -45,6 +45,7 @@ import {
   Visibility,
   LocalShipping,
   Cancel,
+  Build,
   Print,
   Storefront,
   Warning,
@@ -684,6 +685,58 @@ export const Vendas: React.FC = () => {
                         }}
                       >
                         <Box>
+                          {/* Imagem do Produto / Placeholder Visual Sentinel */}
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 110,
+                              borderRadius: 2,
+                              mb: 1.25,
+                              overflow: 'hidden',
+                              position: 'relative',
+                              bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#F1F5F9'),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {prod.imagem_url ? (
+                              <Box
+                                component="img"
+                                src={prod.imagem_url}
+                                alt={prod.nome}
+                                loading="lazy"
+                                sx={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                  transition: 'transform 0.25s ease',
+                                  '&:hover': { transform: 'scale(1.05)' },
+                                }}
+                                onError={(e: any) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 0.5,
+                                  color: isServico ? '#7B1FA2' : 'primary.main',
+                                  opacity: 0.75,
+                                }}
+                              >
+                                {isServico ? <Build sx={{ fontSize: 32 }} /> : <ShoppingBag sx={{ fontSize: 32 }} />}
+                                <Typography variant="caption" sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                                  {prod.categoria}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Box>
+
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
                             <Typography
                               variant="caption"
@@ -1014,33 +1067,54 @@ export const Vendas: React.FC = () => {
                   </Typography>
                 </Box>
               ) : (
-                cartItems.map((item) => (
-                  <Box
-                    key={item.tempId}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      p: 1.25,
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      '&:last-child': { borderBottom: 0 },
-                      borderRadius: 1.5,
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                    }}
-                  >
-                    <Box sx={{ flexGrow: 1, pr: 1.5 }}>
-                      <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', lineHeight: 1.2 }}>
-                        {item.descricao}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontFeatureSettings: '"tnum"' }}
-                      >
-                        {formatCurrency(item.preco_unitario)} cada
-                      </Typography>
-                    </Box>
+                cartItems.map((item) => {
+                  const cartProd = produtos.find((p) => p.id === item.produto_id);
+                  const isCartServico = item.tipo_item === 'SERVICO';
+                  return (
+                    <Box
+                      key={item.tempId}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        p: 1.25,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 0 },
+                        borderRadius: 1.5,
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexGrow: 1, pr: 1.5 }}>
+                        <Avatar
+                          src={cartProd?.imagem_url || undefined}
+                          variant="rounded"
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 1.5,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: isCartServico ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                            color: isCartServico ? '#7B1FA2' : 'primary.main',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isCartServico ? <Build sx={{ fontSize: 16 }} /> : <ShoppingBag sx={{ fontSize: 16 }} />}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', lineHeight: 1.2 }}>
+                            {item.descricao}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontFeatureSettings: '"tnum"' }}
+                          >
+                            {formatCurrency(item.preco_unitario)} cada
+                          </Typography>
+                        </Box>
+                      </Box>
 
                     {/* Quantity Stepper Pill */}
                     <Box
@@ -1096,7 +1170,8 @@ export const Vendas: React.FC = () => {
                       </IconButton>
                     </Box>
                   </Box>
-                ))
+                  );
+                })
               )}
             </Box>
 

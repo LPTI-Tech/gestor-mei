@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+import time
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.empresa import Empresa
@@ -17,6 +20,8 @@ from app.dependencies import (
     require_master
 )
 from app.security import hash_password
+from app.services.storage_service import storage_service
+from app.services.image_service import validate_image_upload, optimize_and_convert_to_webp
 
 router = APIRouter(prefix="/empresa", tags=["Empresa"])
 
@@ -194,3 +199,117 @@ def transferir_propriedade_master(
     return {
         "message": f"Propriedade da empresa '{empresa.nome_fantasia}' transferida com sucesso para '{novo_owner.nome}'."
     }
+
+
+# ============================================================================
+# ENDPOINTS DE LOGOTIPO DA EMPRESA (Sprint Operação Real 1)
+# ============================================================================
+
+def _stream_empresa_logo(empresa_id: int, db: Session):
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa or not empresa.logo_url:
+        raise HTTPException(status_code=404, detail="Logotipo não encontrado para esta empresa.")
+
+    res = storage_service.get_company_logo_stream(empresa_id=empresa_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Arquivo de logotipo não encontrado no armazenamento.")
+
+    stream, content_type, size, provider_name = res
+
+    headers = {
+        "Cache-Control": "public, max-age=86400",
+        "Content-Security-Policy": "default-src 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "X-Storage-Provider": provider_name,
+    }
+    if size:
+        headers["Content-Length"] = str(size)
+
+    def iter_stream():
+        try:
+            while True:
+                chunk = stream.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            if hasattr(stream, "close"):
+                stream.close()
+
+    return StreamingResponse(iter_stream(), media_type=content_type, headers=headers)
+
+
+@router.post("/logo", response_model=EmpresaResponse)
+def upload_empresa_logo(
+    file: UploadFile = File(...),
+    empresa: Empresa = Depends(get_current_empresa),
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Upload do logotipo oficial da empresa.
+    Otimiza e converte para WebP (máx 600x600 px) e armazena no Cloudflare R2 com fallback local.
+    """
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+
+    content = file.file.read()
+    valido, msg_erro = validate_image_upload(content, file.content_type)
+    if not valido:
+        raise HTTPException(status_code=400, detail=msg_erro)
+
+    try:
+        webp_bytes, content_type = optimize_and_convert_to_webp(content, max_size=(600, 600), quality=90)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar logotipo: {str(e)}")
+
+    storage_service.save_company_logo(
+        webp_bytes,
+        empresa_id=empresa.id,
+        content_type=content_type
+    )
+
+    empresa.logo_url = f"/api/empresa/{empresa.id}/logo"
+    db.commit()
+    db.refresh(empresa)
+    return empresa
+
+
+@router.get("/logo")
+def get_current_empresa_logo(
+    empresa: Empresa = Depends(get_current_empresa),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o logotipo da empresa autenticada no contexto atual.
+    """
+    return _stream_empresa_logo(empresa.id, db)
+
+
+@router.get("/{empresa_id}/logo")
+def get_empresa_logo_by_id(
+    empresa_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o logotipo da empresa pelo ID da empresa.
+    Público para renderização de layouts, PDFs e DANFE sem bloqueio de sessão.
+    """
+    return _stream_empresa_logo(empresa_id, db)
+
+
+@router.delete("/logo", response_model=EmpresaResponse)
+def delete_empresa_logo(
+    empresa: Empresa = Depends(get_current_empresa),
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Remove o logotipo da empresa do storage e do cadastro.
+    """
+    storage_service.delete_company_logo(empresa_id=empresa.id)
+
+    empresa.logo_url = None
+    db.commit()
+    db.refresh(empresa)
+    return empresa

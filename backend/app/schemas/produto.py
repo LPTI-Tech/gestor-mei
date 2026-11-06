@@ -11,6 +11,8 @@ class ProdutoBase(BaseModel):
     quantidade_estoque: float = 0.0
     estoque_minimo: float = 0.0
     ativo: bool = True
+    imagem_url: Optional[str] = None
+    imagem_nome: Optional[str] = None
 
 class ProdutoCreate(ProdutoBase):
     pass
@@ -24,6 +26,8 @@ class ProdutoUpdate(BaseModel):
     quantidade_estoque: Optional[float] = None
     estoque_minimo: Optional[float] = None
     ativo: Optional[bool] = None
+    imagem_url: Optional[str] = None
+    imagem_nome: Optional[str] = None
 
 class ProdutoResponse(ProdutoBase):
     id: int

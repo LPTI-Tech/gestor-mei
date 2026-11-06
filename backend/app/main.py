@@ -13,6 +13,7 @@ from app.migrate_sprint6 import run_migration as run_migration_sprint6
 from app.migrate_sprint7 import run_migration as run_migration_sprint7
 from app.migrate_rbac import run_migration as run_migration_rbac
 from app.migrate_sprint8b import run_migration as run_migration_sprint8b
+from app.migrate_operacao_real1 import run_migration as run_migration_operacao_real1
 
 # Import routers
 from app.routers import (
@@ -81,6 +82,7 @@ def on_startup():
 
     run_migration_rbac()
     run_migration_sprint8b()
+    run_migration_operacao_real1()
 
     if not settings.is_production and settings.should_seed:
         seed_database()
@@ -90,6 +92,8 @@ def on_startup():
 backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 uploads_dir = os.path.join(backend_root, "uploads")
 os.makedirs(os.path.join(uploads_dir, "comprovantes"), exist_ok=True)
+os.makedirs(os.path.join(uploads_dir, "produtos"), exist_ok=True)
+os.makedirs(os.path.join(uploads_dir, "logos"), exist_ok=True)
 
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)
