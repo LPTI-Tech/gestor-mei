@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   TextField,
   Grid,
@@ -22,28 +20,35 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   IconButton,
   CircularProgress,
   Alert,
   Tooltip,
   Divider,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
-  CheckCircle,
-  WarningAmber,
-  ReportProblem,
-  CalendarMonth,
-  Payment,
-  Edit,
-  Refresh,
-  OpenInNew,
+  Receipt,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  ShieldAlert,
+  ShieldCheck,
+  DollarSign,
+  ExternalLink,
+  RefreshCw,
   Download,
-  FilterList,
-  AccountBalanceWallet,
-  ReceiptLong,
-  InfoOutlined,
-} from '@mui/icons-material';
+  Search,
+  FileText,
+  CreditCard,
+  Edit3,
+  X,
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react';
 import api from '../services/api';
 import {
   DasMensal,
@@ -52,14 +57,26 @@ import {
   DasStatus,
   RegistrarPagamentoDasRequest,
   AlterarStatusDasRequest,
+  RelatorioMei as RelatorioMeiData,
 } from '../types';
 import { formatCurrency, formatDate, exportToExcel, exportToCSV } from '../services/exportUtils';
+import {
+  ProtectiveCard,
+  ClearSignalKPI,
+  FiscalShieldCapsule,
+} from '../components/sentinel';
+import { StatusPill, StatusPillVariant } from '../components/StatusPill';
 
 export const ControleDas: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [guias, setGuias] = useState<DasMensal[]>([]);
   const [vencimentosData, setVencimentosData] = useState<DasVencimentosResponse | null>(null);
+  const [faturamentoAno, setFaturamentoAno] = useState<number>(0);
+  const [limiteAno, setLimiteAno] = useState<number>(81000);
   const [loading, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>('TODOS');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -88,12 +105,22 @@ export const ControleDas: React.FC = () => {
   const fetchData = async (year: number = selectedYear) => {
     try {
       setLoading(true);
-      const [resGuias, resVenc] = await Promise.all([
+      const [resGuias, resVenc, resRelatorio] = await Promise.allSettled([
         api.get<DasMensal[]>(`/das?ano=${year}`),
         api.get<DasVencimentosResponse>(`/das/vencimentos?ano=${year}`),
+        api.get<RelatorioMeiData>(`/relatorio-mei?ano=${year}`),
       ]);
-      setGuias(resGuias.data);
-      setVencimentosData(resVenc.data);
+
+      if (resGuias.status === 'fulfilled') {
+        setGuias(resGuias.value.data);
+      }
+      if (resVenc.status === 'fulfilled') {
+        setVencimentosData(resVenc.value.data);
+      }
+      if (resRelatorio.status === 'fulfilled') {
+        setFaturamentoAno(resRelatorio.value.data.faturamento_acumulado_ano);
+        setLimiteAno(resRelatorio.value.data.limite_mei_anual || 81000);
+      }
     } catch (err: any) {
       console.error('Erro ao carregar dados do DAS:', err);
       setAlertError('Não foi possível carregar as guias do DAS.');
@@ -157,9 +184,7 @@ export const ControleDas: React.FC = () => {
         data_pagamento: editStatus === 'Pago' ? (editDataPagamento || new Date().toISOString().split('T')[0]) : undefined,
         observacao: editObs,
       };
-      // Primeiro atualiza status
       await api.patch(`/das/${selectedGuia.id}/status`, payload);
-      // Se alterou valor ou vencimento, atualiza os campos gerais
       if (editValor !== selectedGuia.valor || editVencimento !== selectedGuia.vencimento) {
         await api.put(`/das/${selectedGuia.id}`, {
           valor: editValor,
@@ -228,38 +253,80 @@ export const ControleDas: React.FC = () => {
   const dasVenceEm7Dias = vencimentosData?.das_vence_em_7_dias || [];
   const dasMesAtual = resumo?.das_mes_atual;
 
+  // Situação fiscal consolidada para o FiscalShieldCapsule
+  const statusFiscalGeral: 'pago' | 'pendente' | 'atrasado' =
+    dasVencidos.length > 0
+      ? 'atrasado'
+      : dasMesAtual?.status === 'Pendente'
+      ? 'pendente'
+      : 'pago';
+
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 6, maxWidth: 1400, mx: 'auto' }}>
       {/* Feedback Alerts */}
       {alertSuccess && (
-        <Alert severity="success" onClose={() => setAlertSuccess(null)} sx={{ mb: 2, borderRadius: 2 }}>
+        <Alert severity="success" onClose={() => setAlertSuccess(null)} sx={{ mb: 2.5, borderRadius: 2 }}>
           {alertSuccess}
         </Alert>
       )}
       {alertError && (
-        <Alert severity="error" onClose={() => setAlertError(null)} sx={{ mb: 2, borderRadius: 2 }}>
+        <Alert severity="error" onClose={() => setAlertError(null)} sx={{ mb: 2.5, borderRadius: 2 }}>
           {alertError}
         </Alert>
       )}
 
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      {/* CABEÇALHO — CENTRAL DE CONFORMIDADE FISCAL DO MEI */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', md: 'center' },
+          mb: 3.5,
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 2,
+        }}
+      >
         <Box>
-          <Typography variant="h4" fontWeight={800} color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ReceiptLong fontSize="large" /> Controle DAS Mensal
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Acompanhe, gerencie e registre os pagamentos mensais do Documento de Arrecadação do Simples Nacional (MEI).
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                bgcolor: 'primary.main',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(2, 136, 209, 0.3)',
+              }}
+            >
+              <Receipt size={24} />
+            </Box>
+            <Typography variant="h4" fontWeight={900} sx={{ letterSpacing: '-0.02em' }}>
+              Central de Conformidade DAS
+            </Typography>
+            <StatusPill
+              label={`Exercício ${selectedYear}`}
+              variant={dasVencidos.length > 0 ? 'error' : 'success'}
+              pulse={dasVencidos.length > 0}
+              size="medium"
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 800 }}>
+            Gerencie e comprove os pagamentos mensais do DAS (Documento de Arrecadação do Simples Nacional).
+            Mantenha sua empresa em dia com a Receita Federal e proteja seus benefícios do INSS.
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', alignSelf: { xs: 'stretch', sm: 'flex-start' } }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Ano</InputLabel>
+            <InputLabel>Ano-Base</InputLabel>
             <Select
               value={selectedYear}
-              label="Ano"
+              label="Ano-Base"
               onChange={(e) => setSelectedYear(Number(e.target.value))}
+              sx={{ borderRadius: '10px' }}
             >
               <MenuItem value={currentYear - 1}>{currentYear - 1}</MenuItem>
               <MenuItem value={currentYear}>{currentYear}</MenuItem>
@@ -269,11 +336,17 @@ export const ControleDas: React.FC = () => {
 
           <Button
             variant="outlined"
-            startIcon={<Refresh />}
+            startIcon={<RefreshCw size={16} className={actionLoading ? 'spin' : ''} />}
             onClick={handleSincronizarAno}
             disabled={actionLoading}
             size="small"
-            sx={{ borderRadius: 2 }}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontWeight: 700,
+              height: 38,
+              px: 2,
+            }}
           >
             Sincronizar Guias
           </Button>
@@ -281,247 +354,446 @@ export const ControleDas: React.FC = () => {
           <Button
             variant="contained"
             color="primary"
-            startIcon={<OpenInNew />}
+            startIcon={<ExternalLink size={16} />}
             href="https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/pgmei.app/Identificacao"
             target="_blank"
             rel="noopener noreferrer"
             size="small"
-            sx={{ borderRadius: 2, fontWeight: 700 }}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontWeight: 800,
+              height: 38,
+              px: 2.2,
+              boxShadow: '0 4px 12px rgba(2, 136, 209, 0.3)',
+            }}
           >
             Emitir no PGMEI
           </Button>
         </Box>
       </Box>
 
-      {/* Seção de Alertas em Destaque (Requisitos: DAS vence em 7 dias, DAS venceu, DAS pago) */}
-      {/* 1. Alerta: DAS Venceu (Crítico) */}
+      {/* FISCAL SHIELD CAPSULE — BLINDAGEM TRIBUTÁRIA DO EXERCÍCIO */}
+      <Box sx={{ mb: 3.5 }}>
+        <FiscalShieldCapsule
+          faturamentoAcumulado={faturamentoAno}
+          limiteAnual={limiteAno}
+          anoReferencia={selectedYear}
+          statusDas={statusFiscalGeral}
+          variant="full"
+        />
+      </Box>
+
+      {/* ALERTAS INTELIGENTES SENTINEL EM DESTAQUE */}
+      {/* 1. Alerta: Guia Vencida (Crítico) */}
       {dasVencidos.length > 0 && (
-        <Alert
-          severity="error"
-          icon={<ReportProblem />}
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
-          action={
+        <ProtectiveCard
+          variant="accent"
+          accentColor="error"
+          padding={2.5}
+          sx={{ mb: 3 }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', md: 'center' },
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(239, 68, 68, 0.1)',
+                  color: '#DC2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <ShieldAlert size={24} />
+              </Box>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.2 }}>
+                  <Typography variant="body1" fontWeight={800} color="error.main">
+                    Inadimplência Fiscal: {dasVencidos.length} guia(s) DAS em atraso
+                  </Typography>
+                  <StatusPill label="Ação Urgente" variant="error" pulse={true} size="small" />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Competências: <strong>{dasVencidos.map((d) => d.nome_mes).join(', ')}</strong>.
+                  Regularize para evitar multas de mora, perda dos benefícios previdenciários e suspensão do CNPJ.
+                </Typography>
+              </Box>
+            </Box>
+
             <Button
-              color="inherit"
+              variant="contained"
+              color="error"
               size="small"
               onClick={() => handleOpenPayment(dasVencidos[0])}
-              sx={{ fontWeight: 700 }}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 800,
+                px: 2.5,
+                height: 38,
+                flexShrink: 0,
+              }}
             >
               Pagar Guia em Atraso
             </Button>
-          }
-        >
-          DAS Venceu: Você possui {dasVencidos.length} guia(s) DAS em atraso ({dasVencidos.map(d => d.nome_mes).join(', ')}).
-          Regularize o quanto antes no portal da Receita para evitar multas de mora e preservar os benefícios previdenciários do MEI!
-        </Alert>
+          </Box>
+        </ProtectiveCard>
       )}
 
-      {/* 2. Alerta: DAS Vence em 7 dias (Atenção) */}
+      {/* 2. Alerta: Guia Vence em breve (Atenção) */}
       {dasVenceEm7Dias.length > 0 && (
-        <Alert
-          severity="warning"
-          icon={<CalendarMonth />}
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
-          action={
+        <ProtectiveCard
+          variant="accent"
+          accentColor="warning"
+          padding={2.5}
+          sx={{ mb: 3 }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', md: 'center' },
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(245, 158, 11, 0.1)',
+                  color: '#D97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Clock size={24} />
+              </Box>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.2 }}>
+                  <Typography variant="body1" fontWeight={800} color="warning.main">
+                    Vencimento Próximo da Guia DAS
+                  </Typography>
+                  <StatusPill label="7 Dias" variant="warning" size="small" />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {dasVenceEm7Dias[0].dias_para_vencimento === 0
+                    ? `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence HOJE (dia 20)! Valor: ${formatCurrency(dasVenceEm7Dias[0].valor)}.`
+                    : dasVenceEm7Dias[0].dias_para_vencimento === 1
+                    ? `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence AMANHÃ! Valor: ${formatCurrency(dasVenceEm7Dias[0].valor)}.`
+                    : `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence em ${dasVenceEm7Dias[0].dias_para_vencimento} dias (${formatDate(dasVenceEm7Dias[0].vencimento)}).`}
+                </Typography>
+              </Box>
+            </Box>
+
             <Button
-              color="inherit"
+              variant="contained"
+              color="warning"
               size="small"
               onClick={() => handleOpenPayment(dasVenceEm7Dias[0])}
-              sx={{ fontWeight: 700 }}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 800,
+                px: 2.5,
+                height: 38,
+                flexShrink: 0,
+              }}
             >
-              Registrar Pagamento
+              Registrar Quitação
             </Button>
-          }
-        >
-          {dasVenceEm7Dias[0].dias_para_vencimento === 0
-            ? `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence HOJE (dia 20)! Valor: ${formatCurrency(dasVenceEm7Dias[0].valor)}.`
-            : dasVenceEm7Dias[0].dias_para_vencimento === 1
-            ? `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence AMANHÃ (dia 20)! Valor: ${formatCurrency(dasVenceEm7Dias[0].valor)}.`
-            : `O DAS de ${dasVenceEm7Dias[0].nome_mes} vence em ${dasVenceEm7Dias[0].dias_para_vencimento} dias (${formatDate(dasVenceEm7Dias[0].vencimento)}). Valor: ${formatCurrency(dasVenceEm7Dias[0].valor)}.`}
-        </Alert>
+          </Box>
+        </ProtectiveCard>
       )}
 
-      {/* 3. Alerta: DAS Pago (Sucesso/Confirmação) */}
-      {dasMesAtual && dasMesAtual.status === 'Pago' && dasVencidos.length === 0 && (
-        <Alert
-          severity="success"
-          icon={<CheckCircle />}
-          sx={{ mb: 2.5, fontWeight: 600, borderRadius: 2 }}
-        >
-          DAS Pago: A guia de {dasMesAtual.nome_mes} / {selectedYear} já está paga (liquidada em {dasMesAtual.data_pagamento ? formatDate(dasMesAtual.data_pagamento) : 'hoje'}). Parabéns, suas obrigações fiscais do MEI estão em dia!
-        </Alert>
-      )}
-
-      {/* Cards de Resumo / Indicadores (Exibir: Pago, Pendente, Atrasado) */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        {/* Card: Total Pago */}
+      {/* 4 CARDS DE INDICADORES DE CONFORMIDADE COM CLEARSIGNALKPI */}
+      <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+        {/* 1. Total Pago */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: '6px solid #2E7D32', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">
-                  DAS PAGO
-                </Typography>
-                <CheckCircle sx={{ color: '#2E7D32' }} />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="#2E7D32">
-                {formatCurrency(resumo?.total_pago || 0)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {resumo?.qtd_pago || 0} de {resumo?.total_guias || 12} guias quitadas
-              </Typography>
-            </CardContent>
-          </Card>
+          <ClearSignalKPI
+            label="DAS Pago no Ano"
+            value={formatCurrency(resumo?.total_pago || 0)}
+            icon={<CheckCircle2 size={20} />}
+            colorScheme="success"
+            humanExplanation={`${resumo?.qtd_pago || 0} de ${resumo?.total_guias || 12} competências quitadas`}
+            statusPill={{
+              label: 'Em Dia',
+              variant: 'success',
+            }}
+          />
         </Grid>
 
-        {/* Card: Total Pendente */}
+        {/* 2. Total Pendente */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: '6px solid #ED6C02', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">
-                  DAS PENDENTE
-                </Typography>
-                <CalendarMonth sx={{ color: '#ED6C02' }} />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="#ED6C02">
-                {formatCurrency(resumo?.total_pendente || 0)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {resumo?.qtd_pendente || 0} guias a vencer no ano
-              </Typography>
-            </CardContent>
-          </Card>
+          <ClearSignalKPI
+            label="DAS Pendente"
+            value={formatCurrency(resumo?.total_pendente || 0)}
+            icon={<Clock size={20} />}
+            colorScheme="warning"
+            humanExplanation={`${resumo?.qtd_pendente || 0} guia(s) a vencer até o fim do exercício`}
+            statusPill={{
+              label: 'A Vencer',
+              variant: 'warning',
+            }}
+          />
         </Grid>
 
-        {/* Card: Total Atrasado */}
+        {/* 3. Total Atrasado */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: '6px solid #D32F2F', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">
-                  DAS ATRASADO
-                </Typography>
-                <ReportProblem sx={{ color: '#D32F2F' }} />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="#D32F2F">
-                {formatCurrency(resumo?.total_atrasado || 0)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {resumo?.qtd_atrasado || 0} guias vencidas sem quitação
-              </Typography>
-            </CardContent>
-          </Card>
+          <ClearSignalKPI
+            label="DAS em Atraso"
+            value={formatCurrency(resumo?.total_atrasado || 0)}
+            icon={<AlertTriangle size={20} />}
+            colorScheme={(resumo?.total_atrasado || 0) > 0 ? 'error' : 'success'}
+            humanExplanation={
+              (resumo?.total_atrasado || 0) > 0
+                ? `${resumo?.qtd_atrasado || 0} guia(s) vencidas aguardando regularização`
+                : 'Nenhuma guia em atraso no exercício'
+            }
+            statusPill={
+              (resumo?.total_atrasado || 0) > 0
+                ? { label: 'Inadimplência', variant: 'error', pulse: true }
+                : { label: 'Sem Débitos', variant: 'success' }
+            }
+          />
         </Grid>
 
-        {/* Card: Situação do Mês Atual */}
+        {/* 4. Situação do Mês Atual */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, borderLeft: '6px solid #1976D2', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">
-                  COMPETÊNCIA ATUAL
-                </Typography>
-                <AccountBalanceWallet color="primary" />
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 0.5 }}>
-                <Typography variant="h5" fontWeight={800}>
-                  {dasMesAtual?.nome_mes || 'Mês Atual'}
-                </Typography>
-                {dasMesAtual && (
-                  <Chip
-                    size="small"
-                    label={dasMesAtual.status}
-                    color={
-                      dasMesAtual.status === 'Pago'
-                        ? 'success'
-                        : dasMesAtual.status === 'Atrasado'
-                        ? 'error'
-                        : 'warning'
-                    }
-                    sx={{ fontWeight: 800 }}
-                  />
-                )}
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Vencimento: {dasMesAtual ? formatDate(dasMesAtual.vencimento) : 'Dia 20'} • {formatCurrency(dasMesAtual?.valor || 75.60)}
-              </Typography>
-            </CardContent>
-          </Card>
+          <ClearSignalKPI
+            label="Competência Atual"
+            value={dasMesAtual?.nome_mes || 'Mês Atual'}
+            icon={<Calendar size={20} />}
+            colorScheme="primary"
+            humanExplanation={`Vencimento em ${
+              dasMesAtual ? formatDate(dasMesAtual.vencimento) : 'Dia 20'
+            } • ${formatCurrency(dasMesAtual?.valor || 75.60)}`}
+            statusPill={
+              dasMesAtual?.status === 'Pago'
+                ? { label: 'Quitado', variant: 'success' }
+                : dasMesAtual?.status === 'Atrasado'
+                ? { label: 'Vencido', variant: 'error', pulse: true }
+                : { label: 'Pendente', variant: 'warning' }
+            }
+          />
         </Grid>
       </Grid>
 
-      {/* Tabela de Guias Mensais com Filtros e Ações */}
-      <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 16px rgba(0,0,0,0.05)' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <TextField
-              size="small"
-              placeholder="Buscar por mês ou observação..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ minWidth: 260 }}
-            />
+      {/* LINHA DO TEMPO ANUAL DAS — 12 MESES EM COCKPIT VISUAL */}
+      <ProtectiveCard
+        variant="default"
+        title="Linha do Tempo Anual DAS (Jan — Dez)"
+        subtitle={`Visão panorâmica de conformidade fiscal para o exercício de ${selectedYear}`}
+        icon={<Calendar size={20} />}
+        statusPill={
+          <StatusPill
+            label={`${resumo?.qtd_pago || 0}/12 Pagos`}
+            variant={resumo?.qtd_pago === 12 ? 'success' : 'neutral'}
+            size="small"
+          />
+        }
+        padding={{ xs: 2, sm: 2.5 }}
+        sx={{ mb: 3.5 }}
+      >
+        <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((mesNum) => {
+            const guiaMes = guias.find((g) => g.mes === mesNum);
+            const isPago = guiaMes?.status === 'Pago';
+            const isAtrasado = guiaMes?.status === 'Atrasado';
+            const isPendente = guiaMes?.status === 'Pendente';
 
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus}
-                label="Status"
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <MenuItem value="TODOS">Todos os Status</MenuItem>
-                <MenuItem value="Pago">Pago</MenuItem>
-                <MenuItem value="Pendente">Pendente</MenuItem>
-                <MenuItem value="Atrasado">Atrasado</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
+            const mesesNomes = [
+              'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+              'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+            ];
+            const nomeMes = mesesNomes[mesNum - 1];
 
+            return (
+              <Grid item xs={4} sm={3} md={2} lg={1} key={mesNum}>
+                <Box
+                  onClick={() => guiaMes && (isPago ? handleOpenEdit(guiaMes) : handleOpenPayment(guiaMes))}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    cursor: guiaMes ? 'pointer' : 'default',
+                    border: '1px solid',
+                    borderColor: isPago
+                      ? 'rgba(16, 185, 129, 0.3)'
+                      : isAtrasado
+                      ? 'rgba(239, 68, 68, 0.3)'
+                      : isPendente
+                      ? 'rgba(245, 158, 11, 0.3)'
+                      : 'divider',
+                    bgcolor: isPago
+                      ? 'rgba(16, 185, 129, 0.06)'
+                      : isAtrasado
+                      ? 'rgba(239, 68, 68, 0.06)'
+                      : isPendente
+                      ? 'rgba(245, 158, 11, 0.06)'
+                      : 'background.paper',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: guiaMes ? 'translateY(-2px)' : 'none',
+                      boxShadow: guiaMes ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
+                    },
+                  }}
+                >
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">
+                    {nomeMes}
+                  </Typography>
+
+                  <Box sx={{ my: 0.7, display: 'flex', justifyContent: 'center' }}>
+                    {isPago ? (
+                      <CheckCircle2 size={20} color="#059669" />
+                    ) : isAtrasado ? (
+                      <AlertTriangle size={20} color="#DC2626" />
+                    ) : isPendente ? (
+                      <Clock size={20} color="#D97706" />
+                    ) : (
+                      <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: 'action.disabledBackground' }} />
+                    )}
+                  </Box>
+
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    sx={{
+                      display: 'block',
+                      fontSize: '0.72rem',
+                      color: isPago
+                        ? 'success.main'
+                        : isAtrasado
+                        ? 'error.main'
+                        : isPendente
+                        ? 'warning.main'
+                        : 'text.disabled',
+                    }}
+                  >
+                    {isPago ? 'Pago' : isAtrasado ? 'Atrasado' : isPendente ? 'Pendente' : '-'}
+                  </Typography>
+                </Box>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </ProtectiveCard>
+
+      {/* TABELA DE GUIAS MENSAIS COM PROTECTIVECARD & STATUSPILL */}
+      <ProtectiveCard
+        variant="default"
+        title="Demonstrativo de Guias Mensais DAS"
+        subtitle={`Exibindo ${filteredGuias.length} guia(s) no exercício de ${selectedYear}`}
+        icon={<FileText size={20} />}
+        action={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
               size="small"
-              startIcon={<Download />}
+              startIcon={<Download size={15} />}
               onClick={() => handleExport('excel')}
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
             >
-              Exportar Excel
+              Excel
             </Button>
             <Button
               variant="outlined"
               size="small"
-              startIcon={<Download />}
+              startIcon={<Download size={15} />}
               onClick={() => handleExport('csv')}
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
             >
               CSV
             </Button>
           </Box>
+        }
+        padding={0}
+        sx={{ overflow: 'hidden' }}
+      >
+        {/* Barra de Filtros Interna */}
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            gap: 2,
+            alignItems: { xs: 'stretch', sm: 'center' },
+          }}
+        >
+          <TextField
+            size="small"
+            placeholder="Buscar por mês ou observação..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <Search size={16} color="#64748B" style={{ marginRight: 8 }} />
+              ),
+            }}
+            sx={{
+              minWidth: { xs: '100%', sm: 280 },
+              '& .MuiOutlinedInput-root': { borderRadius: '10px' },
+            }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 170 }}>
+            <InputLabel>Status da Guia</InputLabel>
+            <Select
+              value={filterStatus}
+              label="Status da Guia"
+              onChange={(e) => setFilterStatus(e.target.value)}
+              sx={{ borderRadius: '10px' }}
+            >
+              <MenuItem value="TODOS">Todos os Status</MenuItem>
+              <MenuItem value="Pago">Pago</MenuItem>
+              <MenuItem value="Pendente">Pendente</MenuItem>
+              <MenuItem value="Atrasado">Atrasado</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-            <CircularProgress />
+            <CircularProgress size={32} />
           </Box>
         ) : filteredGuias.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Typography variant="body1" color="text.secondary">
+            <Receipt size={48} color="#94A3B8" style={{ marginBottom: 12 }} />
+            <Typography variant="body1" color="text.secondary" fontWeight={700}>
               Nenhuma guia encontrada com os filtros selecionados.
             </Typography>
           </Box>
         ) : (
           <TableContainer>
             <Table sx={{ minWidth: 750 }}>
-              <TableHead sx={{ bgcolor: 'action.hover' }}>
+              <TableHead sx={{ bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.02)' }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Competência</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Vencimento</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Valor</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Data Pagamento</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Observações / Comprovante</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>Ações</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>COMPETÊNCIA</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>VENCIMENTO</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>VALOR</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>STATUS FISCAL</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>DATA PAGAMENTO</TableCell>
+                  <TableCell sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>OBSERVAÇÕES / COMPROVANTE</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800, fontSize: '0.8rem', py: 1.8 }}>AÇÕES</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -535,62 +807,63 @@ export const ControleDas: React.FC = () => {
                       key={guia.id}
                       hover
                       sx={{
+                        transition: 'background-color 0.15s ease',
                         bgcolor: isAtrasado
-                          ? 'rgba(211, 47, 47, 0.04)'
+                          ? 'rgba(239, 68, 68, 0.03)'
                           : isPago
-                          ? 'rgba(46, 125, 50, 0.02)'
+                          ? 'rgba(16, 185, 129, 0.02)'
                           : 'inherit',
                       }}
                     >
-                      <TableCell sx={{ fontWeight: 700 }}>
+                      <TableCell sx={{ fontWeight: 800 }}>
                         {guia.competencia_formatada || `${guia.nome_mes} / ${guia.ano}`}
                       </TableCell>
+
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography variant="body2" fontWeight={600}>
                             {formatDate(guia.vencimento)}
                           </Typography>
                           {guia.alerta_vencimento === 'vence_hoje' && (
-                            <Chip size="small" label="Vence Hoje" color="error" sx={{ height: 20, fontSize: '0.7rem' }} />
+                            <StatusPill label="Vence Hoje" variant="error" pulse={true} size="small" />
                           )}
                           {guia.alerta_vencimento === 'vence_7_dias' && (
-                            <Chip
-                              size="small"
-                              label={`Em ${guia.dias_para_vencimento}d`}
-                              color="warning"
-                              sx={{ height: 20, fontSize: '0.7rem' }}
-                            />
+                            <StatusPill label={`Em ${guia.dias_para_vencimento}d`} variant="warning" size="small" />
                           )}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>
+
+                      <TableCell sx={{ fontWeight: 800, color: 'text.primary' }}>
                         {formatCurrency(guia.valor)}
                       </TableCell>
+
                       <TableCell>
-                        <Chip
-                          icon={isPago ? <CheckCircle /> : isAtrasado ? <ReportProblem /> : <CalendarMonth />}
+                        <StatusPill
                           label={guia.status}
+                          variant={isPago ? 'success' : isAtrasado ? 'error' : 'warning'}
+                          pulse={isAtrasado}
                           size="small"
-                          color={isPago ? 'success' : isAtrasado ? 'error' : 'warning'}
-                          sx={{ fontWeight: 700 }}
                         />
                       </TableCell>
+
                       <TableCell>
                         {guia.data_pagamento ? (
-                          <Typography variant="body2" fontWeight={600} color="success.main">
+                          <Typography variant="body2" fontWeight={700} color="success.main">
                             {formatDate(guia.data_pagamento)}
                           </Typography>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            -
+                          <Typography variant="body2" color="text.disabled">
+                            —
                           </Typography>
                         )}
                       </TableCell>
+
                       <TableCell sx={{ maxWidth: 220 }}>
                         <Typography variant="body2" color="text.secondary" noWrap title={guia.observacao || ''}>
-                          {guia.observacao || '-'}
+                          {guia.observacao || '—'}
                         </Typography>
                       </TableCell>
+
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                           {!isPago ? (
@@ -598,27 +871,42 @@ export const ControleDas: React.FC = () => {
                               variant="contained"
                               color="success"
                               size="small"
-                              startIcon={<Payment />}
+                              startIcon={<CreditCard size={15} />}
                               onClick={() => handleOpenPayment(guia)}
-                              sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none' }}
+                              sx={{
+                                fontWeight: 800,
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                fontSize: '0.78rem',
+                                px: 1.8,
+                              }}
                             >
                               Pagar
                             </Button>
                           ) : (
                             <Button
                               variant="outlined"
-                              color="primary"
                               size="small"
                               onClick={() => handleOpenEdit(guia)}
-                              sx={{ fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
+                              sx={{
+                                fontWeight: 700,
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                fontSize: '0.78rem',
+                                px: 1.5,
+                              }}
                             >
                               Detalhes
                             </Button>
                           )}
 
                           <Tooltip title="Editar ou alterar status">
-                            <IconButton size="small" onClick={() => handleOpenEdit(guia)}>
-                              <Edit fontSize="small" />
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenEdit(guia)}
+                              sx={{ borderRadius: '8px' }}
+                            >
+                              <Edit3 size={16} />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -630,20 +918,36 @@ export const ControleDas: React.FC = () => {
             </Table>
           </TableContainer>
         )}
-      </Paper>
+      </ProtectiveCard>
 
-      {/* Modal: Registrar Pagamento */}
-      <Dialog open={openPayModal} onClose={() => setOpenPayModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>
+      {/* MODAL: REGISTRAR PAGAMENTO DO DAS */}
+      <Dialog
+        open={openPayModal}
+        onClose={() => setOpenPayModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
           Registrar Pagamento do DAS
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ p: 3 }}>
           {selectedGuia && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-              <Alert severity="info" sx={{ borderRadius: 2 }}>
-                Confirmando a quitação da competência <strong>{selectedGuia.competencia_formatada}</strong> com vencimento em{' '}
-                <strong>{formatDate(selectedGuia.vencimento)}</strong>.
-              </Alert>
+              <ProtectiveCard variant="subtle" padding={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Confirmando a quitação da competência{' '}
+                  <strong style={{ color: 'var(--mui-palette-text-primary)' }}>
+                    {selectedGuia.competencia_formatada}
+                  </strong>{' '}
+                  com vencimento em <strong>{formatDate(selectedGuia.vencimento)}</strong>.
+                </Typography>
+              </ProtectiveCard>
 
               <TextField
                 label="Data do Pagamento"
@@ -653,6 +957,7 @@ export const ControleDas: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
                 fullWidth
                 required
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
               />
 
               <TextField
@@ -663,6 +968,7 @@ export const ControleDas: React.FC = () => {
                 fullWidth
                 required
                 inputProps={{ step: '0.01' }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
               />
 
               <TextField
@@ -673,12 +979,13 @@ export const ControleDas: React.FC = () => {
                 value={payObs}
                 onChange={(e) => setPayObs(e.target.value)}
                 fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
               />
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenPayModal(false)} color="inherit">
+        <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setOpenPayModal(false)} color="inherit" sx={{ borderRadius: '8px' }}>
             Cancelar
           </Button>
           <Button
@@ -686,20 +993,31 @@ export const ControleDas: React.FC = () => {
             variant="contained"
             color="success"
             disabled={actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={18} /> : <CheckCircle />}
-            sx={{ fontWeight: 700, borderRadius: 2 }}
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <CheckCircle2 size={16} />}
+            sx={{ fontWeight: 800, borderRadius: '10px', textTransform: 'none', px: 2.5 }}
           >
             Confirmar Pagamento
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Modal: Editar Guia / Alterar Status */}
-      <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>
+      {/* MODAL: GERENCIAR GUIA DAS */}
+      <Dialog
+        open={openEditModal}
+        onClose={() => setOpenEditModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
           Gerenciar Guia DAS — {selectedGuia?.competencia_formatada}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ p: 3 }}>
           {selectedGuia && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
               <FormControl fullWidth>
@@ -708,6 +1026,7 @@ export const ControleDas: React.FC = () => {
                   value={editStatus}
                   label="Status da Guia"
                   onChange={(e) => setEditStatus(e.target.value as DasStatus)}
+                  sx={{ borderRadius: '10px' }}
                 >
                   <MenuItem value="Pago">Pago</MenuItem>
                   <MenuItem value="Pendente">Pendente</MenuItem>
@@ -724,6 +1043,7 @@ export const ControleDas: React.FC = () => {
                     onChange={(e) => setEditValor(Number(e.target.value))}
                     fullWidth
                     inputProps={{ step: '0.01' }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -734,6 +1054,7 @@ export const ControleDas: React.FC = () => {
                     onChange={(e) => setEditVencimento(e.target.value)}
                     InputLabelProps={{ shrink: true }}
                     fullWidth
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
                   />
                 </Grid>
               </Grid>
@@ -746,6 +1067,7 @@ export const ControleDas: React.FC = () => {
                   onChange={(e) => setEditDataPagamento(e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
                 />
               )}
 
@@ -756,12 +1078,13 @@ export const ControleDas: React.FC = () => {
                 value={editObs}
                 onChange={(e) => setEditObs(e.target.value)}
                 fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
               />
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenEditModal(false)} color="inherit">
+        <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setOpenEditModal(false)} color="inherit" sx={{ borderRadius: '8px' }}>
             Cancelar
           </Button>
           <Button
@@ -769,8 +1092,8 @@ export const ControleDas: React.FC = () => {
             variant="contained"
             color="primary"
             disabled={actionLoading}
-            startIcon={actionLoading ? <CircularProgress size={18} /> : <CheckCircle />}
-            sx={{ fontWeight: 700, borderRadius: 2 }}
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <CheckCircle2 size={16} />}
+            sx={{ fontWeight: 800, borderRadius: '10px', textTransform: 'none', px: 2.5 }}
           >
             Salvar Alterações
           </Button>
@@ -781,4 +1104,3 @@ export const ControleDas: React.FC = () => {
 };
 
 export default ControleDas;
-
