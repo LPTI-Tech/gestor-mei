@@ -55,7 +55,7 @@
 
 ### Ambientes de Produção (Nuvem)
 - **Frontend (Vercel):** `https://gestor-mei.vercel.app` *(ou domínio oficial `https://gestormei.com.br`)*
-- **Backend (Render):** `https://gestor-mei-backend.onrender.com`
+- **Backend (Render):** `https://gestor-mei-api.onrender.com`
 - **Armazenamento de Objetos (Cloudflare R2):** Endpoint compatível S3 com Zero Egress Fees e particionamento multi-tenant (`empresas/{id}/produtos/`, `empresas/{id}/logo/`, `empresas/{id}/comprovantes/`).
 - **Banco de Dados (Neon):** PostgreSQL 16 Serverless com pool de conexões e SSL obrigatório.
 
