@@ -14,6 +14,15 @@ class UserRole(str, enum.Enum):
     ADMIN = "OWNER"
     OPERADOR = "OPERATOR"
 
+    @classmethod
+    def _missing_(cls, value):
+        val = str(value).upper() if value is not None else ""
+        if val == "ADMIN":
+            return cls.OWNER
+        if val == "OPERADOR":
+            return cls.OPERATOR
+        return None
+
 class User(Base):
     __tablename__ = "users"
 

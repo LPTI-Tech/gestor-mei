@@ -16,7 +16,63 @@ from app.models.empresa_consultor import EmpresaConsultor
 from app.security import hash_password
 
 
+def align_postgresql_userrole_enum(target_engine):
+    """
+    Garante que o tipo ENUM 'userrole' no PostgreSQL contenha todos os valores
+    necessários para RBAC (MASTER, OWNER, CONSULTOR, OPERATOR).
+    Executa com isolation_level='AUTOCOMMIT' para que cada novo valor seja
+    efetivado imediatamente no catálogo do PostgreSQL, permitindo seu uso em
+    cláusulas UPDATE e INSERT subsequentes sem violar restrições transacionais.
+    """
+    is_sqlite = target_engine.url.drivername.startswith("sqlite")
+    if is_sqlite:
+        return
+
+    print("[MIGRATE RBAC] Verificando e alinhando ENUM 'userrole' no PostgreSQL...")
+    try:
+        with target_engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            # Identifica os nomes de ENUM associados à tabela users ou tipo padrão
+            type_names = {"userrole"}
+            try:
+                col_type = conn.execute(text("""
+                    SELECT udt_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'users' AND column_name = 'role'
+                """)).fetchone()
+                if col_type and col_type[0]:
+                    type_names.add(col_type[0])
+            except Exception:
+                pass
+
+            for tname in type_names:
+                type_exists = conn.execute(
+                    text("SELECT 1 FROM pg_type WHERE typname = :tname"),
+                    {"tname": tname}
+                ).scalar()
+
+                if type_exists:
+                    # Busca valores já existentes no ENUM
+                    existing_rows = conn.execute(text("""
+                        SELECT e.enumlabel
+                        FROM pg_enum e
+                        JOIN pg_type t ON e.enumtypid = t.oid
+                        WHERE t.typname = :tname
+                    """), {"tname": tname}).fetchall()
+                    existing_values = {row[0] for row in existing_rows}
+                    print(f"[MIGRATE RBAC] Valores atuais no ENUM '{tname}': {existing_values}")
+
+                    for val in ["MASTER", "OWNER", "CONSULTOR", "OPERATOR"]:
+                        if val not in existing_values:
+                            conn.execute(text(f"ALTER TYPE {tname} ADD VALUE IF NOT EXISTS '{val}'"))
+                            print(f"[MIGRATE RBAC] Valor '{val}' adicionado ao ENUM '{tname}'.")
+    except Exception as e:
+        print(f"[MIGRATE RBAC] Aviso ao alinhar ENUM PostgreSQL: {e}")
+
+
 def run_migration():
+    # 0. Alinha o ENUM no PostgreSQL antes de qualquer DML ou transação
+    align_postgresql_userrole_enum(engine)
+
     db = SessionLocal()
     try:
         print("[MIGRATE RBAC] Inicializando migração do Controle de Acesso RBAC...")
@@ -48,9 +104,14 @@ def run_migration():
 
             conn.commit()
 
-        # 3. Atualiza roles legados no banco
-        db.execute(text("UPDATE users SET role = 'OWNER' WHERE role = 'ADMIN'"))
-        db.execute(text("UPDATE users SET role = 'OPERATOR' WHERE role = 'OPERADOR'"))
+        # 3. Atualiza roles legados no banco (ADMIN -> OWNER, OPERADOR -> OPERATOR)
+        is_sqlite = engine.url.drivername.startswith("sqlite")
+        if is_sqlite:
+            db.execute(text("UPDATE users SET role = 'OWNER' WHERE UPPER(role) = 'ADMIN'"))
+            db.execute(text("UPDATE users SET role = 'OPERATOR' WHERE UPPER(role) = 'OPERADOR'"))
+        else:
+            db.execute(text("UPDATE users SET role = 'OWNER' WHERE UPPER(role::text) = 'ADMIN'"))
+            db.execute(text("UPDATE users SET role = 'OPERATOR' WHERE UPPER(role::text) = 'OPERADOR'"))
         db.commit()
         print("[MIGRATE RBAC] Roles legados migrados para OWNER e OPERATOR.")
 
