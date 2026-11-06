@@ -37,6 +37,7 @@ import {
   CloudUpload,
 } from '@mui/icons-material';
 import api from '../services/api';
+import { downloadComprovanteAutenticado } from '../services/comprovanteService';
 import { CompraDetalhe } from '../types';
 import { formatCurrency, formatDate } from '../services/exportUtils';
 
@@ -243,10 +244,10 @@ export const DetalheCompra: React.FC = () => {
                     size="small"
                     variant="text"
                     color="primary"
-                    component="a"
-                    href={compra.anexo_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    type="button"
+                    onClick={() => {
+                      downloadComprovanteAutenticado(compra.anexo_url!, compra.anexo_nome || undefined);
+                    }}
                     sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 700 }}
                   >
                     Ver {compra.anexo_tipo || 'Documento'}

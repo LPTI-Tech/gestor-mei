@@ -5,6 +5,7 @@ converte roles legados (ADMIN -> OWNER, OPERADOR -> OPERATOR) e inicializa
 o usuário MASTER global da plataforma LPTI Tech.
 """
 
+import os
 from datetime import datetime
 from sqlalchemy import text
 from app.database import SessionLocal, engine, Base
@@ -53,67 +54,60 @@ def run_migration():
         db.commit()
         print("[MIGRATE RBAC] Roles legados migrados para OWNER e OPERATOR.")
 
-        # 4. Garante a existência do usuário MASTER da plataforma (apenas em desenvolvimento/seed autorizado)
-        master_user = db.query(User).filter(User.role == UserRole.MASTER).first()
-        if not master_user:
-            if not settings.should_seed:
-                print(
-                    "[MIGRATE RBAC] [SEGURANÇA] Nenhum usuário MASTER existente no banco. "
-                    "A criação automática com senha padrão 'master123' foi BLOQUEADA em produção. "
-                    "Execute 'python -m app.scripts.provision_master' para criar o acesso MASTER com senha forte."
-                )
-            else:
-                # Se for SQLite com constraint not null em empresa_id na tabela antiga, atribui None ou 0 se necessário
+        # 4. Provisionamento do usuário MASTER (dependente exclusivamente de MASTER_EMAIL e MASTER_PASSWORD)
+        master_email = (settings.MASTER_EMAIL or os.getenv("MASTER_EMAIL", "")).strip().lower()
+        master_password = settings.MASTER_PASSWORD or os.getenv("MASTER_PASSWORD", "")
+        master_name = settings.MASTER_NAME or os.getenv("MASTER_NAME", "Administrador MASTER (LPTI Tech)").strip()
+
+        if master_email and master_password:
+            master_user = db.query(User).filter(User.email == master_email).first()
+            if not master_user:
                 try:
                     master_user = User(
                         empresa_id=None,
-                        nome="Administrador MASTER (LPTI Tech)",
-                        email="master@lptitech.com.br",
-                        hashed_password=hash_password("master123"),
+                        nome=master_name,
+                        email=master_email,
+                        hashed_password=hash_password(master_password),
                         role=UserRole.MASTER,
                         ativo=True,
                         ultimo_acesso=datetime.utcnow()
                     )
                     db.add(master_user)
                     db.commit()
-                    print("[MIGRATE RBAC] Usuário MASTER master@lptitech.com.br criado com sucesso (empresa_id=None).")
-                except Exception as e_master:
+                    print(f"[MIGRATE RBAC] Usuário MASTER '{master_email}' provisionado com sucesso via variáveis de ambiente.")
+                except Exception:
                     db.rollback()
                     # Fallback para caso SQLite antigo não permita NULL em empresa_id
                     empresa_primeira = db.query(Empresa).first()
                     primeira_empresa_id = empresa_primeira.id if empresa_primeira else 1
                     master_user = User(
                         empresa_id=primeira_empresa_id,
-                        nome="Administrador MASTER (LPTI Tech)",
-                        email="master@lptitech.com.br",
-                        hashed_password=hash_password("master123"),
+                        nome=master_name,
+                        email=master_email,
+                        hashed_password=hash_password(master_password),
                         role=UserRole.MASTER,
                         ativo=True,
                         ultimo_acesso=datetime.utcnow()
                     )
                     db.add(master_user)
                     db.commit()
-                    print(f"[MIGRATE RBAC] Usuário MASTER criado com empresa_id={primeira_empresa_id} (fallback SQLite).")
-
-        # 5. Garante vínculos para o CONSULTOR padrão com as empresas clientes
-        consultor = db.query(User).filter(User.role == UserRole.CONSULTOR).first()
-        if consultor:
-            empresas = db.query(Empresa).all()
-            for emp in empresas:
-                vinculo = db.query(EmpresaConsultor).filter(
-                    EmpresaConsultor.empresa_id == emp.id,
-                    EmpresaConsultor.user_id == consultor.id
-                ).first()
-                if not vinculo:
-                    novo_v = EmpresaConsultor(
-                        empresa_id=emp.id,
-                        user_id=consultor.id,
-                        ativo=True,
-                        created_at=datetime.utcnow()
-                    )
-                    db.add(novo_v)
-            db.commit()
-            print("[MIGRATE RBAC] Vínculos de consultoria configurados para empresas clientes.")
+                    print(f"[MIGRATE RBAC] Usuário MASTER provisionado com empresa_id={primeira_empresa_id} (fallback SQLite).")
+            else:
+                # Atualiza credenciais e papel do usuário MASTER existente
+                master_user.nome = master_name
+                master_user.hashed_password = hash_password(master_password)
+                master_user.role = UserRole.MASTER
+                master_user.ativo = True
+                db.commit()
+                print(f"[MIGRATE RBAC] Usuário MASTER '{master_email}' atualizado via variáveis de ambiente.")
+        else:
+            existing_master = db.query(User).filter(User.role == UserRole.MASTER).first()
+            if not existing_master:
+                print(
+                    "[MIGRATE RBAC] [SEGURANÇA] Nenhum usuário MASTER configurado. "
+                    "A criação automática com senhas padrão foi permanentemente REMOVIDA. "
+                    "Defina as variáveis MASTER_EMAIL e MASTER_PASSWORD ou execute 'python -m app.scripts.provision_master'."
+                )
 
         print("[MIGRATE RBAC] Migração de RBAC concluída com êxito!")
 

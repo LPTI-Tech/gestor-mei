@@ -29,6 +29,7 @@ from app.utils.security_upload import (
     read_file_with_size_limit,
     validate_magic_bytes_xml,
 )
+from app.rate_limiter import limiter
 
 router = APIRouter(prefix="/nfe", tags=["XML NF-e - Entrada de Mercadorias"])
 
@@ -40,6 +41,7 @@ def _clean_digits(val: Optional[str]) -> str:
 
 
 @router.post("/preview-xml", response_model=NfePreviewResponse)
+@limiter.limit("30/minute")
 async def preview_nfe_xml(
     request: Request,
     file: Optional[UploadFile] = File(None),

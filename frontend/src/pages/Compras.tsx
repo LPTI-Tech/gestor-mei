@@ -49,6 +49,7 @@ import { ResumoCompras, CompraItemResumo } from '../types';
 import { formatCurrency, formatDate } from '../services/exportUtils';
 import { StatusPill } from '../components/StatusPill';
 import { StatCard } from '../components/StatCard';
+import { downloadComprovanteAutenticado } from '../services/comprovanteService';
 
 // Formata chave de 44 dígitos em blocos legíveis de 4 caracteres
 const formatChaveFiscal = (chave: string): string => {
@@ -651,12 +652,14 @@ export const Compras: React.FC = () => {
                             icon={isXml ? <FileCode size={12} strokeWidth={1.75} /> : <FileText size={12} strokeWidth={1.75} />}
                           />
                           {c.anexo_url && (
-                            <Tooltip title={`Comprovante anexado (${c.anexo_nome || 'Arquivo'})`}>
+                            <Tooltip title={`Comprovante anexado (${c.anexo_nome || 'Arquivo'}) - Clique para download/visualização segura`}>
                               <Box
-                                component="a"
-                                href={c.anexo_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                component="button"
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadComprovanteAutenticado(c.anexo_url!, c.anexo_nome || undefined);
+                                }}
                                 sx={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -669,6 +672,7 @@ export const Compras: React.FC = () => {
                                   border: '1px solid rgba(16, 185, 129, 0.25)',
                                   fontSize: '0.7rem',
                                   fontWeight: 700,
+                                  cursor: 'pointer',
                                   textDecoration: 'none',
                                   '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.2)' },
                                 }}

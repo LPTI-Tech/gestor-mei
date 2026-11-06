@@ -4,7 +4,9 @@ Garante a existência do perfil CONSULTOR, cria usuário consultor padrão e
 popula empresas clientes com cenários realistas de score (Saudável, Atenção e Crítico).
 """
 
+import os
 from datetime import datetime, date, timedelta
+from app.config import settings
 from app.database import SessionLocal, engine
 from app.models.empresa import Empresa
 from app.models.user import User, UserRole
@@ -16,29 +18,40 @@ from app.security import hash_password
 
 
 def run_migration():
+    # SPRINT SECURITY 1 - FASE 1: Ignora execução em produção ou quando seed está desativado
+    if settings.is_production or not settings.should_seed:
+        print("[MIGRATE SPRINT 7] [INFO] Execução de dados mock da Sprint 7 ignorada (produção ou seed desativado).")
+        return
+
     db = SessionLocal()
     try:
         print("[MIGRATE SPRINT 7] Inicializando migração do Painel do Consultor...")
 
-        # 1. Garante a Empresa 1 e cria o usuário CONSULTOR padrão
+        # 1. Garante a Empresa 1 e cria o usuário CONSULTOR (apenas se credenciais forem fornecidas via ambiente)
         empresa_1 = db.query(Empresa).filter(Empresa.id == 1).first()
         if not empresa_1:
             print("[MIGRATE SPRINT 7] Empresa principal não encontrada. Execute o seed inicial.")
             return
 
-        consultor_user = db.query(User).filter(User.email == "consultor@lptitech.com.br").first()
-        if not consultor_user:
-            consultor_user = User(
-                empresa_id=empresa_1.id,
-                nome="Consultor LPTI Tech",
-                email="consultor@lptitech.com.br",
-                hashed_password=hash_password("consultor123"),
-                role=UserRole.CONSULTOR,
-                ativo=True,
-            )
-            db.add(consultor_user)
-            db.commit()
-            print("[MIGRATE SPRINT 7] Usuário consultor@lptitech.com.br criado com sucesso.")
+        consultor_email = os.getenv("CONSULTOR_EMAIL", "").strip().lower()
+        consultor_password = os.getenv("CONSULTOR_PASSWORD", "")
+
+        if consultor_email and consultor_password:
+            consultor_user = db.query(User).filter(User.email == consultor_email).first()
+            if not consultor_user:
+                consultor_user = User(
+                    empresa_id=empresa_1.id,
+                    nome=os.getenv("CONSULTOR_NAME", "Consultor LPTI Tech").strip(),
+                    email=consultor_email,
+                    hashed_password=hash_password(consultor_password),
+                    role=UserRole.CONSULTOR,
+                    ativo=True,
+                )
+                db.add(consultor_user)
+                db.commit()
+                print(f"[MIGRATE SPRINT 7] Usuário consultor '{consultor_email}' criado com sucesso via variáveis de ambiente.")
+        else:
+            print("[MIGRATE SPRINT 7] Criação de consultor com senha padrão 'consultor123' foi REMOVIDA.")
 
         ano_atual = datetime.utcnow().year
         hoje = date.today()

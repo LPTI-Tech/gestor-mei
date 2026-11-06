@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import json
@@ -15,6 +15,7 @@ from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.ifood import LancamentoIFood
 from app.schemas.backup import BackupExportData, BackupStatusResponse
 from app.dependencies import get_current_user, get_current_empresa, require_admin
+from app.rate_limiter import limiter
 
 router = APIRouter(prefix="/backup", tags=["Backup"])
 
@@ -31,7 +32,9 @@ def get_backup_status(
 
 
 @router.get("/export")
+@limiter.limit("5/hour")
 def export_backup_local(
+    request: Request,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
     empresa: Empresa = Depends(get_current_empresa)

@@ -1,3 +1,5 @@
+import os
+import secrets
 import logging
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
@@ -28,22 +30,22 @@ def seed_database():
             return
             
         # SECURITY POLICY (Sprint Security 1 - Fase 1)
-        if not settings.should_seed:
-            error_banner = (
-                "\n" + "=" * 80 + "\n"
-                "[SEGURANÇA - PRODUÇÃO] BANCO DE DADOS VAZIO DETECTADO!\n"
-                f"Ambiente ativo: '{settings.ENVIRONMENT.upper()}'.\n"
-                "A criação automática de usuários e senhas padrão (admin123/operador123) foi BLOQUEADA.\n"
-                "Nenhum usuário ou senha padrão foi inserido no banco.\n"
-                "Para provisionar o primeiro usuário MASTER de forma segura, execute:\n"
-                "  python -m app.scripts.provision_master --email <email> --nome <nome> --password <senha>\n"
-                "ou interativamente no terminal:\n"
-                "  python -m app.scripts.provision_master\n"
-                "Consulte a documentação oficial em: docs/PROVISIONAMENTO_MASTER.md\n"
-                "=" * 80 + "\n"
-            )
-            print(error_banner)
-            logger.error(error_banner)
+        if settings.is_production or not settings.should_seed:
+            if settings.is_production:
+                error_banner = (
+                    "\n" + "=" * 80 + "\n"
+                    "[SEGURANÇA - PRODUÇÃO] SEED BLOQUEADO EM PRODUÇÃO!\n"
+                    f"Ambiente ativo: '{settings.ENVIRONMENT.upper()}'.\n"
+                    "A execução do seed de demonstração foi terminantemente BLOQUEADA.\n"
+                    "Nenhum registro ou usuário padrão foi inserido.\n"
+                    "Para provisionar o primeiro usuário MASTER de forma segura, execute:\n"
+                    "  python -m app.scripts.provision_master\n"
+                    "=" * 80 + "\n"
+                )
+                print(error_banner)
+                logger.error(error_banner)
+            else:
+                print(f"[SEED] Seed desativado (SEED_DATABASE=false). Nenhum dado foi inserido.")
             return
 
         print(f"[SEED] Ambiente '{settings.ENVIRONMENT}' detectado. Semeando dados iniciais de demonstração...")
@@ -64,12 +66,15 @@ def seed_database():
         db.commit()
         db.refresh(empresa)
         
-        # 2. Users: Admin and Operador
+        # 2. Users: Admin e Operador (Senhas geradas dinamicamente ou via variáveis de ambiente)
+        admin_pass = os.getenv("SEED_ADMIN_PASSWORD") or secrets.token_urlsafe(12)
+        operador_pass = os.getenv("SEED_OPERATOR_PASSWORD") or secrets.token_urlsafe(12)
+
         admin_user = User(
             empresa_id=empresa.id,
             nome="Leonidas Paulino (Administrador)",
             email="admin@gestormei.com.br",
-            hashed_password=hash_password("admin123"),
+            hashed_password=hash_password(admin_pass),
             role=UserRole.ADMIN,
             ativo=True
         )
@@ -77,7 +82,7 @@ def seed_database():
             empresa_id=empresa.id,
             nome="Carlos Atendente (Operador)",
             email="operador@gestormei.com.br",
-            hashed_password=hash_password("operador123"),
+            hashed_password=hash_password(operador_pass),
             role=UserRole.OPERADOR,
             ativo=True
         )
@@ -212,8 +217,8 @@ def seed_database():
         db.commit()
         
         print("Initial demo data seeded successfully!")
-        print("Admin user: admin@gestormei.com.br / admin123")
-        print("Operador user: operador@gestormei.com.br / operador123")
+        print(f"Admin user: admin@gestormei.com.br / {admin_pass}")
+        print(f"Operador user: operador@gestormei.com.br / {operador_pass}")
         
     except Exception as e:
         db.rollback()

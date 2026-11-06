@@ -74,21 +74,22 @@ def on_startup():
     run_migration_sprint4()
     run_migration_sprint5()
     run_migration_sprint6()
-    run_migration_sprint7()
+
+    # Sprint Security 1: migrate_sprint7 e seed são bloqueados quando ENV=production
+    if not settings.is_production and settings.should_seed:
+        run_migration_sprint7()
+
     run_migration_rbac()
     run_migration_sprint8b()
-    seed_database()
 
-# Diretório de uploads (Sprint Security 2: montagem estática pública DESATIVADA)
-# Arquivos são servidos com autenticação e validação multi-tenant via /api/compras/comprovantes/{filename}
+    if not settings.is_production and settings.should_seed:
+        seed_database()
+
+# Diretório de uploads (Sprint Security: montagem estática pública e redirecionamentos desativados)
+# Arquivos são servidos exclusivamente com autenticação Bearer e validação multi-tenant via /api/compras/comprovantes/{filename}
 backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 uploads_dir = os.path.join(backend_root, "uploads")
 os.makedirs(os.path.join(uploads_dir, "comprovantes"), exist_ok=True)
-
-@app.get("/uploads/comprovantes/{filename}")
-def legacy_comprovantes_redirect(filename: str):
-    """Redirecionamento retrocompatível para a rota de download protegida da API."""
-    return RedirectResponse(url=f"/api/compras/comprovantes/{filename}", status_code=307)
 
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)

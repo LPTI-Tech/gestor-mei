@@ -21,7 +21,7 @@ from app.schemas.auth import (
 from app.schemas.user import UserResponse
 from app.schemas.empresa import EmpresaResponse
 from app.security import verify_password, hash_password, create_access_token
-from app.dependencies import get_current_user, get_current_empresa, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin, require_master
 from app.services.email_service import enviar_email_recuperacao
 from app.rate_limiter import limiter
 
@@ -208,13 +208,15 @@ def solicitar_recuperacao_senha(
 
 
 @router.get("/validar-token-reset", response_model=ValidarTokenResetResponse)
+@limiter.limit("10/minute")
 def validar_token_reset(
+    request: Request,
     token: str = Query(..., min_length=10),
-    request: Request = None,
     db: Session = Depends(get_db)
 ):
     """
     Valida se o token de redefinição é autêntico, está dentro da janela de 15 minutos e não foi reutilizado.
+    Protegido com Rate Limiting estrito de 10 requisições por minuto por IP.
     """
     client_ip = request.client.host if request and request.client else None
     user_agent = (request.headers.get("user-agent", "")[:255]) if request else None
@@ -254,9 +256,10 @@ def validar_token_reset(
 
 
 @router.post("/redefinir-senha", response_model=RedefinirSenhaResponse)
+@limiter.limit("5/15minute")
 def redefinir_senha(
-    data: RedefinirSenhaRequest,
     request: Request,
+    data: RedefinirSenhaRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -328,10 +331,10 @@ def redefinir_senha(
 def listar_auditoria_recuperacao(
     limit: int = Query(default=50, le=200),
     db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin)
+    master_user: User = Depends(require_master)
 ):
     """
-    Consulta o histórico de auditoria de solicitações e redefinições de senha (acesso exclusivo Admin).
+    Consulta o histórico de auditoria de solicitações e redefinições de senha (acesso exclusivo MASTER).
     """
     registros = db.query(AuditoriaRecuperacaoSenha).order_by(
         AuditoriaRecuperacaoSenha.data_hora.desc()

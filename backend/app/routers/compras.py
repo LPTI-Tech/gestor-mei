@@ -6,19 +6,21 @@ from typing import List, Optional
 from datetime import datetime
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from app.database import get_db
 from app.models.empresa import Empresa
+from app.models.empresa_consultor import EmpresaConsultor
 from app.models.user import User, UserRole
 from app.models.produto import Produto
 from app.models.fornecedor import Fornecedor
 from app.models.nfe import NfeImportada, ItemNfeImportada
 from app.models.estoque import MovimentacaoEstoque
 from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
+from app.rate_limiter import limiter
 from app.utils.security_upload import (
     MAX_COMPROVANTE_SIZE_BYTES,
     read_file_sync_with_size_limit,
@@ -53,7 +55,9 @@ def _clean_digits(val: Optional[str]) -> str:
 # =======================================================
 
 @router.post("/upload-comprovante", response_model=UploadComprovanteResponse)
+@limiter.limit("20/minute")
 def upload_comprovante_compra(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     empresa: Empresa = Depends(get_current_empresa),
@@ -61,6 +65,7 @@ def upload_comprovante_compra(
     """
     Realiza o upload seguro de comprovante de compra manual (recibo, cupom ou nota).
     Valida assinatura binária (Magic Bytes), limita tamanho a 10MB via streaming e gera nome UUID.
+    Protegido com Rate Limiting de 20 envios por minuto.
     """
     if not file or not file.filename:
         raise HTTPException(
@@ -86,8 +91,8 @@ def upload_comprovante_compra(
     with open(target_path, "wb") as f:
         f.write(content)
 
-    # URL relativa protegida
-    relative_url = f"/uploads/comprovantes/{safe_name}"
+    # URL relativa protegida via endpoint da API
+    relative_url = f"/api/compras/comprovantes/{safe_name}"
     tipo_formatado = ext.replace(".", "").upper()
 
     return UploadComprovanteResponse(
@@ -105,21 +110,49 @@ def download_comprovante_compra(
 ):
     """
     Download seguro e autenticado de comprovante de compra.
-    Impede Path Traversal e valida isolamento multi-tenant por empresa_id.
+    Impede Path Traversal, valida isolamento multi-tenant relacional por empresa_id e injeta headers de proteção (CSP/nosniff).
     """
     safe_filename = os.path.basename(filename)
     if safe_filename != filename or ".." in filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome de arquivo inválido.")
 
-    # Validação multi-tenant: o comprovante deve pertencer à empresa do usuário autenticado (ou perfil MASTER)
+    # 1. Validação relacional multi-tenant no banco de dados (NfeImportada)
+    compra_associada = (
+        db.query(NfeImportada)
+        .filter(NfeImportada.anexo_url.contains(safe_filename))
+        .first()
+    )
+
     role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-    if role_str.upper() != "MASTER":
-        prefix_expected = f"emp_{current_user.empresa_id}_"
-        if not safe_filename.startswith(prefix_expected):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso não autorizado a este comprovante."
-            )
+    is_master = role_str.upper() == "MASTER"
+
+    if not is_master:
+        if compra_associada:
+            if current_user.role == UserRole.CONSULTOR:
+                tem_vinculo = db.query(EmpresaConsultor).filter(
+                    EmpresaConsultor.empresa_id == compra_associada.empresa_id,
+                    EmpresaConsultor.user_id == current_user.id,
+                    EmpresaConsultor.ativo == True
+                ).first()
+                if not tem_vinculo and current_user.empresa_id != compra_associada.empresa_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Acesso não autorizado a este comprovante."
+                    )
+            elif compra_associada.empresa_id != current_user.empresa_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Acesso não autorizado a este comprovante de outra empresa."
+                )
+        else:
+            # Caso o comprovante tenha sido recém-enviado e ainda não vinculado:
+            # Valida prefixo gerado (emp_<empresa_id>_...)
+            prefix_expected = f"emp_{current_user.empresa_id}_"
+            if not safe_filename.startswith(prefix_expected):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Acesso não autorizado a este comprovante."
+                )
 
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     file_path = os.path.join(base_dir, "uploads", "comprovantes", safe_filename)
@@ -146,6 +179,7 @@ def download_comprovante_compra(
         headers={
             "Content-Disposition": f"inline; filename={safe_filename}",
             "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'; sandbox",
         }
     )
 
