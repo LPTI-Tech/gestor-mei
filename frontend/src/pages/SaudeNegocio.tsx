@@ -39,6 +39,7 @@ import {
 import { StatusPill } from '../components/StatusPill';
 import { FiscalLimitIndicator } from '../components/FiscalLimitIndicator';
 import { StatCard } from '../components/StatCard';
+import { VitalityRing, ProtectiveCard } from '../components/sentinel';
 import {
   ResponsiveContainer,
   BarChart,
@@ -224,67 +225,33 @@ export const SaudeNegocioPage: React.FC = () => {
         />
       </Box>
 
-      {/* 3. Health Score Banner — MetricSurface Scoreboard */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2.5, sm: 3 },
-          mb: 3,
-          borderRadius: 3,
-          bgcolor: 'background.paper',
-          border: '1px solid',
-          borderColor: (t) =>
-            t.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.08)',
-          boxShadow: (t) =>
-            t.palette.mode === 'dark'
-              ? '0 1px 3px rgba(0, 0, 0, 0.3)'
-              : '0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02)',
-        }}
+      {/* 3. Health Score Banner — VitalityRing & ProtectiveCard Sentinel */}
+      <ProtectiveCard
+        variant="default"
+        padding={{ xs: 2.5, sm: 3 }}
+        sx={{ mb: 3 }}
       >
         <Grid container spacing={3} alignItems="center">
-          {/* Coluna 1: Score Numérico */}
-          <Grid item xs={12} sm={4} sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 700,
-                fontSize: '0.72rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'text.secondary',
-                display: 'block',
-                mb: 0.5,
-              }}
-            >
-              SCORE DE SAÚDE OPERACIONAL
-            </Typography>
-            <Typography
-              variant="h2"
-              sx={{
-                fontWeight: 900,
-                fontSize: { xs: '2.5rem', sm: '3.2rem' },
-                color: scoreColor,
-                fontFeatureSettings: '"tnum"',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.1,
-                mb: 1,
-              }}
-            >
-              {score}
-              <Typography
-                component="span"
-                sx={{ fontSize: '1.25rem', fontWeight: 600, color: 'text.secondary' }}
-              >
-                /100
-              </Typography>
-            </Typography>
-            <Box sx={{ display: 'inline-flex' }}>
-              <StatusPill
-                label={`Status: ${saude.classificacao_saude}`}
-                variant={getPillVariant()}
-                pulse={isExcelente || isSaudavel}
-              />
-            </Box>
+          {/* Coluna 1: VitalityRing Sentinel */}
+          <Grid
+            item
+            xs={12}
+            sm={4}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <VitalityRing
+              score={score}
+              size={140}
+              strokeWidth={11}
+              margemLucro={saude.margem_lucro_percentual}
+              statusLabel={saude.classificacao_saude}
+              pulse={isExcelente || isSaudavel}
+            />
           </Grid>
 
           {/* Coluna 2: Termômetro de Margem & Diagnóstico Textual */}
@@ -333,7 +300,7 @@ export const SaudeNegocioPage: React.FC = () => {
             </Typography>
           </Grid>
         </Grid>
-      </Paper>
+      </ProtectiveCard>
 
       {/* 4. Metric Surfaces em Grid (Stripe Analytics Cards) */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
