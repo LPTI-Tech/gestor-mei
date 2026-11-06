@@ -217,24 +217,19 @@ def test_download_comprovante_blocks_cross_tenant_access():
     assert "Acesso não autorizado a este comprovante de outra empresa" in exc_info.value.detail
 
 
-def test_download_comprovante_serves_authorized_file(tmp_path):
-    """Garante retorno com headers de segurança nosniff e CSP sandbox quando autorizado."""
+def test_download_comprovante_serves_authorized_file():
+    """Garante retorno com headers de segurança nosniff, CSP sandbox e streaming quando autorizado."""
+    import io
     mock_db = MagicMock()
     user_emp1 = User(id=2, email="user@emp1.com", role=UserRole.OWNER, empresa_id=1, ativo=True)
     compra_emp1 = NfeImportada(id=10, empresa_id=1, anexo_url="/api/compras/comprovantes/emp_1_uuid.pdf")
     mock_db.query.return_value.filter.return_value.first.return_value = compra_emp1
 
-    # Cria arquivo temporário real
     test_filename = "emp_1_uuid.pdf"
-    with patch("os.path.isfile", return_value=True), \
-         patch("app.routers.compras.FileResponse") as mock_file_response:
-        
-        mock_file_response.return_value = "response_ok"
+    mock_stream = io.BytesIO(b"conteudo pdf")
+    with patch("app.routers.compras.storage_service.get_comprovante_stream", return_value=(mock_stream, "application/pdf", 12, "Cloudflare R2")):
         resp = download_comprovante_compra(filename=test_filename, db=mock_db, current_user=user_emp1)
-        
-        assert resp == "response_ok"
-        mock_file_response.assert_called_once()
-        call_kwargs = mock_file_response.call_args[1]
-        assert call_kwargs["media_type"] == "application/pdf"
-        assert call_kwargs["headers"]["X-Content-Type-Options"] == "nosniff"
-        assert call_kwargs["headers"]["Content-Security-Policy"] == "default-src 'none'; sandbox"
+        assert resp.media_type == "application/pdf"
+        assert resp.headers["X-Content-Type-Options"] == "nosniff"
+        assert resp.headers["Content-Security-Policy"] == "default-src 'none'; sandbox"
+        assert resp.headers["X-Storage-Provider"] == "Cloudflare R2"

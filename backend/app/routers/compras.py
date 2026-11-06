@@ -7,7 +7,7 @@ from datetime import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
@@ -21,6 +21,7 @@ from app.models.nfe import NfeImportada, ItemNfeImportada
 from app.models.estoque import MovimentacaoEstoque
 from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
 from app.rate_limiter import limiter
+from app.services.storage_service import storage_service
 from app.utils.security_upload import (
     MAX_COMPROVANTE_SIZE_BYTES,
     read_file_sync_with_size_limit,
@@ -82,14 +83,8 @@ def upload_comprovante_compra(
     # 3. Validação estrita por assinatura de Magic Bytes
     validate_magic_bytes_comprovante(content, ext)
 
-    # 4. Salva no diretório protegido (backend/uploads/comprovantes)
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    target_dir = os.path.join(base_dir, "uploads", "comprovantes")
-    os.makedirs(target_dir, exist_ok=True)
-    target_path = os.path.join(target_dir, safe_name)
-
-    with open(target_path, "wb") as f:
-        f.write(content)
+    # 4. Salva no storage (Cloudflare R2 com fallback transparente para disco local)
+    storage_service.save_comprovante(content, safe_name, empresa.id, content_type=file.content_type)
 
     # URL relativa protegida via endpoint da API
     relative_url = f"/api/compras/comprovantes/{safe_name}"
@@ -110,7 +105,8 @@ def download_comprovante_compra(
 ):
     """
     Download seguro e autenticado de comprovante de compra.
-    Impede Path Traversal, valida isolamento multi-tenant relacional por empresa_id e injeta headers de proteção (CSP/nosniff).
+    Impede Path Traversal, valida isolamento multi-tenant relacional por empresa_id,
+    recupera o arquivo via StorageService (Cloudflare R2 ou fallback local) e injeta headers de proteção (CSP/nosniff).
     """
     safe_filename = os.path.basename(filename)
     if safe_filename != filename or ".." in filename:
@@ -154,33 +150,42 @@ def download_comprovante_compra(
                     detail="Acesso não autorizado a este comprovante."
                 )
 
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    file_path = os.path.join(base_dir, "uploads", "comprovantes", safe_filename)
+    # 2. Resolução do arquivo via StorageService (Cloudflare R2 com fallback local)
+    target_empresa_id = compra_associada.empresa_id if compra_associada else current_user.empresa_id
+    stream_data = storage_service.get_comprovante_stream(safe_filename, target_empresa_id)
 
-    if not os.path.isfile(file_path):
+    if not stream_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comprovante não encontrado."
+            detail="Comprovante não encontrado no armazenamento."
         )
 
-    ext = os.path.splitext(safe_filename)[1].lower()
-    media_types = {
-        ".pdf": "application/pdf",
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".webp": "image/webp",
-    }
-    media_type = media_types.get(ext, "application/octet-stream")
+    file_stream, media_type, file_size, provider_name = stream_data
 
-    return FileResponse(
-        path=file_path,
+    def iter_stream():
+        try:
+            while True:
+                chunk = file_stream.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            if hasattr(file_stream, "close"):
+                file_stream.close()
+
+    headers = {
+        "Content-Disposition": f"inline; filename={safe_filename}",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "X-Storage-Provider": provider_name,
+    }
+    if file_size > 0:
+        headers["Content-Length"] = str(file_size)
+
+    return StreamingResponse(
+        iter_stream(),
         media_type=media_type,
-        headers={
-            "Content-Disposition": f"inline; filename={safe_filename}",
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "default-src 'none'; sandbox",
-        }
+        headers=headers,
     )
 
 

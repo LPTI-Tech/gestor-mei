@@ -98,6 +98,10 @@ Na aba **"Environment"** do serviço no Render, adicione as seguintes variáveis
 | `SEED_DATABASE` | `false` | Em produção, o seed automático é desativado por padrão. Nenhuma credencial padrão é criada |
 | `MEI_DEFAULT_ANNUAL_LIMIT` | `81000.00` | Teto fiscal MEI |
 | `PYTHON_VERSION` | `3.11.9` | Versão runtime Python no Render |
+| `R2_ACCOUNT_ID` | *(Cloudflare Account ID)* | **Obrigatório para Storage Persistente:** ID da conta Cloudflare R2 |
+| `R2_ACCESS_KEY_ID` | *(R2 Token Access Key ID)* | Chave de acesso S3 gerada no painel Cloudflare R2 |
+| `R2_SECRET_ACCESS_KEY` | *(R2 Token Secret Access Key)* | Chave secreta S3 gerada no painel Cloudflare R2 |
+| `R2_BUCKET_NAME` | `gestor-mei-storage` | Nome do bucket R2 para armazenamento de comprovantes e XMLs |
 
 ### 3.3 Health Check do Render
 Na seção **Advanced Settings**:

@@ -136,6 +136,31 @@ class Settings(BaseSettings):
     # MEI Configuration
     MEI_DEFAULT_ANNUAL_LIMIT: float = 81000.00
 
+    # Cloudflare R2 Storage (S3-Compatible Object Storage)
+    R2_ACCOUNT_ID: Optional[str] = os.getenv("R2_ACCOUNT_ID", None)
+    R2_ACCESS_KEY_ID: Optional[str] = os.getenv("R2_ACCESS_KEY_ID", None)
+    R2_SECRET_ACCESS_KEY: Optional[str] = os.getenv("R2_SECRET_ACCESS_KEY", None)
+    R2_BUCKET_NAME: Optional[str] = os.getenv("R2_BUCKET_NAME", None)
+    R2_ENDPOINT_URL: Optional[str] = os.getenv("R2_ENDPOINT_URL", None)
+
+    @property
+    def is_r2_configured(self) -> bool:
+        """Indica se as credenciais do Cloudflare R2 estão preenchidas para ativação do storage em nuvem."""
+        return bool(
+            self.R2_ACCOUNT_ID
+            and self.R2_ACCESS_KEY_ID
+            and self.R2_SECRET_ACCESS_KEY
+            and self.R2_BUCKET_NAME
+        )
+
+    @property
+    def r2_endpoint(self) -> Optional[str]:
+        if self.R2_ENDPOINT_URL:
+            return self.R2_ENDPOINT_URL
+        if self.R2_ACCOUNT_ID:
+            return f"https://{self.R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+        return None
+
     # CORS Origins (Carregadas e sanitizadas)
     CORS_ORIGINS: List[str] = []
 

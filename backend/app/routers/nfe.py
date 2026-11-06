@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 import re
@@ -12,6 +13,7 @@ from app.models.estoque import MovimentacaoEstoque
 from app.models.nfe import ProdutoVinculoXML, NfeImportada, ItemNfeImportada
 from app.dependencies import get_current_user, get_current_empresa
 from app.services.nfe_parser import parse_nfe_xml, NfeParserError
+from app.services.storage_service import storage_service
 from app.schemas.nfe import (
     NfePreviewResponse,
     ItemNfePreview,
@@ -94,6 +96,13 @@ async def preview_nfe_xml(
         )
 
     chave_acesso_parsed = parsed["chave_acesso"].strip()
+
+    # Arquivamento fiscal durável no Cloudflare R2 (ou fallback local)
+    if xml_bytes and chave_acesso_parsed:
+        try:
+            storage_service.archive_nfe_xml(empresa.id, chave_acesso_parsed, xml_bytes)
+        except Exception:
+            pass
 
     # Verifica se a nota já foi importada para a mesma empresa
     nota_previa = db.query(NfeImportada).filter(
@@ -648,3 +657,50 @@ def delete_vinculo(
     db.delete(vinculo)
     db.commit()
     return None
+
+
+@router.get("/{chave_acesso}/download-xml")
+def download_nfe_xml(
+    chave_acesso: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
+):
+    """
+    Download seguro do arquivo XML original arquivado no Cloudflare R2 / storage local.
+    Exige autenticação e validação multi-tenant.
+    """
+    clean_chave = chave_acesso.strip()
+    stream_data = storage_service.get_nfe_xml_stream(empresa.id, clean_chave)
+    if not stream_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo XML da NF-e (Chave: {clean_chave}) não localizado no armazenamento."
+        )
+
+    file_stream, media_type, file_size, provider_name = stream_data
+
+    def iter_stream():
+        try:
+            while True:
+                chunk = file_stream.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            if hasattr(file_stream, "close"):
+                file_stream.close()
+
+    headers = {
+        "Content-Disposition": f"attachment; filename={clean_chave}.xml",
+        "X-Content-Type-Options": "nosniff",
+        "X-Storage-Provider": provider_name,
+    }
+    if file_size > 0:
+        headers["Content-Length"] = str(file_size)
+
+    return StreamingResponse(
+        iter_stream(),
+        media_type=media_type,
+        headers=headers,
+    )
