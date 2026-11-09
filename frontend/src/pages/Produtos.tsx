@@ -199,10 +199,28 @@ export const Produtos: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nomeLimpo = formData.nome.trim();
+    if (!nomeLimpo) {
+      alert('Por favor, informe o nome do produto ou serviço.');
+      return;
+    }
+
+    // Validação preventiva no cliente contra nomes duplicados na mesma empresa
+    const duplicadoLocal = produtos.find(
+      (p) =>
+        p.nome.trim().toLowerCase() === nomeLimpo.toLowerCase() &&
+        (!editingProduto || p.id !== editingProduto.id)
+    );
+
+    if (duplicadoLocal) {
+      alert('Já existe um produto com este nome nesta empresa.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       const payload: any = {
-        nome: formData.nome,
+        nome: nomeLimpo,
         tipo: formData.tipo,
         categoria: formData.categoria,
         preco_venda: Number(formData.preco_venda),

@@ -1,10 +1,13 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
 class Produto(Base):
     __tablename__ = "produtos"
+    __table_args__ = (
+        UniqueConstraint("empresa_id", "nome", name="uq_produtos_empresa_nome"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)

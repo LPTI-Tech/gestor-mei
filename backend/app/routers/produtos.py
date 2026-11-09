@@ -4,6 +4,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.produto import Produto
 from app.models.user import User
@@ -49,9 +51,28 @@ def create_produto(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    nome_clean = (data.nome or "").strip()
+    if not nome_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O nome do produto é obrigatório."
+        )
+
+    # Validação de unicidade por empresa (case-insensitive e trim)
+    existente = db.query(Produto).filter(
+        Produto.empresa_id == current_user.empresa_id,
+        func.lower(func.trim(Produto.nome)) == nome_clean.lower()
+    ).first()
+
+    if existente:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Já existe um produto com este nome nesta empresa."
+        )
+
     produto = Produto(
         empresa_id=current_user.empresa_id,
-        nome=data.nome,
+        nome=nome_clean,
         tipo=data.tipo,
         categoria=data.categoria,
         preco_venda=data.preco_venda,
@@ -61,7 +82,15 @@ def create_produto(
         ativo=data.ativo
     )
     db.add(produto)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Já existe um produto com este nome nesta empresa."
+        )
+
     db.refresh(produto)
     produto.estoque_baixo = (produto.tipo == "PRODUTO" and (produto.quantidade_estoque or 0.0) <= (produto.estoque_minimo or 0.0))
     return produto
@@ -101,10 +130,41 @@ def update_produto(
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
         
     update_data = data.model_dump(exclude_unset=True)
+
+    if "nome" in update_data and update_data["nome"] is not None:
+        nome_clean = update_data["nome"].strip()
+        if not nome_clean:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="O nome do produto não pode ser vazio."
+            )
+
+        # Validação de unicidade por empresa (excluindo o próprio item)
+        existente = db.query(Produto).filter(
+            Produto.empresa_id == current_user.empresa_id,
+            Produto.id != produto_id,
+            func.lower(func.trim(Produto.nome)) == nome_clean.lower()
+        ).first()
+
+        if existente:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Já existe um produto com este nome nesta empresa."
+            )
+        update_data["nome"] = nome_clean
+
     for key, value in update_data.items():
         setattr(produto, key, value)
         
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Já existe um produto com este nome nesta empresa."
+        )
+
     db.refresh(produto)
     produto.estoque_baixo = (produto.tipo == "PRODUTO" and (produto.quantidade_estoque or 0.0) <= (produto.estoque_minimo or 0.0))
     return produto
