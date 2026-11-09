@@ -928,20 +928,21 @@ export const Produtos: React.FC = () => {
         </TableContainer>
       )}
 
-      {/* Modal Add / Edit (Organizado em Seções Executivas) */}
+      {/* Modal Add / Edit (Organizado em 2 Colunas Executivas) */}
       <Dialog
         open={modalOpen}
         onClose={handleCloseModal}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3.5,
             boxShadow: '0 24px 60px rgba(7, 25, 51, 0.22)',
-            maxHeight: { xs: 'calc(100dvh - 32px)', sm: 'calc(100dvh - 64px)' },
+            maxHeight: { xs: 'calc(100dvh - 32px)', sm: 'calc(100dvh - 48px)' },
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            m: { xs: 1.5, sm: 2.5 },
           },
         }}
       >
@@ -1002,316 +1003,227 @@ export const Produtos: React.FC = () => {
           <DialogContent
             dividers
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               flex: '1 1 auto',
               overflowY: 'auto',
               overscrollBehavior: 'contain',
             }}
           >
-            {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
-                Classificação Tributária (DASN-SIMEI)
-              </Typography>
-              <RadioGroup
-                row
-                value={formData.tipo}
-                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
-                sx={{
-                  display: 'flex',
-                  gap: 1.5,
-                }}
-              >
-                <Box
-                  onClick={() => setFormData({ ...formData, tipo: 'PRODUTO' })}
-                  sx={{
-                    flex: 1,
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: '1.5px solid',
-                    borderColor: formData.tipo === 'PRODUTO' ? 'primary.main' : 'divider',
-                    bgcolor: formData.tipo === 'PRODUTO' ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Radio checked={formData.tipo === 'PRODUTO'} size="small" sx={{ p: 0 }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight={700}>
-                      Produto / Mercadoria
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Comércio (ICMS / DASN)
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box
-                  onClick={() => setFormData({ ...formData, tipo: 'SERVICO' })}
-                  sx={{
-                    flex: 1,
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: '1.5px solid',
-                    borderColor: formData.tipo === 'SERVICO' ? 'primary.main' : 'divider',
-                    bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.04)' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Radio checked={formData.tipo === 'SERVICO'} size="small" sx={{ p: 0 }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight={700}>
-                      Serviço Prestado
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Mão de Obra (ISS)
-                    </Typography>
-                  </Box>
-                </Box>
-              </RadioGroup>
-            </Box>
-
-            <Divider sx={{ my: 2.5 }} />
-
-                        {/* SEÇÃO FOTO: Foto Principal com Otimização WebP e R2 */}
-            <Box sx={{ mb: 2.5, p: 2, borderRadius: 2.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC', border: '1px dashed', borderColor: 'divider' }}>
-              <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', display: 'block', mb: 1.5 }}>
-                Foto Principal do Item (Cloudflare R2 • WebP)
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar
-                  src={resolveImageUrl(imagePreviewUrl)}
-                  variant="rounded"
-                  sx={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
-                    color: formData.tipo === 'SERVICO' ? '#7B1FA2' : 'primary.main',
-                  }}
-                >
-                  {formData.tipo === 'SERVICO' ? <Build sx={{ fontSize: 32 }} /> : <ShoppingBag sx={{ fontSize: 32 }} />}
-                </Avatar>
-
-                <Box sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      component="label"
-                      startIcon={<PhotoCamera sx={{ fontSize: 16 }} />}
-                      sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 1.5, fontSize: '0.78rem' }}
-                    >
-                      {imagePreviewUrl ? 'Alterar Foto' : 'Adicionar Foto'}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/png,image/jpeg,image/webp,image/jpg"
-                        onChange={handleImageSelect}
-                      />
-                    </Button>
-                    {imagePreviewUrl && (
-                      <Button
-                        variant="text"
-                        size="small"
-                        color="error"
-                        onClick={handleRemoveImage}
-                        sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
-                      >
-                        Remover
-                      </Button>
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Chip
-                      label="WebP Otimizado"
-                      size="small"
-                      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(46, 125, 50, 0.08)', color: '#2E7D32' }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                      PNG, JPG ou WEBP até 10 MB (redimensionamento e rotação automáticos)
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-
-            {/* SEÇÃO 2: Identificação do Item */}
-            <Box sx={{ mb: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                <LocalOfferOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                  Identificação do Item
-                </Typography>
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Nome do Item / Serviço *"
-                    required
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    placeholder={
-                      formData.tipo === 'SERVICO'
-                        ? 'Ex: Corte Degradê, Manutenção ou Troca de Óleo'
-                        : 'Ex: Marmita M Feijoada ou Refrigerante Lata'
-                    }
-                    InputProps={{ sx: { borderRadius: 2 } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={7}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Categoria</InputLabel>
-                    <Select
-                      value={formData.categoria}
-                      label="Categoria"
-                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                      sx={{ borderRadius: 2 }}
-                    >
-                      {CATEGORIAS_SUGERIDAS.map((cat) => (
-                        <MenuItem key={cat} value={cat}>
-                          {cat}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} sm={5} sx={{ display: 'flex', alignItems: 'center' }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.ativo}
-                        onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
-                        color="primary"
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" fontWeight={600}>
-                        {formData.ativo ? 'Disponível' : 'Inativo'}
-                      </Typography>
-                    }
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider sx={{ my: 2.5 }} />
-
-            {/* SEÇÃO 3: Precificação & Margem de Lucro */}
-            <Box sx={{ mb: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                <SellOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
-                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                  Precificação & Margens
-                </Typography>
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Preço de Venda (R$) *"
-                    type="number"
-                    inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
-                    required
-                    value={formData.preco_venda}
-                    onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
-                    placeholder="0,00"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                      sx: { borderRadius: 2 },
+            <Grid container spacing={3}>
+              {/* COLUNA ESQUERDA: Classificação, Imagem e Identificação */}
+              <Grid item xs={12} md={6}>
+                {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
+                <Box sx={{ mb: 2.5 }}>
+                  <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
+                    Classificação Tributária (DASN-SIMEI)
+                  </Typography>
+                  <RadioGroup
+                    row
+                    value={formData.tipo}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
+                    sx={{
+                      display: 'flex',
+                      gap: 1.5,
                     }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Custo Unitário (R$)"
-                    type="number"
-                    inputProps={{ step: '0.01', min: '0' }}
-                    value={formData.custo_unitario}
-                    onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
-                    placeholder="0,00"
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                      sx: { borderRadius: 2 },
-                    }}
-                  />
-                </Grid>
-
-                {/* Live Profit Margin Card */}
-                {precoNum > 0 && custoNum > 0 && (
-                  <Grid item xs={12}>
-                    <Paper
-                      elevation={0}
+                  >
+                    <Box
+                      onClick={() => setFormData({ ...formData, tipo: 'PRODUTO' })}
                       sx={{
-                        p: 1.5,
+                        flex: 1,
+                        p: 1.25,
                         borderRadius: 2,
-                        bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.06)' : 'rgba(211, 47, 47, 0.06)',
-                        border: '1px solid',
-                        borderColor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(211, 47, 47, 0.2)',
+                        border: '1.5px solid',
+                        borderColor: formData.tipo === 'PRODUTO' ? 'primary.main' : 'divider',
+                        bgcolor: formData.tipo === 'PRODUTO' ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        gap: 1,
+                        transition: 'all 0.15s ease',
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <TrendingUp sx={{ fontSize: 18, color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }} />
-                        <Typography variant="caption" fontWeight={700} color="text.primary">
-                          Lucro Bruto Estimado:
+                      <Radio checked={formData.tipo === 'PRODUTO'} size="small" sx={{ p: 0 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight={700}>
+                          Produto / Mercadoria
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          fontWeight={800}
-                          sx={{ fontFeatureSettings: '"tnum"', color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }}
-                        >
-                          {formatCurrency(lucroEstimado)} / un
+                        <Typography variant="caption" color="text.secondary">
+                          Comércio (ICMS / DASN)
                         </Typography>
                       </Box>
-                      <Chip
-                        label={`${margemEstimada.toFixed(1)}% de Margem`}
-                        size="small"
-                        sx={{
-                          fontWeight: 800,
-                          fontSize: '0.72rem',
-                          fontFeatureSettings: '"tnum"',
-                          bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
-                          color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F',
-                          height: 22,
-                        }}
-                      />
-                    </Paper>
-                  </Grid>
-                )}
-              </Grid>
-            </Box>
+                    </Box>
 
-            {/* SEÇÃO 4: Controle de Estoque (Apenas Produto) */}
-            {formData.tipo === 'PRODUTO' && (
-              <>
-                <Divider sx={{ my: 2.5 }} />
+                    <Box
+                      onClick={() => setFormData({ ...formData, tipo: 'SERVICO' })}
+                      sx={{
+                        flex: 1,
+                        p: 1.25,
+                        borderRadius: 2,
+                        border: '1.5px solid',
+                        borderColor: formData.tipo === 'SERVICO' ? 'primary.main' : 'divider',
+                        bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.04)' : 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Radio checked={formData.tipo === 'SERVICO'} size="small" sx={{ p: 0 }} />
+                      <Box>
+                        <Typography variant="body2" fontWeight={700}>
+                          Serviço Prestado
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Mão de Obra (ISS)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </RadioGroup>
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* SEÇÃO FOTO: Foto Principal com Otimização WebP e R2 */}
+                <Box sx={{ mb: 2.5, p: 2, borderRadius: 2.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC', border: '1px dashed', borderColor: 'divider' }}>
+                  <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', display: 'block', mb: 1.5 }}>
+                    Foto Principal do Item (Cloudflare R2 • WebP)
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      src={resolveImageUrl(imagePreviewUrl)}
+                      variant="rounded"
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                        color: formData.tipo === 'SERVICO' ? '#7B1FA2' : 'primary.main',
+                      }}
+                    >
+                      {formData.tipo === 'SERVICO' ? <Build sx={{ fontSize: 28 }} /> : <ShoppingBag sx={{ fontSize: 28 }} />}
+                    </Avatar>
+
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          component="label"
+                          startIcon={<PhotoCamera sx={{ fontSize: 16 }} />}
+                          sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 1.5, fontSize: '0.78rem' }}
+                        >
+                          {imagePreviewUrl ? 'Alterar Foto' : 'Adicionar Foto'}
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/png,image/jpeg,image/webp,image/jpg"
+                            onChange={handleImageSelect}
+                          />
+                        </Button>
+                        {imagePreviewUrl && (
+                          <Button
+                            variant="text"
+                            size="small"
+                            color="error"
+                            onClick={handleRemoveImage}
+                            sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
+                          >
+                            Remover
+                          </Button>
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label="WebP Otimizado"
+                          size="small"
+                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(46, 125, 50, 0.08)', color: '#2E7D32' }}
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          PNG, JPG ou WEBP até 10 MB
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* SEÇÃO 2: Identificação do Item */}
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <WarehouseOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                    <LocalOfferOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
                     <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                      Controle de Estoque
+                      Identificação do Item
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Nome do Item / Serviço *"
+                        required
+                        value={formData.nome}
+                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                        placeholder={
+                          formData.tipo === 'SERVICO'
+                            ? 'Ex: Corte Degradê, Manutenção ou Troca de Óleo'
+                            : 'Ex: Marmita M Feijoada ou Refrigerante Lata'
+                        }
+                        InputProps={{ sx: { borderRadius: 2 } }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={7}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Categoria</InputLabel>
+                        <Select
+                          value={formData.categoria}
+                          label="Categoria"
+                          onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          {CATEGORIAS_SUGERIDAS.map((cat) => (
+                            <MenuItem key={cat} value={cat}>
+                              {cat}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={5} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={formData.ativo}
+                            onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                            color="primary"
+                          />
+                        }
+                        label={
+                          <Typography variant="body2" fontWeight={600}>
+                            {formData.ativo ? 'Disponível' : 'Inativo'}
+                          </Typography>
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Grid>
+
+              {/* COLUNA DIREITA: Precificação, Margens e Estoque */}
+              <Grid item xs={12} md={6}>
+                {/* SEÇÃO 3: Precificação & Margem de Lucro */}
+                <Box sx={{ mb: 2.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <SellOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                    <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                      Precificação & Margens
                     </Typography>
                   </Box>
 
@@ -1320,30 +1232,126 @@ export const Produtos: React.FC = () => {
                       <TextField
                         fullWidth
                         size="small"
-                        label="Estoque Atual / Inicial"
+                        label="Preço de Venda (R$) *"
                         type="number"
-                        inputProps={{ step: 'any', min: '0' }}
-                        value={formData.quantidade_estoque}
-                        onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
+                        required
+                        value={formData.preco_venda}
+                        onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
+                        placeholder="0,00"
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                          sx: { borderRadius: 2 },
+                        }}
                       />
                     </Grid>
+
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         size="small"
-                        label="Estoque Mínimo (Alerta)"
+                        label="Custo Unitário (R$)"
                         type="number"
-                        inputProps={{ step: 'any', min: '0' }}
-                        value={formData.estoque_minimo}
-                        onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        inputProps={{ step: '0.01', min: '0' }}
+                        value={formData.custo_unitario}
+                        onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
+                        placeholder="0,00"
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                          sx: { borderRadius: 2 },
+                        }}
                       />
                     </Grid>
+
+                    {/* Live Profit Margin Card */}
+                    {precoNum > 0 && custoNum > 0 && (
+                      <Grid item xs={12}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.06)' : 'rgba(211, 47, 47, 0.06)',
+                            border: '1px solid',
+                            borderColor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(211, 47, 47, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TrendingUp sx={{ fontSize: 18, color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }} />
+                            <Typography variant="caption" fontWeight={700} color="text.primary">
+                              Lucro Bruto Estimado:
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              fontWeight={800}
+                              sx={{ fontFeatureSettings: '"tnum"', color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }}
+                            >
+                              {formatCurrency(lucroEstimado)} / un
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={`${margemEstimada.toFixed(1)}% de Margem`}
+                            size="small"
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: '0.72rem',
+                              fontFeatureSettings: '"tnum"',
+                              bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
+                              color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F',
+                              height: 22,
+                            }}
+                          />
+                        </Paper>
+                      </Grid>
+                    )}
                   </Grid>
                 </Box>
-              </>
-            )}
+
+                {/* SEÇÃO 4: Controle de Estoque (Apenas Produto) */}
+                {formData.tipo === 'PRODUTO' && (
+                  <Box>
+                    <Divider sx={{ my: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <WarehouseOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                      <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                        Controle de Estoque
+                      </Typography>
+                    </Box>
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Estoque Atual / Inicial"
+                          type="number"
+                          inputProps={{ step: 'any', min: '0' }}
+                          value={formData.quantidade_estoque}
+                          onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
+                          InputProps={{ sx: { borderRadius: 2 } }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Estoque Mínimo (Alerta)"
+                          type="number"
+                          inputProps={{ step: 'any', min: '0' }}
+                          value={formData.estoque_minimo}
+                          onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
+                          InputProps={{ sx: { borderRadius: 2 } }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+              </Grid>
+            </Grid>
           </DialogContent>
 
           <DialogActions
@@ -1355,8 +1363,11 @@ export const Produtos: React.FC = () => {
               display: 'flex',
               justifyContent: 'flex-end',
               flexShrink: 0,
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 10,
               bgcolor: (theme) =>
-                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#FAFAFA',
+                theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
               gap: 1.5,
             }}
           >
