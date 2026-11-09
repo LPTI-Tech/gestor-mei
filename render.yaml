@@ -23,4 +23,10 @@ services:
         value: "false"
       - key: MEI_DEFAULT_ANNUAL_LIMIT
         value: "81000.00"
+      - key: MASTER_NAME
+        value: "Leonidas Paulino (MASTER)"
+      - key: MASTER_EMAIL
+        sync: false
+      - key: MASTER_PASSWORD
+        sync: false
 
