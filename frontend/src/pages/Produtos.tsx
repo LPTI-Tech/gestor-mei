@@ -938,11 +938,24 @@ export const Produtos: React.FC = () => {
           sx: {
             borderRadius: 3.5,
             boxShadow: '0 24px 60px rgba(7, 25, 51, 0.22)',
+            maxHeight: { xs: 'calc(100dvh - 32px)', sm: 'calc(100dvh - 64px)' },
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
           },
         }}
       >
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
           <DialogTitle
             sx={{
               display: 'flex',
@@ -950,6 +963,7 @@ export const Produtos: React.FC = () => {
               justifyContent: 'space-between',
               p: 2.5,
               pb: 2,
+              flexShrink: 0,
               borderBottom: '1px solid',
               borderColor: 'divider',
             }}
@@ -985,7 +999,15 @@ export const Produtos: React.FC = () => {
             </IconButton>
           </DialogTitle>
 
-          <DialogContent sx={{ p: 3 }}>
+          <DialogContent
+            dividers
+            sx={{
+              p: 3,
+              flex: '1 1 auto',
+              overflowY: 'auto',
+              overscrollBehavior: 'contain',
+            }}
+          >
             {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
@@ -1332,6 +1354,9 @@ export const Produtos: React.FC = () => {
               borderColor: 'divider',
               display: 'flex',
               justifyContent: 'flex-end',
+              flexShrink: 0,
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#FAFAFA',
               gap: 1.5,
             }}
           >
