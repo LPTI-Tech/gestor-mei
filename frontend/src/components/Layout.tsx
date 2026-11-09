@@ -61,6 +61,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
+import { resolveImageUrl } from '../services/api';
 
 const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 74;
@@ -315,7 +316,7 @@ export const Layout: React.FC = () => {
           >
             <Box
               component="img"
-              src={empresa?.logo_url || logoIcon}
+              src={resolveImageUrl(empresa?.logo_url) || logoIcon}
               alt={empresa?.nome_fantasia || "Logo Gestor MEI"}
               onError={(e: any) => {
                 e.currentTarget.src = logoIcon;

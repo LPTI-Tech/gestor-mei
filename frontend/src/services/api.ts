@@ -11,6 +11,50 @@ const api = axios.create({
   timeout: 30000,
 });
 
+/**
+ * Resolve caminhos de imagens em ambientes desacoplados (ex: Vercel + Render).
+ * Se a URL for relativa (/api/...), prefixa com a base da API configurada no ambiente.
+ */
+export function resolveImageUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return undefined;
+  }
+
+  const trimmed = url.trim();
+
+  // URLs absolutas, blob (uploads locais) ou data-uri mantêm-se inalteradas
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return trimmed;
+  }
+
+  const rawBase = import.meta.env.VITE_API_URL || '';
+  if (!rawBase) {
+    return trimmed;
+  }
+
+  const cleanBase = rawBase.replace(/\/+$/, '');
+
+  // Se a URL iniciar com /api
+  if (trimmed.startsWith('/api')) {
+    if (cleanBase.endsWith('/api')) {
+      return `${cleanBase}${trimmed.replace(/^\/api/, '')}`;
+    }
+    return `${cleanBase}${trimmed}`;
+  }
+
+  // Se for outro caminho relativo
+  if (trimmed.startsWith('/')) {
+    return `${cleanBase}${trimmed}`;
+  }
+
+  return `${cleanBase}/${trimmed}`;
+}
+
 api.interceptors.request.use((config) => {
   // Evita duplicação caso a rota chamada já inclua o prefixo /api/
   if ((config.baseURL === '/api' || config.baseURL?.endsWith('/api')) && config.url?.startsWith('/api/')) {

@@ -53,7 +53,7 @@ import {
   PhotoCamera,
 } from '@mui/icons-material';
 import { PackageSearch, Plus, Trash2, Edit3, Search as SearchLucide } from 'lucide-react';
-import api from '../services/api';
+import api, { resolveImageUrl } from '../services/api';
 import { Produto, TipoItem } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -731,7 +731,7 @@ export const Produtos: React.FC = () => {
                     <TableCell sx={{ py: 1.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
-                          src={prod.imagem_url || undefined}
+                          src={resolveImageUrl(prod.imagem_url)}
                           variant="rounded"
                           sx={{
                             width: 44,
@@ -1065,7 +1065,7 @@ export const Produtos: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar
-                  src={imagePreviewUrl || undefined}
+                  src={resolveImageUrl(imagePreviewUrl)}
                   variant="rounded"
                   sx={{
                     width: 72,

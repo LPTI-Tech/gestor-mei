@@ -38,7 +38,7 @@ import {
   CloudQueue,
   CheckCircle,
 } from '@mui/icons-material';
-import api from '../services/api';
+import api, { resolveImageUrl } from '../services/api';
 import { Empresa } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { useAuth } from '../contexts/AuthContext';
@@ -556,7 +556,7 @@ export const Configuracoes: React.FC = () => {
           >
             <Box sx={{ position: 'relative' }}>
               <Avatar
-                src={empresa?.logo_url || undefined}
+                src={resolveImageUrl(empresa?.logo_url)}
                 variant="rounded"
                 sx={{
                   width: 90,

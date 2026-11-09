@@ -58,7 +58,7 @@ import {
   ShoppingBag,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import api, { resolveImageUrl } from '../services/api';
 import {
   Produto,
   Venda,
@@ -703,7 +703,7 @@ export const Vendas: React.FC = () => {
                             {prod.imagem_url ? (
                               <Box
                                 component="img"
-                                src={prod.imagem_url}
+                                src={resolveImageUrl(prod.imagem_url)}
                                 alt={prod.nome}
                                 loading="lazy"
                                 sx={{
@@ -1087,7 +1087,7 @@ export const Vendas: React.FC = () => {
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexGrow: 1, pr: 1.5 }}>
                         <Avatar
-                          src={cartProd?.imagem_url || undefined}
+                          src={resolveImageUrl(cartProd?.imagem_url)}
                           variant="rounded"
                           sx={{
                             width: 36,
