@@ -64,6 +64,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const activeEmpresaId = localStorage.getItem('gestor_mei_active_empresa_id');
+  if (activeEmpresaId) {
+    config.headers['X-Empresa-ID'] = activeEmpresaId;
+  }
   return config;
 });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
+  IconButton,
   Typography,
   Card,
   CardContent,
@@ -24,6 +25,9 @@ import {
 } from '@mui/material';
 import {
   Settings,
+  VpnKey,
+  LinkOff,
+  Check,
   Save,
   CloudDownload,
   Security,
@@ -39,7 +43,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import api, { resolveImageUrl } from '../services/api';
-import { Empresa } from '../types';
+import { Empresa, ProvedoresUsuarioResponse, ProvedorVinculado } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -68,6 +72,40 @@ export const Configuracoes: React.FC = () => {
   const [exportingBackup, setExportingBackup] = useState<boolean>(false);
 
   const [uploadingLogo, setUploadingLogo] = useState<boolean>(false);
+  // SPRINT RBAC 03: Provedores Vinculados (Entrega 5)
+  const [provedoresData, setProvedoresData] = useState<ProvedoresUsuarioResponse | null>(null);
+  const [loadingProvedores, setLoadingProvedores] = useState(false);
+  const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
+
+  const fetchProvedores = async () => {
+    try {
+      setLoadingProvedores(true);
+      const res = await api.get<ProvedoresUsuarioResponse>('/auth/provedores');
+      setProvedoresData(res.data);
+    } catch (err) {
+      console.error('Erro ao carregar provedores:', err);
+    } finally {
+      setLoadingProvedores(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProvedores();
+  }, []);
+
+  const handleDesvincular = async (provider: string) => {
+    try {
+      setUnlinkingProvider(provider);
+      await api.delete(`/auth/desvincular-provedor/${provider}`);
+      setSuccessMsg(`Provedor ${provider} desvinculado com sucesso.`);
+      fetchProvedores();
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.detail || `Erro ao desvincular provedor ${provider}.`);
+    } finally {
+      setUnlinkingProvider(null);
+    }
+  };
+
 
 
 
@@ -141,6 +179,7 @@ export const Configuracoes: React.FC = () => {
 
   };
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (empresa) {
@@ -255,6 +294,12 @@ export const Configuracoes: React.FC = () => {
           Ative ou desative módulos conforme seu ramo (Salão, Barbearia, Oficina, Comércio ou Alimentação).
         </Typography>
       </Box>
+
+      {errorMsg && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setErrorMsg(null)}>
+          {errorMsg}
+        </Alert>
+      )}
 
       {successMsg && (
         <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccessMsg(null)}>
@@ -755,6 +800,139 @@ export const Configuracoes: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+
+          {/* SPRINT RBAC 03: MÉTODOS DE ACESSO & LOGIN SOCIAL (ENTREGA 5) */}
+          <Card sx={{ borderRadius: 3, mb: 3 }}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }} display="flex" alignItems="center" gap={1}>
+                <VpnKey color="primary" /> Métodos de Acesso & Login Social
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+                Sua conta suporta múltiplos métodos de autenticação simultâneos (Senha local, Google e Microsoft).
+              </Typography>
+
+              {loadingProvedores ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {/* Senha Local */}
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: 36, height: 36 }}>
+                        <VpnKey fontSize="small" />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          Senha Local
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {provedoresData?.has_password ? 'Senha criptografada cadastrada' : 'Sem senha definida'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Chip
+                      icon={<Check fontSize="small" />}
+                      label={provedoresData?.has_password ? 'Ativa' : 'Inativa'}
+                      size="small"
+                      color={provedoresData?.has_password ? 'success' : 'default'}
+                      variant="outlined"
+                      sx={{ fontWeight: 700 }}
+                    />
+                  </Paper>
+
+                  {/* Google */}
+                  {(() => {
+                    const googleLink = provedoresData?.providers.find((p) => p.provider === 'GOOGLE');
+                    return (
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ bgcolor: '#ffffff', border: '1px solid #e2e8f0', width: 36, height: 36 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24">
+                              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                            </svg>
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight={700}>
+                              Google Identity
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {googleLink ? googleLink.email : 'Acesso via OpenID Connect'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {googleLink ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="Conectado" size="small" color="success" variant="outlined" sx={{ fontWeight: 700 }} />
+                            <Tooltip title="Desvincular Google">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                disabled={unlinkingProvider === 'GOOGLE'}
+                                onClick={() => handleDesvincular('GOOGLE')}
+                              >
+                                {unlinkingProvider === 'GOOGLE' ? <CircularProgress size={16} /> : <LinkOff fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        ) : (
+                          <Chip label="Disponível" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        )}
+                      </Paper>
+                    );
+                  })()}
+
+                  {/* Microsoft */}
+                  {(() => {
+                    const msLink = provedoresData?.providers.find((p) => p.provider === 'MICROSOFT');
+                    return (
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ bgcolor: '#ffffff', border: '1px solid #e2e8f0', width: 36, height: 36 }}>
+                            <svg width="18" height="18" viewBox="0 0 23 23">
+                              <path fill="#f35325" d="M1 1h10v10H1z" />
+                              <path fill="#81bc06" d="M12 1h10v10H12z" />
+                              <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                              <path fill="#ffba08" d="M12 12h10v10H12z" />
+                            </svg>
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight={700}>
+                              Microsoft Entra ID
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {msLink ? msLink.email : 'Acesso via Microsoft 365 / Outlook'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {msLink ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label="Conectado" size="small" color="success" variant="outlined" sx={{ fontWeight: 700 }} />
+                            <Tooltip title="Desvincular Microsoft">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                disabled={unlinkingProvider === 'MICROSOFT'}
+                                onClick={() => handleDesvincular('MICROSOFT')}
+                              >
+                                {unlinkingProvider === 'MICROSOFT' ? <CircularProgress size={16} /> : <LinkOff fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        ) : (
+                          <Chip label="Disponível" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                        )}
+                      </Paper>
+                    );
+                  })()}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
 
         {/* Backup & Data Protection */}
         <Grid item xs={12} md={5}>

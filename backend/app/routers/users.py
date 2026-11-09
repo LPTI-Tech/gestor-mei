@@ -27,11 +27,13 @@ router = APIRouter(prefix="/users", tags=["Gestão de Usuários & RBAC"])
 
 
 def _formatar_usuario_response(u: User) -> UserResponse:
-    """Monta o schema de resposta com o nome do criador preenchido."""
+    """Monta o schema de resposta com o nome do criador e nome da empresa preenchidos."""
     criador_nome = u.criador.nome if u.criador else None
+    empresa_nome = u.empresa.nome_fantasia if u.empresa else None
     return UserResponse(
         id=u.id,
         empresa_id=u.empresa_id,
+        empresa_nome=empresa_nome,
         nome=u.nome,
         email=u.email,
         role=u.role,
@@ -120,6 +122,13 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Informe o ID da empresa para cadastrar este usuário."
         )
+
+    # Se novo usuário for OWNER, rebaixa OWNERs anteriores da empresa para OPERATOR
+    if data.role == UserRole.OWNER and target_empresa_id:
+        db.query(User).filter(
+            User.empresa_id == target_empresa_id,
+            User.role == UserRole.OWNER
+        ).update({"role": UserRole.OPERATOR})
 
     new_user = User(
         empresa_id=target_empresa_id,
@@ -300,6 +309,13 @@ def alterar_perfil_usuario(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Apenas o perfil MASTER pode alterar a titularidade do Proprietário (OWNER)."
             )
+
+    if novo_role == UserRole.OWNER and user.empresa_id:
+        db.query(User).filter(
+            User.empresa_id == user.empresa_id,
+            User.role == UserRole.OWNER,
+            User.id != user.id
+        ).update({"role": UserRole.OPERATOR})
 
     user.role = novo_role
     db.commit()

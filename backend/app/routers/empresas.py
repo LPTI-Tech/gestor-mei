@@ -1,5 +1,6 @@
 import os
 import time
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -12,7 +13,9 @@ from app.schemas.empresa import (
     EmpresaCreateMaster,
     TransferirPropriedadeRequest,
     ModulosConfigUpdate,
-    ConfiguracaoEstoqueUpdate
+    ConfiguracaoEstoqueUpdate,
+    EmpresaMasterListItem,
+    EmpresaMasterOwner
 )
 from app.dependencies import (
     get_current_empresa,
@@ -81,6 +84,44 @@ def update_estoque_config(
 # ============================================================================
 # OPERAÇÕES EXCLUSIVAS DO PERFIL MASTER (PLATAFORMA LPTI TECH)
 # ============================================================================
+
+@router.get("/todas", response_model=List[EmpresaMasterListItem])
+def listar_todas_empresas_master(
+    db: Session = Depends(get_db),
+    master_user: User = Depends(require_master)
+):
+    """
+    Lista todas as empresas cadastradas na plataforma com seus titulares (OWNER),
+    total de usuários e status operacional.
+    Acesso estritamente exclusivo ao perfil MASTER.
+    """
+    empresas = db.query(Empresa).order_by(Empresa.id.asc()).all()
+    resultado = []
+    for emp in empresas:
+        owner_user = db.query(User).filter(
+            User.empresa_id == emp.id,
+            User.role == UserRole.OWNER
+        ).first()
+        total_users = db.query(User).filter(User.empresa_id == emp.id).count()
+
+        owner_info = None
+        if owner_user:
+            owner_info = EmpresaMasterOwner(
+                id=owner_user.id,
+                nome=owner_user.nome,
+                email=owner_user.email,
+                ativo=owner_user.ativo,
+                ultimo_acesso=owner_user.ultimo_acesso
+            )
+
+        emp_dict = EmpresaResponse.model_validate(emp).model_dump()
+        resultado.append(EmpresaMasterListItem(
+            **emp_dict,
+            owner=owner_info,
+            total_usuarios=total_users
+        ))
+    return resultado
+
 
 @router.post("", response_model=EmpresaResponse, status_code=status.HTTP_201_CREATED)
 def criar_empresa_master(

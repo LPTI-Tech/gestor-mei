@@ -14,6 +14,9 @@ interface AuthContextType {
   isOperator: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithMicrosoft: (token: string, tokenType?: string) => Promise<void>;
+  setContextEmpresaId: (empresaId: number | null) => Promise<void>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
 }
@@ -52,22 +55,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
-  const login = async (email: string, password: string) => {
-    const response = await api.post<AuthToken>('/api/auth/login', { email, password });
-    const data = response.data;
-    
-    setToken(data.access_token);
-    localStorage.setItem('gestor_mei_token', data.access_token);
-    
-    // Fetch full profile
+  const handlePostAuthSuccess = async (accessToken: string) => {
+    setToken(accessToken);
+    localStorage.setItem('gestor_mei_token', accessToken);
+
     const profileRes = await api.get('/api/auth/me', {
-      headers: { Authorization: `Bearer ${data.access_token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-    
+
     setUser(profileRes.data.user);
     setEmpresa(profileRes.data.empresa);
     localStorage.setItem('gestor_mei_user', JSON.stringify(profileRes.data.user));
     localStorage.setItem('gestor_mei_empresa', JSON.stringify(profileRes.data.empresa));
+  };
+
+  const login = async (email: string, password: string) => {
+    const response = await api.post<AuthToken>('/api/auth/login', { email, password });
+    await handlePostAuthSuccess(response.data.access_token);
+  };
+
+  const loginWithGoogle = async (credential: string) => {
+    const response = await api.post<AuthToken>('/api/auth/google', { credential });
+    await handlePostAuthSuccess(response.data.access_token);
+  };
+
+  const loginWithMicrosoft = async (tokenStr: string, tokenType: string = 'access_token') => {
+    const response = await api.post<AuthToken>('/api/auth/microsoft', {
+      token: tokenStr,
+      token_type: tokenType,
+    });
+    await handlePostAuthSuccess(response.data.access_token);
+  };
+
+  const setContextEmpresaId = async (empresaId: number | null) => {
+    if (empresaId) {
+      localStorage.setItem('gestor_mei_active_empresa_id', String(empresaId));
+    } else {
+      localStorage.removeItem('gestor_mei_active_empresa_id');
+    }
+    await refreshUserData();
   };
 
   const logout = () => {
@@ -77,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('gestor_mei_token');
     localStorage.removeItem('gestor_mei_user');
     localStorage.removeItem('gestor_mei_empresa');
+    localStorage.removeItem('gestor_mei_active_empresa_id');
   };
 
   const isAuthenticated = !!token && !!user;
@@ -100,6 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isOperator,
         isLoading,
         login,
+        loginWithGoogle,
+        loginWithMicrosoft,
+        setContextEmpresaId,
         logout,
         refreshUserData,
       }}

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
 from app.models.user import UserRole
 
 class Token(BaseModel):
@@ -54,3 +55,46 @@ class RedefinirSenhaRequest(BaseModel):
 
 class RedefinirSenhaResponse(BaseModel):
     mensagem: str
+
+
+# ============================================================================
+# SPRINT RBAC 03: LOGIN SOCIAL (GOOGLE / MICROSOFT) & VINCULAÇÃO DE CONTAS
+# ============================================================================
+
+class GoogleAuthRequest(BaseModel):
+    credential: str = Field(..., min_length=10, description="Token JWT (ID Token) emitido pelo Google Identity Services.")
+    client_id: Optional[str] = None
+
+
+class MicrosoftAuthRequest(BaseModel):
+    token: str = Field(..., min_length=10, description="Access Token ou ID Token emitido pela Microsoft Identity Platform.")
+    token_type: Optional[str] = Field("access_token", description="'access_token' para consulta ao MS Graph ou 'id_token' para verificação OIDC.")
+
+
+class ProvedorVinculadoResponse(BaseModel):
+    id: int
+    provider: str  # "GOOGLE", "MICROSOFT"
+    email: str
+    name: Optional[str] = None
+    picture_url: Optional[str] = None
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+
+
+class ProvedoresUsuarioResponse(BaseModel):
+    has_password: bool
+    email: str
+    providers: List[ProvedorVinculadoResponse]
+
+
+class AuditoriaLoginResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    email: str
+    provider: str
+    sucesso: bool
+    motivo_falha: Optional[str] = None
+    ip: Optional[str] = None
+    user_agent: Optional[str] = None
+    empresa_id: Optional[int] = None
+    data_hora: datetime

@@ -92,6 +92,11 @@ class Settings(BaseSettings):
     MASTER_PASSWORD: Optional[str] = os.getenv("MASTER_PASSWORD", None)
     MASTER_NAME: str = os.getenv("MASTER_NAME", "Administrador MASTER")
 
+    # SPRINT RBAC 03: OAuth Social Login (Google & Microsoft Identity)
+    GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID", None)
+    MICROSOFT_CLIENT_ID: Optional[str] = os.getenv("MICROSOFT_CLIENT_ID", None)
+    MICROSOFT_TENANT_ID: str = os.getenv("MICROSOFT_TENANT_ID", "common")
+
     @property
     def is_development(self) -> bool:
         return self.ENVIRONMENT in ("development", "dev", "local")

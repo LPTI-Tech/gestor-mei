@@ -15,6 +15,7 @@ from app.migrate_rbac import run_migration as run_migration_rbac
 from app.migrate_sprint8b import run_migration as run_migration_sprint8b
 from app.migrate_operacao_real1 import run_migration as run_migration_operacao_real1
 from app.migrate_unique_produto import run_migration as run_migration_unique_produto
+from app.migrate_oauth import run_migration as run_migration_oauth
 
 # Import routers
 from app.routers import (
@@ -85,6 +86,7 @@ def on_startup():
     run_migration_sprint8b()
     run_migration_operacao_real1()
     run_migration_unique_produto()
+    run_migration_oauth()
 
     if not settings.is_production and settings.should_seed:
         seed_database()

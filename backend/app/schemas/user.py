@@ -29,6 +29,7 @@ class UserRoleUpdateRequest(BaseModel):
 class UserResponse(UserBase):
     id: int
     empresa_id: Optional[int] = None
+    empresa_nome: Optional[str] = None
     created_at: datetime
     ultimo_acesso: Optional[datetime] = None
     criado_por_id: Optional[int] = None

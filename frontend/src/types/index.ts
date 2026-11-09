@@ -3,6 +3,7 @@ export type UserRole = 'MASTER' | 'OWNER' | 'CONSULTOR' | 'OPERATOR' | 'ADMIN' |
 export interface User {
   id: number;
   empresa_id?: number | null;
+  empresa_nome?: string | null;
   nome: string;
   email: string;
   role: UserRole;
@@ -11,6 +12,35 @@ export interface User {
   ultimo_acesso?: string | null;
   criado_por_id?: number | null;
   criado_por_nome?: string | null;
+}
+
+export interface ProvedorVinculado {
+  id: number;
+  provider: 'GOOGLE' | 'MICROSOFT';
+  email: string;
+  name?: string | null;
+  picture_url?: string | null;
+  created_at: string;
+  last_login_at?: string | null;
+}
+
+export interface ProvedoresUsuarioResponse {
+  has_password: boolean;
+  email: string;
+  providers: ProvedorVinculado[];
+}
+
+export interface EmpresaMasterOwner {
+  id: number;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  ultimo_acesso?: string | null;
+}
+
+export interface EmpresaMasterListItem extends Empresa {
+  owner?: EmpresaMasterOwner | null;
+  total_usuarios: number;
 }
 
 export interface VinculoConsultor {

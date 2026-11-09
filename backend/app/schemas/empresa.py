@@ -65,3 +65,16 @@ class EmpresaResponse(EmpresaBase):
 
     class Config:
         from_attributes = True
+
+
+class EmpresaMasterOwner(BaseModel):
+    id: int
+    nome: str
+    email: str
+    ativo: bool
+    ultimo_acesso: Optional[datetime] = None
+
+
+class EmpresaMasterListItem(EmpresaResponse):
+    owner: Optional[EmpresaMasterOwner] = None
+    total_usuarios: int = 0

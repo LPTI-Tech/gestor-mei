@@ -14,6 +14,8 @@ from app.models.das import DasMensal
 from app.models.nfe import ProdutoVinculoXML, NfeImportada, ItemNfeImportada
 from app.models.fornecedor import Fornecedor
 from app.models.password_reset import PasswordResetToken, AuditoriaRecuperacaoSenha
+from app.models.user_oauth import UserOAuthAccount
+from app.models.login_audit import AuditoriaLogin
 
 __all__ = [
     "Empresa",
@@ -39,5 +41,7 @@ __all__ = [
     "ItemNfeImportada",
     "Fornecedor",
     "PasswordResetToken",
-    "AuditoriaRecuperacaoSenha"
+    "AuditoriaRecuperacaoSenha",
+    "UserOAuthAccount",
+    "AuditoriaLogin"
 ]

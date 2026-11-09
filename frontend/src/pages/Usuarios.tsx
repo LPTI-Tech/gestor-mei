@@ -47,9 +47,11 @@ import {
   Search,
   Schedule,
   PersonAdd,
+  Business,
+  SwapHoriz,
 } from '@mui/icons-material';
 import api from '../services/api';
-import { User, UserRole } from '../types';
+import { User, UserRole, EmpresaMasterListItem } from '../types';
 import { formatDateTime } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,8 +59,10 @@ import { useAuth } from '../contexts/AuthContext';
 export const Usuarios: React.FC = () => {
   const { user: currentUser, isMaster } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaMasterListItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
+  const [empresaFiltro, setEmpresaFiltro] = useState<number | 'TODAS'>('TODAS');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Modal Criar / Editar Usuário
@@ -68,6 +72,7 @@ export const Usuarios: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('OPERATOR');
+  const [formEmpresaId, setFormEmpresaId] = useState<number | ''>('');
   const [formAtivo, setFormAtivo] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -89,6 +94,13 @@ export const Usuarios: React.FC = () => {
   const [roleSubmitting, setRoleSubmitting] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
+  // Modal Transferir Propriedade (Exclusivo MASTER)
+  const [transferModalOpen, setTransferModalOpen] = useState<boolean>(false);
+  const [transferEmpresaId, setTransferEmpresaId] = useState<number | ''>('');
+  const [transferNovoOwnerId, setTransferNovoOwnerId] = useState<number | ''>('');
+  const [transferSubmitting, setTransferSubmitting] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+
   // Diálogo Excluir
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteNome, setDeleteNome] = useState<string | null>(null);
@@ -106,9 +118,25 @@ export const Usuarios: React.FC = () => {
     }
   };
 
+  const fetchEmpresas = async () => {
+    if (!isMaster) return;
+    try {
+      const res = await api.get<EmpresaMasterListItem[]>('/empresa/todas');
+      setEmpresas(res.data);
+      if (res.data.length > 0 && formEmpresaId === '') {
+        setFormEmpresaId(res.data[0].id);
+      }
+    } catch (err) {
+      console.error('Erro ao listar empresas para MASTER:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
-  }, []);
+    if (isMaster) {
+      fetchEmpresas();
+    }
+  }, [isMaster]);
 
   // Handlers Modal Criar / Editar
   const handleOpenCreateModal = () => {
@@ -117,6 +145,7 @@ export const Usuarios: React.FC = () => {
     setFormEmail('');
     setFormPassword('');
     setFormRole('OPERATOR');
+    setFormEmpresaId(empresas.length > 0 ? empresas[0].id : (currentUser?.empresa_id || ''));
     setFormAtivo(true);
     setShowPassword(false);
     setFormError(null);
@@ -129,6 +158,7 @@ export const Usuarios: React.FC = () => {
     setFormEmail(u.email);
     setFormPassword('');
     setFormRole(u.role);
+    setFormEmpresaId(u.empresa_id || '');
     setFormAtivo(u.ativo);
     setShowPassword(false);
     setFormError(null);
@@ -152,17 +182,22 @@ export const Usuarios: React.FC = () => {
         await api.put(`/users/${editingUserId}`, payload);
         setFeedback({ type: 'success', text: `Dados de '${formNome}' atualizados com sucesso!` });
       } else {
-        await api.post('/users', {
+        const payload: any = {
           nome: formNome,
           email: formEmail,
           password: formPassword,
           role: formRole,
           ativo: formAtivo,
-        });
+        };
+        if (isMaster && formEmpresaId) {
+          payload.empresa_id = formEmpresaId;
+        }
+        await api.post('/users', payload);
         setFeedback({ type: 'success', text: `Usuário '${formNome}' cadastrado com sucesso!` });
       }
       setModalOpen(false);
       fetchUsers();
+      if (isMaster) fetchEmpresas();
     } catch (err: any) {
       const msg = err.response?.data?.detail || 'Erro ao salvar informações do usuário.';
       setFormError(msg);
@@ -187,11 +222,12 @@ export const Usuarios: React.FC = () => {
     setResetError(null);
 
     if (novaSenha.length < 4) {
-      setResetError('A nova senha deve possuir pelo menos 4 caracteres.');
+      setResetError('A nova senha deve possuir no mínimo 4 caracteres.');
       return;
     }
+
     if (novaSenha !== confirmarSenha) {
-      setResetError('A confirmação da senha não coincide com a nova senha.');
+      setResetError('A confirmação de senha não coincide com a nova senha digitada.');
       return;
     }
 
@@ -231,11 +267,45 @@ export const Usuarios: React.FC = () => {
       setRoleModalOpen(false);
       setFeedback({ type: 'success', text: `Perfil de '${roleTargetUser.nome}' alterado com sucesso!` });
       fetchUsers();
+      if (isMaster) fetchEmpresas();
     } catch (err: any) {
       const msg = err.response?.data?.detail || 'Erro ao alterar perfil.';
       setRoleError(msg);
     } finally {
       setRoleSubmitting(false);
+    }
+  };
+
+  // Handlers Transferir Propriedade MASTER
+  const handleOpenTransferModal = () => {
+    setTransferEmpresaId(empresas.length > 0 ? empresas[0].id : '');
+    setTransferNovoOwnerId('');
+    setTransferError(null);
+    setTransferModalOpen(true);
+  };
+
+  const handleExecuteTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferEmpresaId || !transferNovoOwnerId) {
+      setTransferError('Selecione a empresa e o novo titular.');
+      return;
+    }
+    setTransferError(null);
+
+    try {
+      setTransferSubmitting(true);
+      const res = await api.post(`/empresa/${transferEmpresaId}/transferir-propriedade`, {
+        novo_owner_user_id: Number(transferNovoOwnerId),
+      });
+      setTransferModalOpen(false);
+      setFeedback({ type: 'success', text: res.data.message || 'Propriedade transferida com sucesso!' });
+      fetchUsers();
+      fetchEmpresas();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || 'Erro ao transferir propriedade.';
+      setTransferError(msg);
+    } finally {
+      setTransferSubmitting(false);
     }
   };
 
@@ -299,15 +369,22 @@ export const Usuarios: React.FC = () => {
 
   // Métricas
   const totalUsuarios = users.length;
-  const ownerUser = users.find((u) => u.role === 'OWNER' || u.role === 'ADMIN');
+  const totalOwners = users.filter((u) => u.role === 'OWNER' || u.role === 'ADMIN').length;
   const totalOperadores = users.filter((u) => u.role === 'OPERATOR' || u.role === 'OPERADOR').length;
   const totalConsultores = users.filter((u) => u.role === 'CONSULTOR').length;
 
   // Filtragem da tabela
   const usersFiltrados = users.filter((u) => {
+    if (empresaFiltro !== 'TODAS' && u.empresa_id !== empresaFiltro) {
+      return false;
+    }
     if (!busca) return true;
     const termo = busca.toLowerCase();
-    return u.nome.toLowerCase().includes(termo) || u.email.toLowerCase().includes(termo);
+    return (
+      u.nome.toLowerCase().includes(termo) ||
+      u.email.toLowerCase().includes(termo) ||
+      (u.empresa_nome && u.empresa_nome.toLowerCase().includes(termo))
+    );
   });
 
   return (
@@ -328,19 +405,35 @@ export const Usuarios: React.FC = () => {
             <People color="primary" /> Gestão de Usuários & RBAC
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Controle os acessos internos da sua empresa com perfis de Proprietário (OWNER), Consultor e Operadores.
+            {isMaster
+              ? 'Painel MASTER LPTI Tech: Administração global de empresas clientes, titulares (OWNER) e equipe.'
+              : 'Controle os acessos internos da sua empresa com perfis de Proprietário (OWNER), Consultor e Operadores.'}
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Add />}
-          onClick={handleOpenCreateModal}
-          sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
-        >
-          Novo Usuário
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {isMaster && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<SwapHoriz />}
+              onClick={handleOpenTransferModal}
+              sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
+            >
+              Transferir Titularidade
+            </Button>
+          )}
+
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={handleOpenCreateModal}
+            sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
+          >
+            Novo Usuário
+          </Button>
+        </Box>
       </Box>
 
       {/* Alerta de Feedback */}
@@ -364,7 +457,7 @@ export const Usuarios: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  EQUIPE TOTAL
+                  USUÁRIOS ATIVOS
                 </Typography>
                 <Typography variant="h5" fontWeight={800}>
                   {totalUsuarios}
@@ -380,12 +473,12 @@ export const Usuarios: React.FC = () => {
               <Avatar sx={{ bgcolor: '#ede7f6', color: '#7b1fa2', width: 48, height: 48 }}>
                 <AdminPanelSettings />
               </Avatar>
-              <Box sx={{ overflow: 'hidden' }}>
+              <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  PROPRIETÁRIO (OWNER)
+                  PROPRIETÁRIOS (OWNER)
                 </Typography>
-                <Typography variant="body1" fontWeight={700} noWrap title={ownerUser?.nome || 'Não definido'}>
-                  {ownerUser ? ownerUser.nome.split(' ')[0] : 'Nenhum'}
+                <Typography variant="h5" fontWeight={800} color="#7b1fa2">
+                  {totalOwners}
                 </Typography>
               </Box>
             </CardContent>
@@ -400,7 +493,7 @@ export const Usuarios: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  OPERADORES DE CAIXA
+                  OPERADORES
                 </Typography>
                 <Typography variant="h5" fontWeight={800}>
                   {totalOperadores}
@@ -418,7 +511,7 @@ export const Usuarios: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  CONSULTORES
+                  CONSULTORES LPTI
                 </Typography>
                 <Typography variant="h5" fontWeight={800}>
                   {totalConsultores}
@@ -430,13 +523,13 @@ export const Usuarios: React.FC = () => {
       </Grid>
 
       {/* Barra de Filtro / Busca */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+      <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
           size="small"
-          placeholder="Buscar por nome ou e-mail..."
+          placeholder="Buscar por nome, e-mail ou empresa..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 320 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -445,6 +538,24 @@ export const Usuarios: React.FC = () => {
             ),
           }}
         />
+
+        {isMaster && (
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Filtrar por Empresa</InputLabel>
+            <Select
+              value={empresaFiltro}
+              label="Filtrar por Empresa"
+              onChange={(e) => setEmpresaFiltro(e.target.value as any)}
+            >
+              <MenuItem value="TODAS">🏢 Todas as Empresas</MenuItem>
+              {empresas.map((emp) => (
+                <MenuItem key={emp.id} value={emp.id}>
+                  {emp.nome_fantasia}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       {/* Tabela de Usuários */}
@@ -458,6 +569,7 @@ export const Usuarios: React.FC = () => {
             <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Usuário</TableCell>
+                {isMaster && <TableCell sx={{ fontWeight: 700 }}>Empresa</TableCell>}
                 <TableCell sx={{ fontWeight: 700 }}>Perfil / Nível</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Último Acesso</TableCell>
@@ -468,7 +580,7 @@ export const Usuarios: React.FC = () => {
             <TableBody>
               {usersFiltrados.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  <TableCell colSpan={isMaster ? 7 : 6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                     Nenhum usuário encontrado com os filtros aplicados.
                   </TableCell>
                 </TableRow>
@@ -505,6 +617,19 @@ export const Usuarios: React.FC = () => {
                         </Box>
                       </TableCell>
 
+                      {/* Empresa (Exibido para MASTER) */}
+                      {isMaster && (
+                        <TableCell>
+                          <Chip
+                            icon={<Business fontSize="small" />}
+                            label={u.empresa_nome || `Empresa #${u.empresa_id || '-'}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontWeight: 600, fontSize: '0.78rem' }}
+                          />
+                        </TableCell>
+                      )}
+
                       {/* Perfil */}
                       <TableCell>
                         <Chip
@@ -512,39 +637,37 @@ export const Usuarios: React.FC = () => {
                           label={roleConfig.label}
                           size="small"
                           color={roleConfig.color}
-                          sx={{ fontWeight: 600, px: 0.5 }}
+                          sx={{ fontWeight: 600, fontSize: '0.78rem' }}
                         />
                       </TableCell>
 
                       {/* Status */}
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Switch
-                            size="small"
-                            checked={u.ativo}
-                            disabled={isOwnerUser || isSelf}
-                            onChange={() => handleToggleStatus(u)}
-                            color="success"
-                          />
-                          <Chip
-                            label={u.ativo ? 'Ativo' : 'Bloqueado'}
-                            size="small"
-                            color={u.ativo ? 'success' : 'default'}
-                            variant={u.ativo ? 'filled' : 'outlined'}
-                            sx={{ height: 22, fontSize: '0.75rem' }}
-                          />
-                        </Box>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={u.ativo}
+                              disabled={isOwnerUser && !isMaster}
+                              onChange={() => handleToggleStatus(u)}
+                              color="primary"
+                            />
+                          }
+                          label={
+                            <Typography variant="caption" fontWeight={600} color={u.ativo ? 'success.main' : 'text.disabled'}>
+                              {u.ativo ? 'Ativo' : 'Bloqueado'}
+                            </Typography>
+                          }
+                          sx={{ m: 0 }}
+                        />
                       </TableCell>
 
                       {/* Último Acesso */}
                       <TableCell>
                         {u.ultimo_acesso ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                            <Schedule fontSize="inherit" color="action" />
-                            <Typography variant="body2" fontSize="0.82rem">
-                              {formatDateTime(u.ultimo_acesso)}
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" fontSize="0.82rem">
+                            {formatDateTime(u.ultimo_acesso)}
+                          </Typography>
                         ) : (
                           <Typography variant="caption" color="text.secondary">
                             Nunca acessou
@@ -586,8 +709,8 @@ export const Usuarios: React.FC = () => {
                           {/* Excluir */}
                           <Tooltip
                             title={
-                              isOwnerUser
-                                ? 'O titular da empresa (OWNER) não pode ser excluído.'
+                              isOwnerUser && !isMaster
+                                ? 'O titular da empresa (OWNER) só pode ser alterado ou transferido pelo MASTER.'
                                 : isSelf
                                 ? 'Você não pode excluir sua própria conta em uso.'
                                 : 'Excluir Usuário'
@@ -597,7 +720,7 @@ export const Usuarios: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="error"
-                                disabled={isOwnerUser || isSelf}
+                                disabled={(isOwnerUser && !isMaster) || isSelf}
                                 onClick={() => {
                                   setDeleteId(u.id);
                                   setDeleteNome(u.nome);
@@ -631,6 +754,23 @@ export const Usuarios: React.FC = () => {
               <Alert severity="error" sx={{ mb: 2 }}>
                 {formError}
               </Alert>
+            )}
+
+            {isMaster && !editingUserId && (
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Empresa de Destino</InputLabel>
+                <Select
+                  value={formEmpresaId}
+                  label="Empresa de Destino"
+                  onChange={(e) => setFormEmpresaId(Number(e.target.value))}
+                >
+                  {empresas.map((emp) => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.nome_fantasia} (CNPJ: {emp.cnpj})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             )}
 
             <TextField
@@ -690,6 +830,12 @@ export const Usuarios: React.FC = () => {
               </Select>
             </FormControl>
 
+            {formRole === 'OWNER' && (
+              <Alert severity="warning" sx={{ mt: 1.5, fontSize: '0.8rem' }}>
+                ⚠️ <strong>Titularidade de Empresa:</strong> Ao definir este usuário como <strong>Proprietário (OWNER)</strong>, qualquer titular anterior da empresa selecionada será automaticamente rebaixado para operador.
+              </Alert>
+            )}
+
             {!isMaster && (
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, px: 0.5 }}>
                 ℹ️ Somente a administração MASTER da plataforma pode cadastrar novos proprietários titulares.
@@ -702,7 +848,7 @@ export const Usuarios: React.FC = () => {
                   checked={formAtivo}
                   onChange={(e) => setFormAtivo(e.target.checked)}
                   color="primary"
-                  disabled={editingUserId !== null && (formRole === 'OWNER' || formRole === 'ADMIN')}
+                  disabled={editingUserId !== null && (formRole === 'OWNER' || formRole === 'ADMIN') && !isMaster}
                 />
               }
               label={formAtivo ? 'Conta Ativa' : 'Conta Bloqueada'}
@@ -726,7 +872,7 @@ export const Usuarios: React.FC = () => {
       <Dialog open={resetModalOpen} onClose={() => setResetModalOpen(false)} maxWidth="xs" fullWidth>
         <Box component="form" onSubmit={handleSaveResetPassword}>
           <DialogTitle fontWeight={700} display="flex" alignItems="center" gap={1}>
-            <VpnKey color="warning" /> Redefinir Senha
+            <VpnKey color="warning" /> Redefinir Senha de Acesso
           </DialogTitle>
           <DialogContent>
             {resetError && (
@@ -736,7 +882,7 @@ export const Usuarios: React.FC = () => {
             )}
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Defina uma nova senha para <strong>{targetUser?.nome}</strong> ({targetUser?.email}).
+              Defina a nova senha para o usuário <strong>{targetUser?.nome}</strong> ({targetUser?.email}):
             </Typography>
 
             <TextField
@@ -747,8 +893,8 @@ export const Usuarios: React.FC = () => {
               margin="normal"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
-              helperText="Mínimo de 4 caracteres"
               autoFocus
+              helperText="Mínimo de 4 caracteres"
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -775,7 +921,7 @@ export const Usuarios: React.FC = () => {
               Cancelar
             </Button>
             <Button type="submit" variant="contained" color="warning" disabled={resetSubmitting}>
-              {resetSubmitting ? <CircularProgress size={22} /> : 'Atualizar Senha'}
+              {resetSubmitting ? <CircularProgress size={22} /> : 'Salvar Nova Senha'}
             </Button>
           </DialogActions>
         </Box>
@@ -815,11 +961,11 @@ export const Usuarios: React.FC = () => {
               </Select>
             </FormControl>
 
-            <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem' }}>
-              • <strong>Operador:</strong> Registra vendas, gerencia produtos e comanda caixa.<br />
-              • <strong>Consultor:</strong> Visualiza indicadores financeiros, DAS e diagnósticos.<br />
-              • <strong>Proprietário:</strong> Gestão administrativa completa da empresa.
-            </Alert>
+            {novoRole === 'OWNER' && (
+              <Alert severity="warning" sx={{ mt: 2, fontSize: '0.8rem' }}>
+                ⚠️ <strong>Transferência de Titularidade:</strong> Ao promover <strong>{roleTargetUser?.nome}</strong> para OWNER, ele se tornará o proprietário titular oficial da empresa.
+              </Alert>
+            )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setRoleModalOpen(false)} color="inherit" disabled={roleSubmitting}>
@@ -827,6 +973,75 @@ export const Usuarios: React.FC = () => {
             </Button>
             <Button type="submit" variant="contained" color="info" disabled={roleSubmitting}>
               {roleSubmitting ? <CircularProgress size={22} /> : 'Confirmar Perfil'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* ==================================================================== */}
+      {/* 4. Modal Transferir Propriedade MASTER (ENTREGA 2) */}
+      {/* ==================================================================== */}
+      <Dialog open={transferModalOpen} onClose={() => setTransferModalOpen(false)} maxWidth="xs" fullWidth>
+        <Box component="form" onSubmit={handleExecuteTransfer}>
+          <DialogTitle fontWeight={700} display="flex" alignItems="center" gap={1}>
+            <SwapHoriz color="secondary" /> Transferir Titularidade (OWNER)
+          </DialogTitle>
+          <DialogContent>
+            {transferError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {transferError}
+              </Alert>
+            )}
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Como administrador global MASTER, selecione a empresa cliente e o novo usuário que assumirá o perfil titular (OWNER).
+            </Typography>
+
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel>Empresa Cliente</InputLabel>
+              <Select
+                value={transferEmpresaId}
+                label="Empresa Cliente"
+                onChange={(e) => {
+                  setTransferEmpresaId(Number(e.target.value));
+                  setTransferNovoOwnerId('');
+                }}
+              >
+                {empresas.map((emp) => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.nome_fantasia} (Atual: {emp.owner ? emp.owner.nome : 'Sem titular'})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth margin="normal" required disabled={!transferEmpresaId}>
+              <InputLabel>Novo Titular (OWNER)</InputLabel>
+              <Select
+                value={transferNovoOwnerId}
+                label="Novo Titular (OWNER)"
+                onChange={(e) => setTransferNovoOwnerId(Number(e.target.value))}
+              >
+                {users
+                  .filter((u) => u.empresa_id === transferEmpresaId)
+                  .map((u) => (
+                    <MenuItem key={u.id} value={u.id}>
+                      {u.nome} ({u.email}) - {u.role}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+
+            <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem' }}>
+              ℹ️ O usuário selecionado será promovido a <strong>OWNER</strong> e o titular anterior será rebaixado para <strong>OPERATOR</strong>.
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setTransferModalOpen(false)} color="inherit" disabled={transferSubmitting}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="contained" color="secondary" disabled={transferSubmitting || !transferNovoOwnerId}>
+              {transferSubmitting ? <CircularProgress size={22} /> : 'Transferir Propriedade'}
             </Button>
           </DialogActions>
         </Box>
