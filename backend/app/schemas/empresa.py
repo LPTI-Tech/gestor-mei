@@ -18,6 +18,8 @@ class EmpresaBase(BaseModel):
     modulo_estoque: Optional[bool] = False
     permitir_estoque_negativo: Optional[bool] = True
     logo_url: Optional[str] = None
+    ativo: Optional[bool] = True
+    motivo_bloqueio: Optional[str] = None
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -78,3 +80,19 @@ class EmpresaMasterOwner(BaseModel):
 class EmpresaMasterListItem(EmpresaResponse):
     owner: Optional[EmpresaMasterOwner] = None
     total_usuarios: int = 0
+
+
+class EmpresaStatusUpdate(BaseModel):
+    ativo: bool
+    motivo_bloqueio: Optional[str] = None
+
+
+class MetricasGlobaisResponse(BaseModel):
+    total_empresas: int
+    empresas_ativas: int
+    empresas_bloqueadas: int
+    total_owners: int
+    total_operadores: int
+    total_consultores: int
+    total_masters: int
+

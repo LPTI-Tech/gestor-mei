@@ -1,12 +1,13 @@
+from typing import List, Optional
 from datetime import datetime, date, timedelta, time
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from app.database import get_db
 from app.models.venda import Venda
 from app.models.despesa import Despesa
 from app.models.caixa import CaixaTurno, CaixaLancamento
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.produto import Produto
 from app.models.das import DasMensal
 from app.routers.das import sincronizar_e_garantir_ano
@@ -19,10 +20,50 @@ MESES_NOMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "O
 
 @router.get("", response_model=DashboardMetricsResponse)
 def get_dashboard_metrics(
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     empresa_id = current_user.empresa_id
+    if current_user.role in [UserRole.MASTER, UserRole.CONSULTOR] and x_empresa_id:
+        try:
+            empresa_id = int(str(x_empresa_id).strip())
+        except (ValueError, TypeError):
+            pass
+
+    # Se for perfil MASTER e nenhuma empresa foi selecionada (visão global):
+    if current_user.role == UserRole.MASTER and empresa_id is None:
+        return DashboardMetricsResponse(
+            venda_dia=0.0,
+            venda_semana=0.0,
+            venda_mes=0.0,
+            venda_ano=0.0,
+            caixa_atual=0.0,
+            qtd_vendas_mes=0,
+            ticket_medio_mes=0.0,
+            entradas_mes=0.0,
+            saidas_mes=0.0,
+            lucro_operacional_mes=0.0,
+            vendas_por_dia=[],
+            vendas_por_mes=[],
+            pagamentos_breakdown=[],
+            origens_breakdown=[],
+            total_itens_estoque=0,
+            itens_estoque_baixo=0,
+            valor_estoque_custo=0.0,
+            das_status_mes_atual=None,
+            das_valor_mes_atual=0.0,
+            das_vencimento_mes_atual=None,
+            das_dias_restantes=None,
+            das_qtd_atrasados=0,
+            das_qtd_pendentes=0,
+            das_qtd_pagos=0,
+            das_alerta_tipo="info",
+            das_alerta_mensagem="Painel de controle global MASTER ativo.",
+            is_restricted=False,
+            role="MASTER"
+        )
+
     today = date.today()
     now = datetime.utcnow()
     
@@ -230,7 +271,8 @@ def get_dashboard_metrics(
     valor_est_custo = sum(float(p.quantidade_estoque or 0.0) * float(p.custo_unitario or 0.0) for p in prods_est)
 
     # 9. Indicadores do Controle DAS Mensal (Sprint 5)
-    sincronizar_e_garantir_ano(db, empresa_id, today.year)
+    if empresa_id is not None:
+        sincronizar_e_garantir_ano(db, empresa_id, today.year)
     guias_ano = db.query(DasMensal).filter(
         DasMensal.empresa_id == empresa_id,
         DasMensal.ano == today.year

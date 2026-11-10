@@ -25,5 +25,9 @@ class Empresa(Base):
     permitir_estoque_negativo = Column(Boolean, default=True)
     logo_url = Column(String(255), nullable=True)
     
+    # Status de bloqueio administrativo (Sprint RBAC 04)
+    ativo = Column(Boolean, default=True, nullable=False)
+    motivo_bloqueio = Column(String(255), nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

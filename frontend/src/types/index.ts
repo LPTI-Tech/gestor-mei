@@ -73,9 +73,21 @@ export interface Empresa {
   modulo_estoque?: boolean;
   permitir_estoque_negativo?: boolean;
   logo_url?: string;
+  ativo?: boolean;
+  motivo_bloqueio?: string | null;
   data_inicio_atividades: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface MetricasGlobais {
+  total_empresas: number;
+  empresas_ativas: number;
+  empresas_bloqueadas: number;
+  total_owners: number;
+  total_operadores: number;
+  total_consultores: number;
+  total_masters: number;
 }
 
 export interface AuthToken {

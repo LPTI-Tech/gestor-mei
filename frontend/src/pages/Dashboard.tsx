@@ -63,13 +63,16 @@ import {
   ClearSignalKPI,
   ProtectiveCard,
 } from '../components/sentinel';
+import { MasterDashboard } from '../components/MasterDashboard';
 
 export const Dashboard: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
-  const { user, empresa, isAdmin, isConsultor } = useAuth();
+  const { user, empresa, isAdmin, isConsultor, isMaster, setContextEmpresaId } = useAuth();
   const isGestor = isAdmin || isConsultor;
+  const activeEmpresaId = localStorage.getItem('gestor_mei_active_empresa_id');
+  const isMasterGlobalView = isMaster && !activeEmpresaId;
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -79,6 +82,10 @@ export const Dashboard: React.FC = () => {
   const [snackbarMsg, setSnackbarMsg] = useState<string | null>(null);
 
   const fetchMetrics = async () => {
+    if (isMasterGlobalView) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [resMetrics, resProdutos, resSaude] = await Promise.all([
@@ -101,7 +108,7 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [activeEmpresaId, isMasterGlobalView]);
 
   const handleCopyDasData = () => {
     const cnpj = empresa?.cnpj || 'Não informado';
@@ -132,6 +139,10 @@ export const Dashboard: React.FC = () => {
     );
   };
 
+  if (isMasterGlobalView) {
+    return <MasterDashboard />;
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -154,6 +165,26 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* Banner de Modo Auditoria para Usuário MASTER em contexto de empresa */}
+      {isMaster && activeEmpresaId && (
+        <Alert
+          severity="info"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => setContextEmpresaId(null)}
+              sx={{ fontWeight: 700, textTransform: 'none' }}
+            >
+              Voltar à Visão Global MASTER
+            </Button>
+          }
+          sx={{ mb: 3, borderRadius: 2.5, border: '1px solid rgba(2, 132, 199, 0.3)' }}
+        >
+          👁️ <strong>Modo Auditoria MASTER:</strong> Você está visualizando os dados operacionais da empresa{' '}
+          <strong>{empresa?.nome_fantasia || `#${activeEmpresaId}`}</strong>.
+        </Alert>
+      )}
       {/* =============================================================== */}
       {/* 1. SAUDAÇÃO EXECUTIVA & INSIGHTS                               */}
       {/* =============================================================== */}

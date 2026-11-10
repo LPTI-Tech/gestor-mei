@@ -15,7 +15,9 @@ from app.schemas.empresa import (
     ModulosConfigUpdate,
     ConfiguracaoEstoqueUpdate,
     EmpresaMasterListItem,
-    EmpresaMasterOwner
+    EmpresaMasterOwner,
+    EmpresaStatusUpdate,
+    MetricasGlobaisResponse
 )
 from app.dependencies import (
     get_current_empresa,
@@ -84,6 +86,37 @@ def update_estoque_config(
 # ============================================================================
 # OPERAÇÕES EXCLUSIVAS DO PERFIL MASTER (PLATAFORMA LPTI TECH)
 # ============================================================================
+
+@router.get("/metricas-globais", response_model=MetricasGlobaisResponse)
+def get_metricas_globais_master(
+    db: Session = Depends(get_db),
+    master_user: User = Depends(require_master)
+):
+    """
+    Retorna consolidação dos principais indicadores de plataforma para o Dashboard MASTER:
+    - Total de empresas
+    - Empresas ativas vs. bloqueadas
+    - Total de proprietários (OWNER), operadores, consultores e MASTERs.
+    """
+    total_empresas = db.query(Empresa).count()
+    empresas_ativas = db.query(Empresa).filter(Empresa.ativo == True).count()
+    empresas_bloqueadas = db.query(Empresa).filter(Empresa.ativo == False).count()
+
+    total_owners = db.query(User).filter(User.role.in_([UserRole.OWNER, UserRole.ADMIN])).count()
+    total_operadores = db.query(User).filter(User.role.in_([UserRole.OPERATOR, UserRole.OPERADOR])).count()
+    total_consultores = db.query(User).filter(User.role == UserRole.CONSULTOR).count()
+    total_masters = db.query(User).filter(User.role == UserRole.MASTER).count()
+
+    return MetricasGlobaisResponse(
+        total_empresas=total_empresas,
+        empresas_ativas=empresas_ativas,
+        empresas_bloqueadas=empresas_bloqueadas,
+        total_owners=total_owners,
+        total_operadores=total_operadores,
+        total_consultores=total_consultores,
+        total_masters=total_masters
+    )
+
 
 @router.get("/todas", response_model=List[EmpresaMasterListItem])
 def listar_todas_empresas_master(
@@ -240,6 +273,29 @@ def transferir_propriedade_master(
     return {
         "message": f"Propriedade da empresa '{empresa.nome_fantasia}' transferida com sucesso para '{novo_owner.nome}'."
     }
+
+
+@router.patch("/{empresa_id}/status", response_model=EmpresaResponse)
+def toggle_status_empresa_master(
+    empresa_id: int,
+    data: EmpresaStatusUpdate,
+    db: Session = Depends(get_db),
+    master_user: User = Depends(require_master)
+):
+    """
+    Bloqueia ou desbloqueia uma empresa cliente com motivo opcional.
+    Acesso estritamente exclusivo ao perfil MASTER.
+    """
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+    empresa.ativo = data.ativo
+    empresa.motivo_bloqueio = data.motivo_bloqueio if not data.ativo else None
+    db.commit()
+    db.refresh(empresa)
+    return empresa
+
 
 
 # ============================================================================

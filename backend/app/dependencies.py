@@ -155,6 +155,12 @@ def get_current_empresa(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Empresa não encontrada."
             )
+        if not empresa.ativo:
+            motivo_txt = f": {empresa.motivo_bloqueio}" if empresa.motivo_bloqueio else "."
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Empresa suspensa temporariamente pela administração{motivo_txt}"
+            )
         return empresa
 
     # 3. Perfis vinculados estritamente à sua empresa (OWNER, OPERATOR, ADMIN)
@@ -175,6 +181,12 @@ def get_current_empresa(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Empresa vinculada não encontrada."
+        )
+    if not empresa.ativo:
+        motivo_txt = f": {empresa.motivo_bloqueio}" if empresa.motivo_bloqueio else "."
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Empresa suspensa temporariamente pela administração{motivo_txt}"
         )
     return empresa
 

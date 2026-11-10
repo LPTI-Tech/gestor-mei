@@ -189,8 +189,17 @@ export const Usuarios: React.FC = () => {
           role: formRole,
           ativo: formAtivo,
         };
-        if (isMaster && formEmpresaId) {
-          payload.empresa_id = formEmpresaId;
+        if (isMaster) {
+          if (formRole === 'MASTER') {
+            payload.empresa_id = null;
+          } else if (formEmpresaId) {
+            payload.empresa_id = formEmpresaId;
+  
+          } else {
+            setFormError('Selecione a Empresa de Destino para este usuário.');
+            setSubmitting(false);
+            return;
+          }
         }
         await api.post('/users', payload);
         setFeedback({ type: 'success', text: `Usuário '${formNome}' cadastrado com sucesso!` });
@@ -340,6 +349,13 @@ export const Usuarios: React.FC = () => {
   // Helpers de visualização por Perfil
   const getRoleConfig = (role: UserRole) => {
     switch (role) {
+      case 'MASTER':
+        return {
+          label: 'Administrador Global (MASTER)',
+          color: 'error' as const,
+          bgColor: '#b71c1c',
+          icon: <AdminPanelSettings fontSize="small" />,
+        };
       case 'OWNER':
       case 'ADMIN':
         return {
@@ -372,6 +388,7 @@ export const Usuarios: React.FC = () => {
   const totalOwners = users.filter((u) => u.role === 'OWNER' || u.role === 'ADMIN').length;
   const totalOperadores = users.filter((u) => u.role === 'OPERATOR' || u.role === 'OPERADOR').length;
   const totalConsultores = users.filter((u) => u.role === 'CONSULTOR').length;
+  const totalMasters = users.filter((u) => u.role === 'MASTER').length;
 
   // Filtragem da tabela
   const usersFiltrados = users.filter((u) => {
@@ -520,6 +537,26 @@ export const Usuarios: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+
+        {isMaster && (
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid rgba(183, 28, 28, 0.2)' }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: '#ffebee', color: '#b71c1c', width: 48, height: 48 }}>
+                  <AdminPanelSettings />
+                </Avatar>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    ADMINISTRADORES MASTER
+                  </Typography>
+                  <Typography variant="h5" fontWeight={800} color="#b71c1c">
+                    {totalMasters}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       {/* Barra de Filtro / Busca */}
@@ -757,10 +794,11 @@ export const Usuarios: React.FC = () => {
             )}
 
             {isMaster && !editingUserId && (
-              <FormControl fullWidth margin="normal" required>
+              <FormControl fullWidth margin="normal" required={formRole !== 'MASTER'}>
                 <InputLabel>Empresa de Destino</InputLabel>
                 <Select
-                  value={formEmpresaId}
+                  value={formRole === 'MASTER' ? '' : formEmpresaId}
+                  disabled={formRole === 'MASTER'}
                   label="Empresa de Destino"
                   onChange={(e) => setFormEmpresaId(Number(e.target.value))}
                 >
@@ -770,6 +808,11 @@ export const Usuarios: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
+                {formRole === 'MASTER' && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    ℹ️ Perfil MASTER possui acesso global a todas as empresas. Não requer empresa de destino vinculada.
+                  </Typography>
+                )}
               </FormControl>
             )}
 
@@ -826,6 +869,9 @@ export const Usuarios: React.FC = () => {
                 <MenuItem value="CONSULTOR">Consultor LPTI Tech (Visão de relatórios e diagnósticos)</MenuItem>
                 {isMaster && (
                   <MenuItem value="OWNER">Proprietário (OWNER - Acesso total à empresa)</MenuItem>
+                )}
+                {isMaster && (
+                  <MenuItem value="MASTER">Administrador Global (MASTER - Plataforma LPTI Tech)</MenuItem>
                 )}
               </Select>
             </FormControl>
@@ -957,6 +1003,9 @@ export const Usuarios: React.FC = () => {
                 <MenuItem value="CONSULTOR">Consultor LPTI Tech</MenuItem>
                 {isMaster && (
                   <MenuItem value="OWNER">Proprietário (OWNER)</MenuItem>
+                )}
+                {isMaster && (
+                  <MenuItem value="MASTER">Administrador Global (MASTER)</MenuItem>
                 )}
               </Select>
             </FormControl>

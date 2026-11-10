@@ -58,18 +58,18 @@ def list_users(
     """
     Lista os usuários da empresa.
     REGRA CRÍTICA: O perfil MASTER é da plataforma LPTI Tech e NUNCA aparece na lista comum de clientes!
+    Apenas um usuário MASTER autenticado pode visualizar outros MASTERs.
     """
-    query = db.query(User).filter(User.role != UserRole.MASTER)
-
     if current_user.role == UserRole.MASTER:
+        query = db.query(User)
         if empresa_id is not None:
             query = query.filter(User.empresa_id == empresa_id)
         elif current_user.empresa_id is not None:
             query = query.filter(User.empresa_id == current_user.empresa_id)
-        # Se for MASTER e empresa_id for omitido, retorna todos os usuários de empresas
+        # Se for MASTER e empresa_id for omitido, retorna todos os usuários (incluindo MASTERs)
     else:
-        # Usuário OWNER ou operador: apenas usuários da própria empresa
-        query = query.filter(User.empresa_id == current_user.empresa_id)
+        # Usuário OWNER ou operador: apenas usuários da própria empresa e NUNCA perfil MASTER
+        query = db.query(User).filter(User.role != UserRole.MASTER).filter(User.empresa_id == current_user.empresa_id)
 
     users = query.order_by(User.created_at.asc()).all()
     return [_formatar_usuario_response(u) for u in users]
@@ -395,7 +395,7 @@ def delete_user(
             detail="O Proprietário titular (OWNER) da empresa não pode ser excluído."
         )
 
-    if user.role == UserRole.MASTER:
+    if user.role == UserRole.MASTER and current_user.role != UserRole.MASTER:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário MASTER da plataforma não pode ser excluído por este canal."

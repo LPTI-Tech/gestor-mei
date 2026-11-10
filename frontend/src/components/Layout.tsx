@@ -57,6 +57,14 @@ import {
   Moon,
   LogOut,
 } from 'lucide-react';
+import {
+  Globe,
+  Building2,
+  ChevronDown,
+  Check,
+} from 'lucide-react';
+import api from '../services/api';
+import { EmpresaMasterListItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
@@ -88,7 +96,33 @@ export const Layout: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, empresa, logout, isAdmin, isOwner, isMaster, isConsultor, isOperator } = useAuth();
+  const { user, empresa, logout, isAdmin, isOwner, isMaster, isConsultor, isOperator, setContextEmpresaId } = useAuth();
+  // Tenant Switcher State (MASTER)
+  const activeEmpresaId = localStorage.getItem('gestor_mei_active_empresa_id');
+  const [tenantAnchorEl, setTenantAnchorEl] = useState<null | HTMLElement>(null);
+  const [todasEmpresas, setTodasEmpresas] = useState<EmpresaMasterListItem[]>([]);
+
+  useEffect(() => {
+    if (isMaster) {
+      api.get<EmpresaMasterListItem[]>('/empresa/todas')
+        .then((res) => setTodasEmpresas(res.data))
+        .catch((err) => console.error('Erro ao buscar empresas para switcher:', err));
+    }
+  }, [isMaster, activeEmpresaId]);
+
+  const handleOpenTenantMenu = (e: React.MouseEvent<HTMLElement>) => {
+    setTenantAnchorEl(e.currentTarget);
+  };
+
+  const handleCloseTenantMenu = () => {
+    setTenantAnchorEl(null);
+  };
+
+  const handleSelectTenant = async (empresaId: number | null) => {
+    handleCloseTenantMenu();
+    await setContextEmpresaId(empresaId);
+    navigate('/dashboard');
+  };
   const { mode, toggleTheme } = useAppTheme();
 
   // Estado de recolhimento da Sidebar (persistido no localStorage)
@@ -644,6 +678,122 @@ export const Layout: React.FC = () => {
               {breadcrumb.title}
             </Typography>
           </Box>
+
+            {/* Tenant Switcher Global para Perfil MASTER */}
+            {isMaster && (
+              <Box sx={{ ml: { xs: 0, sm: 1.5 } }}>
+                <Button
+                  size="small"
+                  onClick={handleOpenTenantMenu}
+                  startIcon={activeEmpresaId ? <Building2 size={15} /> : <Globe size={15} />}
+                  endIcon={<ChevronDown size={14} />}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                    borderRadius: 2,
+                    px: { xs: 1, sm: 1.5 },
+                    py: 0.5,
+                    bgcolor: activeEmpresaId
+                      ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.1)')
+                      : (mode === 'dark' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'),
+                    color: activeEmpresaId
+                      ? (mode === 'dark' ? '#38bdf8' : '#0284c7')
+                      : (mode === 'dark' ? '#34d399' : '#059669'),
+                    border: '1px solid',
+                    borderColor: activeEmpresaId
+                      ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(2, 132, 199, 0.25)')
+                      : (mode === 'dark' ? 'rgba(52, 211, 153, 0.3)' : 'rgba(16, 185, 129, 0.25)'),
+                    maxWidth: { xs: 150, sm: 260 },
+                    '&:hover': {
+                      bgcolor: activeEmpresaId
+                        ? (mode === 'dark' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(2, 132, 199, 0.18)')
+                        : (mode === 'dark' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.18)'),
+                    },
+                  }}
+                >
+                  <Typography noWrap variant="caption" sx={{ fontWeight: 700, fontSize: 'inherit' }}>
+                    {activeEmpresaId
+                      ? (empresa?.nome_fantasia || `Empresa #${activeEmpresaId}`)
+                      : '🌐 Visão Global (MASTER)'}
+                  </Typography>
+                </Button>
+
+                <Menu
+                  anchorEl={tenantAnchorEl}
+                  open={Boolean(tenantAnchorEl)}
+                  onClose={handleCloseTenantMenu}
+                  PaperProps={{
+                    sx: {
+                      width: 320,
+                      maxHeight: 440,
+                      borderRadius: 2.5,
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                      p: 0.5,
+                    },
+                  }}
+                >
+                  <Box sx={{ px: 2, py: 1 }}>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+                      Contexto Multi-tenant (MASTER)
+                    </Typography>
+                  </Box>
+
+                  <MenuItem
+                    selected={!activeEmpresaId}
+                    onClick={() => handleSelectTenant(null)}
+                    sx={{ borderRadius: 1.5, my: 0.3 }}
+                  >
+                    <ListItemIcon>
+                      <Globe size={18} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Todas as Empresas (Visão Global)"
+                      secondary="Dashboard Macro & Auditoria"
+                      primaryTypographyProps={{ fontWeight: !activeEmpresaId ? 700 : 500, fontSize: '0.82rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.7rem' }}
+                    />
+                    {!activeEmpresaId && <Check size={16} color="#10b981" />}
+                  </MenuItem>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  <Box sx={{ px: 2, py: 0.5 }}>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+                      Empresas Clientes ({todasEmpresas.length})
+                    </Typography>
+                  </Box>
+
+                  {todasEmpresas.map((emp) => {
+                    const isSelected = activeEmpresaId === String(emp.id);
+                    return (
+                      <MenuItem
+                        key={emp.id}
+                        selected={isSelected}
+                        onClick={() => handleSelectTenant(emp.id)}
+                        sx={{ borderRadius: 1.5, my: 0.3 }}
+                      >
+                        <ListItemIcon>
+                          <Building2 size={18} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={emp.nome_fantasia}
+                          secondary={`CNPJ: ${emp.cnpj}`}
+                          primaryTypographyProps={{ fontWeight: isSelected ? 700 : 500, fontSize: '0.82rem' }}
+                          secondaryTypographyProps={{ fontSize: '0.7rem' }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {!emp.ativo && (
+                            <Chip label="Bloqueada" size="small" color="error" sx={{ height: 18, fontSize: '0.62rem' }} />
+                          )}
+                          {isSelected && <Check size={16} color="#0284c7" />}
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Menu>
+              </Box>
+            )}
 
           {/* Lado Direito: Atalhos Rápidos, Notificações, Status e Avatar */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.2 } }}>

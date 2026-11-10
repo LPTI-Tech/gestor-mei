@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
 } from '@mui/material';
 import {
   Visibility,
@@ -25,14 +24,13 @@ import {
   ArrowForward,
   MailOutline,
   LockOutlined,
-  HelpOutline,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthLayout } from '../components/AuthLayout';
 
 // SVG Oficial Google
 const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" style={{ marginRight: 10 }}>
+  <svg width="18" height="18" viewBox="0 0 24 24" style={{ marginRight: 8, flexShrink: 0 }}>
     <path
       fill="#4285F4"
       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -54,13 +52,27 @@ const GoogleIcon = () => (
 
 // SVG Oficial Microsoft (4 cores)
 const MicrosoftIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 23 23" style={{ marginRight: 10 }}>
+  <svg width="18" height="18" viewBox="0 0 23 23" style={{ marginRight: 8, flexShrink: 0 }}>
     <path fill="#f35325" d="M1 1h10v10H1z" />
     <path fill="#81bc06" d="M12 1h10v10H12z" />
     <path fill="#05a6f0" d="M1 12h10v10H1z" />
     <path fill="#ffba08" d="M12 12h10v10H12z" />
   </svg>
 );
+
+// Identifica se o ambiente é de desenvolvimento local ou homologação
+const isDevOrHomolog = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.includes('beta') ||
+    hostname.includes('staging') ||
+    hostname.includes('homolog') ||
+    Boolean(import.meta.env.DEV)
+  );
+};
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -73,11 +85,15 @@ export const Login: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState<string>('admin@gestormei.com.br');
-  const [loginPassword, setLoginPassword] = useState<string>('admin123');
+  // Form state: em dev/homolog mantém atalhos convenientes; em produção inicia limpo
+  const [loginEmail, setLoginEmail] = useState<string>(
+    isDevOrHomolog() ? 'admin@gestormei.com.br' : ''
+  );
+  const [loginPassword, setLoginPassword] = useState<string>(
+    isDevOrHomolog() ? 'admin123' : ''
+  );
 
-  // Modal de Simulação / Configuração OAuth
+  // Modal de Simulação / Configuração OAuth (Fallback Dev)
   const [oauthModalOpen, setOauthModalOpen] = useState(false);
   const [oauthModalProvider, setOauthModalProvider] = useState<'google' | 'microsoft'>('google');
   const [customOauthEmail, setCustomOauthEmail] = useState('drrestaurantebetim@hotmail.com');
@@ -171,11 +187,9 @@ export const Login: React.FC = () => {
   const handleGoogleClick = () => {
     setErrorMessage(null);
     if (googleClientId && (window as any).google?.accounts?.id) {
-      // Exibe prompt One-tap ou popup do Google Identity Services
       try {
         (window as any).google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Abre modal assistido se o prompt for bloqueado pelo navegador
             setOauthModalProvider('google');
             setOauthModalOpen(true);
           }
@@ -185,7 +199,6 @@ export const Login: React.FC = () => {
         setOauthModalOpen(true);
       }
     } else {
-      // Abre assistente de login social / teste para desenvolvedor
       setOauthModalProvider('google');
       setOauthModalOpen(true);
     }
@@ -194,7 +207,6 @@ export const Login: React.FC = () => {
   const handleMicrosoftClick = () => {
     setErrorMessage(null);
     if (microsoftClientId) {
-      // Redireciona para o fluxo OAuth da Microsoft Identity Platform
       const redirectUri = encodeURIComponent(`${window.location.origin}/login`);
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${microsoftClientId}&response_type=token&redirect_uri=${redirectUri}&scope=User.Read%20openid%20profile%20email&response_mode=fragment`;
       window.location.href = authUrl;
@@ -246,19 +258,22 @@ export const Login: React.FC = () => {
   return (
     <AuthLayout
       title="Bem-vindo de volta"
-      subtitle="Acesse seu painel com sua conta Google, Microsoft ou credenciais locais."
-      badgeText="Acesso Seguro • OpenID & TLS 1.3"
+      subtitle="Entre para continuar"
+      badgeText="🔒 Seus dados protegidos"
+      securitySubtext="🔒 Controle seguro de acesso"
     >
       {errorMessage && (
         <Alert
           severity="error"
           onClose={() => setErrorMessage(null)}
           sx={{
-            mb: 3,
-            borderRadius: 2.5,
+            mb: 2,
+            py: 0.5,
+            borderRadius: 2,
             borderLeft: '4px solid #ef4444',
             bgcolor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
             color: isDark ? '#fca5a5' : '#991b1b',
+            fontSize: '0.82rem',
             '& .MuiAlert-icon': {
               color: '#ef4444',
             },
@@ -269,25 +284,32 @@ export const Login: React.FC = () => {
       )}
 
       {/* ==================================================================== */}
-      {/* SPRINT RBAC 03: BOTÕES DE LOGIN SOCIAL (GOOGLE E MICROSOFT) */}
+      {/* SPRINT UX LOGIN 2.0: BOTÕES SOCIAIS COMPACTOS (GOOGLE E MICROSOFT) */}
       {/* ==================================================================== */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gap: 1.2,
+          mb: 2,
+        }}
+      >
         <Button
           fullWidth
           variant="outlined"
-          size="large"
+          size="medium"
           disabled={loading || socialLoading !== null}
           onClick={handleGoogleClick}
           sx={{
-            height: 46,
-            borderRadius: 2.5,
+            height: 42,
+            borderRadius: 2,
             textTransform: 'none',
-            fontWeight: 700,
-            fontSize: '0.92rem',
+            fontWeight: 600,
+            fontSize: '0.88rem',
             borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#e2e8f0',
             bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
             color: isDark ? '#f8fafc' : '#1e293b',
-            boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+            boxShadow: isDark ? 'none' : '0 1px 2px rgba(0,0,0,0.04)',
             '&:hover': {
               borderColor: '#4285F4',
               bgcolor: isDark ? 'rgba(66, 133, 244, 0.08)' : 'rgba(66, 133, 244, 0.04)',
@@ -295,29 +317,29 @@ export const Login: React.FC = () => {
           }}
         >
           {socialLoading === 'google' ? (
-            <CircularProgress size={20} sx={{ color: '#4285F4', mr: 1 }} />
+            <CircularProgress size={18} sx={{ color: '#4285F4', mr: 1 }} />
           ) : (
             <GoogleIcon />
           )}
-          <span>Entrar com Google</span>
+          <span>Google</span>
         </Button>
 
         <Button
           fullWidth
           variant="outlined"
-          size="large"
+          size="medium"
           disabled={loading || socialLoading !== null}
           onClick={handleMicrosoftClick}
           sx={{
-            height: 46,
-            borderRadius: 2.5,
+            height: 42,
+            borderRadius: 2,
             textTransform: 'none',
-            fontWeight: 700,
-            fontSize: '0.92rem',
+            fontWeight: 600,
+            fontSize: '0.88rem',
             borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#e2e8f0',
             bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
             color: isDark ? '#f8fafc' : '#1e293b',
-            boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+            boxShadow: isDark ? 'none' : '0 1px 2px rgba(0,0,0,0.04)',
             '&:hover': {
               borderColor: '#05a6f0',
               bgcolor: isDark ? 'rgba(5, 166, 240, 0.08)' : 'rgba(5, 166, 240, 0.04)',
@@ -325,20 +347,20 @@ export const Login: React.FC = () => {
           }}
         >
           {socialLoading === 'microsoft' ? (
-            <CircularProgress size={20} sx={{ color: '#05a6f0', mr: 1 }} />
+            <CircularProgress size={18} sx={{ color: '#05a6f0', mr: 1 }} />
           ) : (
             <MicrosoftIcon />
           )}
-          <span>Entrar com Microsoft</span>
+          <span>Microsoft</span>
         </Button>
       </Box>
 
-      {/* Divisor Visual */}
+      {/* Divisor Visual: ──────── ou ──────── */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          mb: 3,
+          my: 2,
           '::before, ::after': {
             content: '""',
             flex: 1,
@@ -352,37 +374,36 @@ export const Login: React.FC = () => {
           sx={{
             px: 1.5,
             color: 'text.secondary',
-            fontWeight: 700,
-            fontSize: '0.74rem',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
+            fontWeight: 500,
+            fontSize: '0.78rem',
           }}
         >
-          Ou entre com e-mail e senha
+          ou
         </Typography>
       </Box>
 
       {/* Formulário de Acesso Tradicional com Senha */}
       <Box component="form" onSubmit={handleLoginSubmit} noValidate>
-        {/* Campo de E-mail */}
-        <Box sx={{ mb: 2.5 }}>
+        {/* Campo de Email */}
+        <Box sx={{ mb: 1.8 }}>
           <Typography
             component="label"
             htmlFor="login-email"
             variant="caption"
             sx={{
               display: 'block',
-              mb: 0.8,
-              fontWeight: 700,
+              mb: 0.5,
+              fontWeight: 600,
               fontSize: '0.82rem',
               color: isDark ? '#cbd5e1' : '#334155',
             }}
           >
-            E-mail de Acesso
+            Email
           </Typography>
           <TextField
             id="login-email"
             fullWidth
+            size="small"
             placeholder="seu.email@empresa.com.br"
             type="email"
             value={loginEmail}
@@ -393,13 +414,14 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <MailOutline sx={{ fontSize: 20, color: 'text.secondary' }} />
+                  <MailOutline sx={{ fontSize: 18, color: 'text.secondary' }} />
                 </InputAdornment>
               ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2.5,
+                borderRadius: 2,
+                height: 42,
                 bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
                 '& fieldset': {
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
@@ -409,15 +431,15 @@ export const Login: React.FC = () => {
           />
         </Box>
 
-        {/* Campo de Senha */}
-        <Box sx={{ mb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
+        {/* Campo de Senha com Link Esqueceu a Senha */}
+        <Box sx={{ mb: 1.2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography
               component="label"
               htmlFor="login-password"
               variant="caption"
               sx={{
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: '0.82rem',
                 color: isDark ? '#cbd5e1' : '#334155',
               }}
@@ -431,8 +453,8 @@ export const Login: React.FC = () => {
               color="primary"
               sx={{
                 textDecoration: 'none',
-                fontWeight: 700,
-                fontSize: '0.82rem',
+                fontWeight: 600,
+                fontSize: '0.8rem',
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
@@ -442,6 +464,7 @@ export const Login: React.FC = () => {
           <TextField
             id="login-password"
             fullWidth
+            size="small"
             placeholder="••••••••••••"
             type={showPassword ? 'text' : 'password'}
             value={loginPassword}
@@ -451,7 +474,7 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                  <LockOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -464,14 +487,15 @@ export const Login: React.FC = () => {
                     size="small"
                     sx={{ color: 'text.secondary' }}
                   >
-                    {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    {showPassword ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
                   </IconButton>
                 </InputAdornment>
               ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2.5,
+                borderRadius: 2,
+                height: 42,
                 bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#ffffff',
                 '& fieldset': {
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
@@ -481,118 +505,107 @@ export const Login: React.FC = () => {
           />
         </Box>
 
-        {/* Botão de Submissão Primário */}
+        {/* Botão Entrar */}
         <Button
           type="submit"
           fullWidth
           variant="contained"
-          size="large"
           disabled={loading || socialLoading !== null}
-          endIcon={!loading ? <ArrowForward fontSize="small" /> : undefined}
+          endIcon={!loading ? <ArrowForward sx={{ fontSize: 18 }} /> : undefined}
           sx={{
             mt: 2,
-            mb: 3,
-            height: 48,
-            fontWeight: 800,
-            fontSize: '0.96rem',
-            borderRadius: 2.5,
+            height: 44,
+            fontWeight: 700,
+            fontSize: '0.94rem',
+            borderRadius: 2,
             textTransform: 'none',
             background: 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)',
-            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
             '&:hover': {
               background: 'linear-gradient(180deg, #0369a1 0%, #075985 100%)',
             },
           }}
         >
           {loading ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.2 }}>
-              <CircularProgress size={20} color="inherit" thickness={4} />
-              <span>Autenticando...</span>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <CircularProgress size={18} color="inherit" thickness={4} />
+              <span>Entrando...</span>
             </Box>
           ) : (
-            'Entrar com Senha'
+            'Entrar'
           )}
         </Button>
 
-        {/* Divisor Elegante de Acesso Rápido */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            my: 2.5,
-            '::before, ::after': {
-              content: '""',
-              flex: 1,
-              borderBottom: '1px solid',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.9)',
-            },
-          }}
-        >
-          <Typography
-            variant="caption"
+        {/* ALTERAÇÃO 4: Atalhos Demo (Exibidos APENAS em localhost ou homologação) */}
+        {isDevOrHomolog() && (
+          <Box
             sx={{
-              px: 1.5,
-              color: 'text.secondary',
-              fontWeight: 700,
-              fontSize: '0.74rem',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
+              mt: 2.5,
+              pt: 2,
+              borderTop: '1px dashed',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(226, 232, 240, 0.9)',
             }}
           >
-            Acesso Rápido (Demonstração)
-          </Typography>
-        </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                textAlign: 'center',
+                mb: 1.2,
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.72rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Ambiente de Testes • Acesso Rápido
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                disabled={loading || socialLoading !== null}
+                onClick={() => fillDemo('admin')}
+                startIcon={<Security sx={{ fontSize: 16 }} />}
+                sx={{
+                  py: 0.8,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
+                  color: isDark ? '#f1f5f9' : '#1e293b',
+                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(248, 250, 252, 0.8)',
+                }}
+              >
+                Dono (OWNER)
+              </Button>
 
-        {/* Botões Segmentados de Preenchimento Demo */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 1.5,
-          }}
-        >
-          <Button
-            type="button"
-            variant="outlined"
-            size="small"
-            disabled={loading || socialLoading !== null}
-            onClick={() => fillDemo('admin')}
-            startIcon={<Security sx={{ fontSize: 18 }} />}
-            sx={{
-              py: 1.2,
-              borderRadius: 2.5,
-              textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '0.82rem',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
-              color: isDark ? '#f1f5f9' : '#1e293b',
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(248, 250, 252, 0.8)',
-            }}
-          >
-            Dono (OWNER)
-          </Button>
-
-          <Button
-            type="button"
-            variant="outlined"
-            size="small"
-            disabled={loading || socialLoading !== null}
-            onClick={() => fillDemo('operador')}
-            startIcon={<FlashOn sx={{ fontSize: 18 }} />}
-            sx={{
-              py: 1.2,
-              borderRadius: 2.5,
-              textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '0.82rem',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
-              color: isDark ? '#f1f5f9' : '#1e293b',
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(248, 250, 252, 0.8)',
-            }}
-          >
-            Operador (Caixa)
-          </Button>
-        </Box>
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                disabled={loading || socialLoading !== null}
+                onClick={() => fillDemo('operador')}
+                startIcon={<FlashOn sx={{ fontSize: 16 }} />}
+                sx={{
+                  py: 0.8,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0',
+                  color: isDark ? '#f1f5f9' : '#1e293b',
+                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(248, 250, 252, 0.8)',
+                }}
+              >
+                Operador (Caixa)
+              </Button>
+            </Box>
+          </Box>
+        )}
       </Box>
 
       {/* ==================================================================== */}
@@ -678,3 +691,4 @@ export const Login: React.FC = () => {
     </AuthLayout>
   );
 };
+export default Login;

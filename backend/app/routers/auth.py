@@ -1,7 +1,7 @@
 import secrets
 import hashlib
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, Header
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config import settings
@@ -331,12 +331,20 @@ def listar_auditoria_login(
 
 @router.get("/me")
 def get_me(
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     empresa_data = None
-    if user.empresa_id:
-        empresa = db.query(Empresa).filter(Empresa.id == user.empresa_id).first()
+    target_empresa_id = user.empresa_id
+    if user.role in [UserRole.MASTER, UserRole.CONSULTOR] and x_empresa_id:
+        try:
+            target_empresa_id = int(str(x_empresa_id).strip())
+        except (ValueError, TypeError):
+            pass
+
+    if target_empresa_id:
+        empresa = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
         if empresa:
             empresa_data = EmpresaResponse.model_validate(empresa)
     return {
