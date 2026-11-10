@@ -82,6 +82,52 @@ export const MasterDashboard: React.FC = () => {
   const [transferSubmitting, setTransferSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Modal Cadastrar Nova Empresa & OWNER
+  const [createEmpresaModalOpen, setCreateEmpresaModalOpen] = useState(false);
+  const [newNomeEmpresarial, setNewNomeEmpresarial] = useState('');
+  const [newNomeFantasia, setNewNomeFantasia] = useState('');
+  const [newCnpj, setNewCnpj] = useState('');
+  const [newEmailEmpresa, setNewEmailEmpresa] = useState('');
+  const [newTelefone, setNewTelefone] = useState('');
+  const [newNomeOwner, setNewNomeOwner] = useState('');
+  const [newEmailOwner, setNewEmailOwner] = useState('');
+  const [newSenhaOwner, setNewSenhaOwner] = useState('');
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const handleCreateEmpresaWithOwner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    setCreateSubmitting(true);
+    try {
+      await api.post('/empresa', {
+        nome_empresarial: newNomeEmpresarial,
+        nome_fantasia: newNomeFantasia,
+        cnpj: newCnpj.replace(/\D/g, ''),
+        email: newEmailEmpresa,
+        telefone: newTelefone,
+        nome_owner: newNomeOwner,
+        email_owner: newEmailOwner,
+        senha_owner: newSenhaOwner,
+      });
+      setCreateEmpresaModalOpen(false);
+      setNewNomeEmpresarial('');
+      setNewNomeFantasia('');
+      setNewCnpj('');
+      setNewEmailEmpresa('');
+      setNewTelefone('');
+      setNewNomeOwner('');
+      setNewEmailOwner('');
+      setNewSenhaOwner('');
+      setFeedback({ type: 'success', text: `Empresa '${newNomeFantasia}' e OWNER '${newNomeOwner}' cadastrados com sucesso!` });
+      carregarDados();
+    } catch (err: any) {
+      setCreateError(err.response?.data?.detail || 'Erro ao cadastrar nova empresa e OWNER.');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
   const carregarDados = async () => {
     try {
       setLoading(true);
@@ -555,6 +601,27 @@ export const MasterDashboard: React.FC = () => {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PlusCircle size={16} />}
+              onClick={() => {
+                setCreateError(null);
+                setCreateEmpresaModalOpen(true);
+              }}
+              sx={{
+                fontWeight: 700,
+                textTransform: 'none',
+                borderRadius: 2,
+                px: 2,
+                py: 0.8,
+                bgcolor: '#10b981',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                '&:hover': { bgcolor: '#059669' },
+              }}
+            >
+              Nova Empresa & OWNER
+            </Button>
             {/* Filtros de Status */}
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               <Chip
@@ -845,6 +912,149 @@ export const MasterDashboard: React.FC = () => {
             {transferSubmitting ? <CircularProgress size={20} /> : 'Efetivar Transferência'}
           </Button>
         </DialogActions>
+      </Dialog>
+      {/* Modal Cadastrar Nova Empresa & OWNER Titular */}
+      <Dialog
+        open={createEmpresaModalOpen}
+        onClose={() => setCreateEmpresaModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Building2 size={22} color="#10b981" />
+          <span>Cadastrar Nova Empresa & OWNER Titular</span>
+        </DialogTitle>
+        <Box component="form" onSubmit={handleCreateEmpresaWithOwner}>
+          <DialogContent dividers>
+            {createError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {createError}
+              </Alert>
+            )}
+
+            <Typography variant="caption" fontWeight={700} color="primary" sx={{ display: 'block', mb: 1, textTransform: 'uppercase' }}>
+              1. Dados Cadastrais da Empresa MEI
+            </Typography>
+
+            <Grid container spacing={1.5} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Nome Fantasia"
+                  required
+                  value={newNomeFantasia}
+                  onChange={(e) => setNewNomeFantasia(e.target.value)}
+                  placeholder="ex: Padaria do Bairro MEI"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Razao Social"
+                  required
+                  value={newNomeEmpresarial}
+                  onChange={(e) => setNewNomeEmpresarial(e.target.value)}
+                  placeholder="ex: Carlos Silva 12345678000"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="CNPJ"
+                  required
+                  value={newCnpj}
+                  onChange={(e) => setNewCnpj(e.target.value)}
+                  placeholder="00.000.000/0001-00"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Telefone / WhatsApp"
+                  value={newTelefone}
+                  onChange={(e) => setNewTelefone(e.target.value)}
+                  placeholder="(31) 99999-9999"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="E-mail da Empresa"
+                  type="email"
+                  value={newEmailEmpresa}
+                  onChange={(e) => setNewEmailEmpresa(e.target.value)}
+                  placeholder="contato@empresa.com.br"
+                />
+              </Grid>
+            </Grid>
+
+            <Typography variant="caption" fontWeight={700} color="secondary" sx={{ display: 'block', mb: 1, textTransform: 'uppercase' }}>
+              2. Dados de Acesso do Proprietario (OWNER)
+            </Typography>
+
+            <Grid container spacing={1.5}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Nome Completo do Titular"
+                  required
+                  value={newNomeOwner}
+                  onChange={(e) => setNewNomeOwner(e.target.value)}
+                  placeholder="ex: Carlos Alberto Silva"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="E-mail de Login do OWNER"
+                  type="email"
+                  required
+                  value={newEmailOwner}
+                  onChange={(e) => setNewEmailOwner(e.target.value)}
+                  placeholder="carlos@empresa.com.br"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Senha Inicial do OWNER"
+                  type="password"
+                  required
+                  value={newSenhaOwner}
+                  onChange={(e) => setNewSenhaOwner(e.target.value)}
+                  placeholder="Minimo 4 caracteres"
+                  helperText="O titular podera alterar no primeiro acesso"
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setCreateEmpresaModalOpen(false)} color="inherit" disabled={createSubmitting}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={createSubmitting}
+              sx={{
+                fontWeight: 700,
+                bgcolor: '#10b981',
+                '&:hover': { bgcolor: '#059669' },
+              }}
+            >
+              {createSubmitting ? <CircularProgress size={20} /> : 'Cadastrar Empresa & OWNER'}
+            </Button>
+          </DialogActions>
+        </Box>
       </Dialog>
     </Box>
   );

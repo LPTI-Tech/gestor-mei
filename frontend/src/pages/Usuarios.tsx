@@ -192,13 +192,15 @@ export const Usuarios: React.FC = () => {
         if (isMaster) {
           if (formRole === 'MASTER') {
             payload.empresa_id = null;
-          } else if (formEmpresaId) {
-            payload.empresa_id = formEmpresaId;
-  
           } else {
-            setFormError('Selecione a Empresa de Destino para este usuário.');
-            setSubmitting(false);
-            return;
+            const chosenEmpresa = formEmpresaId || (empresas.length > 0 ? empresas[0].id : null);
+            if (chosenEmpresa) {
+              payload.empresa_id = Number(chosenEmpresa);
+            } else {
+              setFormError('Selecione a Empresa de Destino para este usuário.');
+              setSubmitting(false);
+              return;
+            }
           }
         }
         await api.post('/users', payload);
@@ -797,7 +799,7 @@ export const Usuarios: React.FC = () => {
               <FormControl fullWidth margin="normal" required={formRole !== 'MASTER'}>
                 <InputLabel>Empresa de Destino</InputLabel>
                 <Select
-                  value={formRole === 'MASTER' ? '' : formEmpresaId}
+                  value={formRole === 'MASTER' ? '' : (formEmpresaId || (empresas.length > 0 ? empresas[0].id : ''))}
                   disabled={formRole === 'MASTER'}
                   label="Empresa de Destino"
                   onChange={(e) => setFormEmpresaId(Number(e.target.value))}

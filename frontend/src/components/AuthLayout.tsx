@@ -5,12 +5,16 @@ import {
   Card,
   CardContent,
   Typography,
-  Chip,
   Button,
   useTheme,
+  alpha,
 } from '@mui/material';
 import {
   ArrowBack,
+  CheckCircle,
+  Shield,
+  VpnKey,
+  VerifiedUser,
 } from '@mui/icons-material';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoOficial from '../assets/branding/gestor-mei-logo-tight.png';
@@ -36,387 +40,299 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
         width: '100%',
+        position: 'relative',
         display: 'flex',
-        bgcolor: isDark ? '#070d18' : '#f8fafc',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        overflowX: 'hidden',
+        // Fundo 100% da tela: Experiência única em Azul Sentinel escuro com profundidade
+        bgcolor: '#071933',
+        background: `
+          radial-gradient(ellipse 90% 80% at 50% -20%, rgba(14, 165, 233, 0.24) 0%, transparent 60%),
+          radial-gradient(ellipse 70% 50% at 90% 90%, rgba(16, 185, 129, 0.16) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 10% 80%, rgba(2, 132, 199, 0.18) 0%, transparent 50%),
+          linear-gradient(160deg, #071933 0%, #0a2540 40%, #0d3257 75%, #071933 100%)
+        `,
+        color: '#ffffff',
+        py: { xs: 3, md: 4 },
+        px: { xs: 2, sm: 3, md: 4 },
       }}
     >
       {/* ==================================================================== */}
-      {/* LADO ESQUERDO: BRANDING INSTITUCIONAL & MOCKUP SENTINEL (DESKTOP)   */}
+      {/* MALHA TECNOLÓGICA & REDE DE CONEXÕES DIGITAIS (SVG OVERLAY)           */}
+      {/* ==================================================================== */}
+      <Box
+        component="svg"
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 0,
+          opacity: 0.45,
+        }}
+        viewBox="0 0 1440 900"
+        fill="none"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="sentinel-tech-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path
+              d="M 60 0 L 0 0 0 60"
+              fill="none"
+              stroke="rgba(56, 189, 248, 0.08)"
+              strokeWidth="1"
+            />
+            <circle cx="60" cy="0" r="1.5" fill="rgba(56, 189, 248, 0.25)" />
+            <circle cx="0" cy="60" r="1.5" fill="rgba(16, 185, 129, 0.25)" />
+          </pattern>
+          <linearGradient id="circ-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+          </linearGradient>
+          <linearGradient id="circ-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#0284c7" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+
+        {/* Grade de Malha Tecnológica */}
+        <rect width="100%" height="100%" fill="url(#sentinel-tech-grid)" />
+
+        {/* Linhas de Circuitos Discretos & Nós de Rede */}
+        <path
+          d="M 120 180 L 320 180 L 440 300 L 700 300 L 780 220"
+          stroke="url(#circ-grad-1)"
+          strokeWidth="1.5"
+          strokeDasharray="4 4"
+        />
+        <circle cx="120" cy="180" r="3" fill="#38bdf8" />
+        <circle cx="440" cy="300" r="3.5" fill="#10b981" />
+        <circle cx="780" cy="220" r="2.5" fill="#38bdf8" />
+
+        <path
+          d="M 960 120 L 1120 280 L 1320 280"
+          stroke="url(#circ-grad-2)"
+          strokeWidth="1.5"
+          strokeDasharray="6 4"
+        />
+        <circle cx="960" cy="120" r="2.5" fill="#10b981" />
+        <circle cx="1120" cy="280" r="4" fill="#38bdf8" />
+        <circle cx="1320" cy="280" r="3" fill="#10b981" />
+
+        <path
+          d="M 180 720 L 360 720 L 480 600 L 640 600"
+          stroke="url(#circ-grad-1)"
+          strokeWidth="1.2"
+        />
+        <circle cx="180" cy="720" r="2.5" fill="#10b981" />
+        <circle cx="480" cy="600" r="3.5" fill="#38bdf8" />
+
+        <path
+          d="M 1020 780 L 1200 600 L 1380 600"
+          stroke="url(#circ-grad-2)"
+          strokeWidth="1.2"
+        />
+        <circle cx="1020" cy="780" r="3" fill="#38bdf8" />
+        <circle cx="1200" cy="600" r="3" fill="#10b981" />
+
+        {/* Partículas Suaves de Profundidade */}
+        <circle cx="280" cy="140" r="1.5" fill="#38bdf8" opacity="0.6" />
+        <circle cx="620" cy="160" r="2" fill="#10b981" opacity="0.5" />
+        <circle cx="860" cy="340" r="1.5" fill="#38bdf8" opacity="0.5" />
+        <circle cx="200" cy="480" r="2" fill="#38bdf8" opacity="0.4" />
+        <circle cx="1280" cy="420" r="2.5" fill="#10b981" opacity="0.6" />
+        <circle cx="820" cy="720" r="1.5" fill="#38bdf8" opacity="0.4" />
+      </Box>
+
+      {/* ==================================================================== */}
+      {/* TOPO: BARRA DE NAVEGAÇÃO & STATUS DO SISTEMA                          */}
       {/* ==================================================================== */}
       <Box
         sx={{
-          display: { xs: 'none', md: 'flex' },
-          width: { md: '48%', lg: '45%' },
-          minHeight: '100vh',
-          flexDirection: 'column',
+          width: '100%',
+          maxWidth: 1180,
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          p: { md: 4, lg: 5 },
           position: 'relative',
-          overflow: 'hidden',
-          background: 'linear-gradient(145deg, #071933 0%, #0d2847 40%, #0a1f38 75%, #051326 100%)',
-          color: '#ffffff',
-          boxShadow: 'inset -1px 0 0 rgba(255, 255, 255, 0.08)',
-          '::before': {
-            content: '""',
-            position: 'absolute',
-            top: '-20%',
-            left: '-20%',
-            width: '140%',
-            height: '140%',
-            background: 'radial-gradient(circle at 25% 25%, rgba(2, 132, 199, 0.22) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.12) 0%, transparent 45%)',
-            pointerEvents: 'none',
-          },
+          zIndex: 2,
+          mb: { xs: 2, md: 3 },
         }}
       >
-        {/* Cabeçalho do Lado Esquerdo */}
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            {/* Logo Oficial com Container Elegante */}
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                p: 1.2,
-                borderRadius: 3,
-                bgcolor: 'rgba(5, 19, 38, 0.85)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
-              }}
-            >
-              <Box
-                component="img"
-                src={logoOficial}
-                alt="Logo Oficial Gestor MEI"
-                sx={{
-                  width: { md: 155, lg: 175 },
-                  height: 'auto',
-                  display: 'block',
-                }}
-              />
-            </Box>
-          </Box>
-
-          {/* ALTERAÇÃO 1: TÍTULO, SUBTÍTULO, DESCRIÇÃO E BENEFÍCIOS */}
-          <Typography
-            variant="h4"
+        {backTo ? (
+          <Button
+            size="small"
+            onClick={() => navigate(backTo)}
+            startIcon={<ArrowBack fontSize="small" />}
             sx={{
-              fontWeight: 900,
-              fontSize: { md: '1.85rem', lg: '2.2rem' },
-              lineHeight: 1.15,
-              letterSpacing: '-0.03em',
-              color: '#ffffff',
-              mb: 1,
+              color: 'rgba(255, 255, 255, 0.75)',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.84rem',
+              borderRadius: 2,
+              px: 1.5,
+              py: 0.6,
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              '&:hover': {
+                color: '#ffffff',
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+              },
             }}
           >
-            GESTOR MEI
-          </Typography>
+            {backText}
+          </Button>
+        ) : (
+          <Box />
+        )}
+
+        {/* 🟢 Sistema Online com Destaque Discreto e Elegante */}
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 3,
+            bgcolor: 'rgba(10, 37, 64, 0.65)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <ApiStatusIndicator variant="text" size="small" />
+        </Box>
+      </Box>
+
+      {/* ==================================================================== */}
+      {/* CORPO CENTRAL: LOGO PRINCIPAL + CARD GLASSMORPHISM                   */}
+      {/* ==================================================================== */}
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 480,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          position: 'relative',
+          zIndex: 2,
+          my: 'auto',
+        }}
+      >
+        {/* PARTE 1 - ITEM 3: A LOGO VOLTA A SER O PRINCIPAL DESTAQUE VISUAL */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: { xs: 2.5, md: 3 },
+            textAlign: 'center',
+          }}
+        >
+          {/* Caixa de Acrílico Iluminada para a Logo */}
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: { xs: 1.8, sm: 2.2 },
+              borderRadius: 4,
+              bgcolor: 'rgba(7, 25, 51, 0.85)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              boxShadow: `
+                0 16px 36px -8px rgba(0, 0, 0, 0.6),
+                0 0 24px -4px rgba(16, 185, 129, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12)
+              `,
+              mb: 1.8,
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: `
+                  0 20px 44px -8px rgba(0, 0, 0, 0.7),
+                  0 0 32px -4px rgba(16, 185, 129, 0.3),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.18)
+                `,
+              },
+            }}
+          >
+            <Box
+              component="img"
+              src={logoOficial}
+              alt="Logo Oficial Gestor MEI"
+              sx={{
+                width: { xs: 190, sm: 220, md: 235 },
+                height: 'auto',
+                display: 'block',
+                filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35))',
+              }}
+            />
+          </Box>
 
           <Typography
             variant="h6"
             sx={{
               color: '#38bdf8',
-              fontSize: { md: '1.1rem', lg: '1.25rem' },
               fontWeight: 700,
-              lineHeight: 1.35,
-              mb: 1.5,
+              fontSize: { xs: '0.95rem', sm: '1.05rem' },
+              letterSpacing: '-0.01em',
+              lineHeight: 1.3,
             }}
           >
             A gestão do seu negócio ficou simples.
           </Typography>
-
           <Typography
-            variant="body1"
+            variant="caption"
             sx={{
               color: '#94a3b8',
-              fontSize: { md: '0.9rem', lg: '0.96rem' },
-              lineHeight: 1.55,
-              maxWidth: 460,
-              mb: 2.5,
+              fontSize: '0.78rem',
+              mt: 0.4,
+              display: 'block',
             }}
           >
-            Controle vendas, estoque, compras, financeiro e obrigações fiscais em um único lugar.
+            Vendas, estoque, compras, financeiro e obrigações fiscais em um único lugar.
           </Typography>
-
-          {/* Benefícios */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-            {[
-              'Vendas e PDV',
-              'Estoque e Compras',
-              'Gestão Fiscal MEI',
-            ].map((beneficio) => (
-              <Box key={beneficio} sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <Box
-                  sx={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
-                    color: '#34d399',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 800,
-                    flexShrink: 0,
-                  }}
-                >
-                  ✓
-                </Box>
-                <Typography sx={{ color: '#f1f5f9', fontWeight: 600, fontSize: '0.92rem' }}>
-                  {beneficio}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
         </Box>
 
-        {/* ALTERAÇÃO 2: MOCKUP DISCRETO DO DASHBOARD SENTINEL */}
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 1,
-            my: { md: 2, lg: 2.5 },
-            borderRadius: 3.5,
-            p: 2.2,
-            bgcolor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.45)',
-            opacity: 0.92,
-          }}
-        >
-          {/* Header da Mini Janela */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 1.8,
-              pb: 1,
-              borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', opacity: 0.7 }} />
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b', opacity: 0.7 }} />
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{ ml: 1, color: '#94a3b8', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.02em' }}
-              >
-                Dashboard Sentinel • Visão Geral
-              </Typography>
-            </Box>
-            <Chip
-              label="Tempo Real"
-              size="small"
-              sx={{
-                height: 18,
-                fontSize: '0.64rem',
-                fontWeight: 700,
-                bgcolor: 'rgba(16, 185, 129, 0.12)',
-                color: '#34d399',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderRadius: 1.5,
-              }}
-            />
-          </Box>
-
-          {/* Grid 2x2 com os Dados Fictícios */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 1.2,
-            }}
-          >
-            {/* Vendas Hoje */}
-            <Box
-              sx={{
-                p: 1.4,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-              }}
-            >
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem', display: 'block', mb: 0.2 }}>
-                Vendas Hoje
-              </Typography>
-              <Typography variant="subtitle2" sx={{ color: '#38bdf8', fontWeight: 800, fontSize: '0.98rem' }}>
-                R$ 1.248,50
-              </Typography>
-            </Box>
-
-            {/* Produtos */}
-            <Box
-              sx={{
-                p: 1.4,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-              }}
-            >
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem', display: 'block', mb: 0.2 }}>
-                Produtos
-              </Typography>
-              <Typography variant="subtitle2" sx={{ color: '#f1f5f9', fontWeight: 800, fontSize: '0.98rem' }}>
-                127
-              </Typography>
-            </Box>
-
-            {/* Fluxo de Caixa */}
-            <Box
-              sx={{
-                p: 1.4,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-              }}
-            >
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem', display: 'block', mb: 0.2 }}>
-                Fluxo de Caixa
-              </Typography>
-              <Typography variant="subtitle2" sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.98rem' }}>
-                R$ 3.420,00
-              </Typography>
-            </Box>
-
-            {/* Próximo DAS */}
-            <Box
-              sx={{
-                p: 1.4,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-              }}
-            >
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem', display: 'block', mb: 0.2 }}>
-                Próximo DAS
-              </Typography>
-              <Typography variant="subtitle2" sx={{ color: '#fbbf24', fontWeight: 800, fontSize: '0.98rem' }}>
-                20/11/2026
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Rodapé do Lado Esquerdo */}
-        <Box sx={{ position: 'relative', zIndex: 1, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-              Desenvolvido por <strong>LPTI Tech</strong>
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#475569', fontSize: '0.72rem' }}>
-              🔒 Controle seguro de acesso
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* ==================================================================== */}
-      {/* LADO DIREITO: ÁREA DE ACESSO INTERATIVA (GLASSMORPHISM CARD)         */}
-      {/* ==================================================================== */}
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: { xs: 2, sm: 3.5, md: 4 },
-          position: 'relative',
-        }}
-      >
-        {/* ALTERAÇÃO 6: Barra Superior com Sistema Online Sutil (Sem Versão no Topo) */}
-        <Box
-          sx={{
-            position: { xs: 'static', sm: 'absolute' },
-            top: { sm: 20 },
-            right: { sm: 28 },
-            left: { sm: 28 },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            maxWidth: 480,
-            mb: { xs: 2.5, sm: 0 },
-            px: { xs: 0, sm: 1 },
-          }}
-        >
-          {backTo ? (
-            <Button
-              size="small"
-              onClick={() => navigate(backTo)}
-              startIcon={<ArrowBack fontSize="small" />}
-              sx={{
-                color: 'text.secondary',
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.82rem',
-                borderRadius: 2,
-                '&:hover': { color: 'primary.main', bgcolor: 'transparent' },
-              }}
-            >
-              {backText}
-            </Button>
-          ) : (
-            <Box
-              sx={{
-                display: { xs: 'flex', md: 'none' },
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <Box
-                component="img"
-                src={logoOficial}
-                alt="Logo Gestor MEI"
-                sx={{ height: 30, width: 'auto' }}
-              />
-            </Box>
-          )}
-
-          {/* ALTERAÇÃO 6: 🟢 Sistema Online com Destaque Reduzido */}
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
-            <ApiStatusIndicator variant="text" size="small" />
-          </Box>
-        </Box>
-
-        {/* Card Glassmorphism Central (Reduzido ~25% de altura) */}
+        {/* CARD CENTRAL DE LOGIN (GLASSMORPHISM PREMIUM REDUZIDO EM ALTURA) */}
         <Card
           elevation={0}
           sx={{
             width: '100%',
-            maxWidth: 440,
             borderRadius: 4,
-            border: '1px solid',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.9)',
-            bgcolor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.98)',
-            backdropFilter: 'blur(16px)',
-            boxShadow: isDark
-              ? '0 25px 50px -12px rgba(0, 0, 0, 0.65)'
-              : '0 20px 45px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            bgcolor: 'rgba(10, 37, 64, 0.78)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: `
+              0 24px 60px -12px rgba(0, 0, 0, 0.7),
+              0 0 32px -8px rgba(2, 132, 199, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `,
             overflow: 'hidden',
           }}
         >
-          {/* ALTERAÇÃO 5: Faixa Superior com "🔒 Seus dados protegidos" e "🔒 Controle seguro de acesso" */}
+          {/* Faixa Superior de Proteção e Blindagem RBAC */}
           <Box
             sx={{
-              py: 1.1,
-              px: { xs: 2.5, sm: 3.5 },
-              bgcolor: isDark ? 'rgba(2, 132, 199, 0.1)' : 'rgba(2, 132, 199, 0.05)',
-              borderBottom: '1px solid',
-              borderColor: isDark ? 'rgba(2, 132, 199, 0.18)' : 'rgba(2, 132, 199, 0.1)',
+              py: 1,
+              px: { xs: 2.5, sm: 3 },
+              bgcolor: 'rgba(2, 132, 199, 0.14)',
+              borderBottom: '1px solid rgba(56, 189, 248, 0.16)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -425,10 +341,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <Typography
               variant="caption"
               sx={{
-                color: 'primary.main',
+                color: '#38bdf8',
                 fontWeight: 700,
                 fontSize: '0.78rem',
                 letterSpacing: '0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.6,
               }}
             >
               {badgeText}
@@ -436,7 +355,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <Typography
               variant="caption"
               sx={{
-                color: 'text.secondary',
+                color: '#94a3b8',
                 fontWeight: 600,
                 fontSize: '0.72rem',
               }}
@@ -445,18 +364,16 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             </Typography>
           </Box>
 
-          <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
-            {/* Título & Subtítulo mais compactos */}
-            <Box sx={{ mb: 2 }}>
+          <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+            {/* Título & Subtítulo Interno */}
+            <Box sx={{ mb: 2, textAlign: 'left' }}>
               <Typography
                 variant="h5"
-                component="h1"
                 sx={{
                   fontWeight: 800,
-                  fontSize: { xs: '1.35rem', sm: '1.5rem' },
-                  letterSpacing: '-0.025em',
-                  color: isDark ? '#f8fafc' : '#0f172a',
-                  mb: 0.3,
+                  fontSize: { xs: '1.25rem', sm: '1.4rem' },
+                  letterSpacing: '-0.02em',
+                  color: '#ffffff',
                 }}
               >
                 {title}
@@ -464,41 +381,140 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <Typography
                 variant="body2"
                 sx={{
-                  color: 'text.secondary',
-                  fontSize: '0.88rem',
-                  lineHeight: 1.4,
+                  color: '#94a3b8',
+                  fontSize: '0.84rem',
+                  mt: 0.3,
                 }}
               >
                 {subtitle}
               </Typography>
             </Box>
 
-            {/* Conteúdo Injetado (Formulários) */}
             {children}
           </CardContent>
         </Card>
 
-        {/* ALTERAÇÃO 6: Versão v1.4.7 no Rodapé */}
+        {/* Benefícios em Pílulas Sutis */}
         <Box
           sx={{
-            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: { xs: 1.2, sm: 2 },
             mt: 2.5,
-            width: '100%',
-            maxWidth: 440,
+            flexWrap: 'wrap',
           }}
         >
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              fontSize: '0.75rem',
-              display: 'block',
-            }}
-          >
-            Gestor MEI • v1.4.7 • LPTI Tech
-          </Typography>
+          {['Vendas e PDV', 'Estoque e Compras', 'Gestão Fiscal MEI'].map((item) => (
+            <Box
+              key={item}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.6,
+                px: 1.2,
+                py: 0.4,
+                borderRadius: 2,
+                bgcolor: 'rgba(10, 37, 64, 0.45)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(16, 185, 129, 0.2)',
+                  color: '#10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                }}
+              >
+                ✓
+              </Box>
+              <Typography sx={{ color: '#cbd5e1', fontSize: '0.74rem', fontWeight: 600 }}>
+                {item}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      {/* ==================================================================== */}
+      {/* PARTE 1 - ITEM 4: RODAPÉ INSTITUCIONAL DE ALTA CREDIBILIDADE          */}
+      {/* ==================================================================== */}
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 960,
+          position: 'relative',
+          zIndex: 2,
+          mt: { xs: 3, md: 4 },
+          pt: 2,
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+        {/* Badges de Confiança */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: { xs: 1.5, sm: 3 },
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
+            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
+              Login Seguro
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
+            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
+              Microsoft e Google
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
+            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
+              Proteção de Dados (LGPD)
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Informações Institucionais Finais */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1.2,
+            color: '#64748b',
+            fontSize: '0.72rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>Gestor MEI © 2026</span>
+          <span>•</span>
+          <span style={{ color: '#94a3b8', fontWeight: 600 }}>LPTI Tech</span>
+          <span>•</span>
+          <span style={{ color: '#38bdf8', fontWeight: 600 }}>v1.4.7</span>
         </Box>
       </Box>
     </Box>
   );
 };
+
+export default AuthLayout;

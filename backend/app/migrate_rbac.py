@@ -86,7 +86,8 @@ def run_migration():
             
             if is_sqlite:
                 result = conn.execute(text("PRAGMA table_info(users)"))
-                existing_cols = [row[1] for row in result.fetchall()]
+                cols = result.fetchall()
+                existing_cols = [row[1] for row in cols]
                 
                 if "ultimo_acesso" not in existing_cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN ultimo_acesso DATETIME"))
@@ -95,6 +96,38 @@ def run_migration():
                 if "criado_por_id" not in existing_cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN criado_por_id INTEGER"))
                     print("[MIGRATE RBAC] Coluna 'criado_por_id' adicionada em users (SQLite).")
+
+                # Verifica se empresa_id possui NOT NULL constraint no SQLite
+                emp_col = next((row for row in cols if row[1] == "empresa_id"), None)
+                if emp_col and emp_col[3] == 1:
+                    print("[MIGRATE RBAC] Reconstruindo tabela users no SQLite para permitir empresa_id NULL (usuário MASTER)...")
+                    conn.execute(text("PRAGMA foreign_keys=OFF"))
+                    conn.execute(text("""
+                        CREATE TABLE users_temp (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            empresa_id INTEGER REFERENCES empresas(id),
+                            nome VARCHAR(150) NOT NULL,
+                            email VARCHAR(150) NOT NULL UNIQUE,
+                            hashed_password VARCHAR(255) NOT NULL,
+                            role VARCHAR(20) NOT NULL,
+                            ativo BOOLEAN DEFAULT 1,
+                            created_at DATETIME,
+                            ultimo_acesso DATETIME,
+                            criado_por_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+                        )
+                    """))
+                    # Seleciona apenas as colunas que já existem
+                    refetched = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+                    current_cols = [r[1] for r in refetched]
+                    shared_cols = [c for c in ["id", "empresa_id", "nome", "email", "hashed_password", "role", "ativo", "created_at", "ultimo_acesso", "criado_por_id"] if c in current_cols]
+                    shared_str = ", ".join(shared_cols)
+                    conn.execute(text(f"INSERT INTO users_temp ({shared_str}) SELECT {shared_str} FROM users"))
+                    conn.execute(text("DROP TABLE users"))
+                    conn.execute(text("ALTER TABLE users_temp RENAME TO users"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_empresa_id ON users (empresa_id)"))
+                    conn.execute(text("PRAGMA foreign_keys=ON"))
+                    print("[MIGRATE RBAC] Tabela users no SQLite atualizada com empresa_id NULLABLE.")
             else:
                 # PostgreSQL
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ultimo_acesso TIMESTAMP WITHOUT TIME ZONE"))

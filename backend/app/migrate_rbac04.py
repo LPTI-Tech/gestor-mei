@@ -30,7 +30,8 @@ def run_migration():
                 # PostgreSQL
                 conn.execute(text("ALTER TABLE empresas ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE NOT NULL"))
                 conn.execute(text("ALTER TABLE empresas ADD COLUMN IF NOT EXISTS motivo_bloqueio VARCHAR(255)"))
-                print("[MIGRATE RBAC 04] Colunas 'ativo' e 'motivo_bloqueio' adicionadas/verificadas em empresas (PostgreSQL).")
+                conn.execute(text("ALTER TABLE users ALTER COLUMN empresa_id DROP NOT NULL"))
+                print("[MIGRATE RBAC 04] Colunas 'ativo', 'motivo_bloqueio' e relaxamento de 'users.empresa_id' verificadas (PostgreSQL).")
 
             conn.commit()
 
