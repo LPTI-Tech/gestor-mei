@@ -255,6 +255,57 @@ export const Login: React.FC = () => {
     setErrorMessage(null);
   };
 
+  // Estilo Sentinel UX Polish 2.2: Preserva o tema escuro/glassmorphism no foco
+  const sentinelInputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      height: 34,
+      color: '#ffffff',
+      bgcolor: 'rgba(255, 255, 255, 0.05)',
+      transition: 'all 0.2s ease-in-out',
+      '& fieldset': {
+        borderColor: 'rgba(255, 255, 255, 0.18)',
+        transition: 'all 0.2s ease-in-out',
+      },
+      '&:hover': {
+        bgcolor: 'rgba(255, 255, 255, 0.07)',
+      },
+      '&:hover fieldset': {
+        borderColor: 'rgba(56, 189, 248, 0.5)',
+      },
+      '&.Mui-focused': {
+        bgcolor: 'rgba(255, 255, 255, 0.08) !important',
+        color: '#ffffff !important',
+        boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25), 0 2px 10px rgba(0, 0, 0, 0.3)',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#10b981 !important',
+        borderWidth: '1.5px',
+      },
+      '& input': {
+        color: '#ffffff !important',
+        fontSize: '0.84rem',
+        backgroundColor: 'transparent !important',
+        '&:focus': {
+          backgroundColor: 'transparent !important',
+          color: '#ffffff !important',
+          outline: 'none',
+        },
+      },
+      '& input::placeholder': {
+        color: 'rgba(148, 163, 184, 0.8)',
+        opacity: 1,
+        fontSize: '0.8rem',
+      },
+      '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
+        WebkitBoxShadow: '0 0 0 1000px rgba(15, 23, 42, 0.88) inset !important',
+        WebkitTextFillColor: '#ffffff !important',
+        caretColor: '#ffffff',
+        transition: 'background-color 5000s ease-in-out 0s',
+      },
+    },
+  };
+
   return (
     <AuthLayout
       title="Bem-vindo de volta"
@@ -417,29 +468,7 @@ export const Login: React.FC = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                height: 34,
-                color: '#ffffff',
-                bgcolor: 'rgba(255, 255, 255, 0.05)',
-                '& fieldset': {
-                  borderColor: 'rgba(255, 255, 255, 0.18)',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(56, 189, 248, 0.5)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#10b981',
-                  borderWidth: '2px',
-                },
-                '& input::placeholder': {
-                  color: 'rgba(148, 163, 184, 0.8)',
-                  opacity: 1,
-                  fontSize: '0.8rem',
-                },
-              },
-            }}
+            sx={sentinelInputSx}
           />
         </Box>
 
@@ -504,29 +533,7 @@ export const Login: React.FC = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                height: 34,
-                color: '#ffffff',
-                bgcolor: 'rgba(255, 255, 255, 0.05)',
-                '& fieldset': {
-                  borderColor: 'rgba(255, 255, 255, 0.18)',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(56, 189, 248, 0.5)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#10b981',
-                  borderWidth: '2px',
-                },
-                '& input::placeholder': {
-                  color: 'rgba(148, 163, 184, 0.8)',
-                  opacity: 1,
-                  fontSize: '0.8rem',
-                },
-              },
-            }}
+            sx={sentinelInputSx}
           />
         </Box>
 
