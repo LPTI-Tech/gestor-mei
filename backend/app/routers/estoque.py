@@ -9,7 +9,7 @@ from app.models.produto import Produto
 from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
 from app.models.empresa import Empresa
 from app.models.user import User
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 from app.schemas.estoque import (
     EntradaEstoqueRequest,
     SaidaEstoqueRequest,
@@ -43,13 +43,14 @@ def _format_movimentacao_response(mov: MovimentacaoEstoque) -> MovimentacaoEstoq
 def get_resumo_estoque(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Retorna o panorama geral do estoque: total de itens, itens em nível crítico/baixo,
     valorização patrimonial a preço de custo e potencial de venda.
     """
     produtos = db.query(Produto).filter(
-        Produto.empresa_id == current_user.empresa_id,
+        Produto.empresa_id == empresa.id,
         Produto.tipo == "PRODUTO",
         Produto.ativo == True
     ).order_by(Produto.nome.asc()).all()
@@ -102,12 +103,13 @@ def get_resumo_estoque(
 def get_produtos_estoque_baixo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Retorna apenas os produtos cujo saldo em estoque está menor ou igual ao estoque mínimo.
     """
     produtos = db.query(Produto).filter(
-        Produto.empresa_id == current_user.empresa_id,
+        Produto.empresa_id == empresa.id,
         Produto.tipo == "PRODUTO",
         Produto.ativo == True
     ).all()
@@ -143,12 +145,13 @@ def list_movimentacoes(
     limit: int = Query(default=100, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Retorna o histórico cronológico de movimentações de estoque da empresa.
     """
     query = db.query(MovimentacaoEstoque).filter(
-        MovimentacaoEstoque.empresa_id == current_user.empresa_id
+        MovimentacaoEstoque.empresa_id == empresa.id
     )
 
     if produto_id:
@@ -167,12 +170,13 @@ def list_auditoria_estoque(
     limit: int = Query(default=100, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Retorna o histórico de auditoria de saídas autorizadas com estoque insuficiente/crítico.
     """
     query = db.query(AuditoriaEstoque).filter(
-        AuditoriaEstoque.empresa_id == current_user.empresa_id
+        AuditoriaEstoque.empresa_id == empresa.id
     )
 
     if produto_id:
@@ -203,6 +207,7 @@ def registrar_entrada_estoque(
     data: EntradaEstoqueRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Registra entrada manual de mercadorias no estoque.
@@ -213,7 +218,7 @@ def registrar_entrada_estoque(
 
     produto = db.query(Produto).filter(
         Produto.id == data.produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
 
     if not produto:
@@ -225,7 +230,7 @@ def registrar_entrada_estoque(
         produto.custo_unitario = float(data.custo_unitario)
 
     mov = MovimentacaoEstoque(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         produto_id=produto.id,
         tipo="ENTRADA",
         quantidade=float(data.quantidade),
@@ -245,6 +250,7 @@ def registrar_saida_estoque(
     data: SaidaEstoqueRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Registra saída manual de mercadorias (perdas, consumo interno, descarte, validade vencida).
@@ -254,13 +260,12 @@ def registrar_saida_estoque(
 
     produto = db.query(Produto).filter(
         Produto.id == data.produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
 
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
-    empresa = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
     permitir_negativo = getattr(empresa, "permitir_estoque_negativo", True)
     if permitir_negativo is None:
         permitir_negativo = True
@@ -288,7 +293,7 @@ def registrar_saida_estoque(
         motivo_str = f"{data.motivo or 'Saída Manual'} [ESTOQUE CRÍTICO / NEGATIVO]"
         obs_str = f"{data.observacao or ''} (Saída autorizada com saldo insuficiente: {saldo_atual:.2f} disp., {qtd_saida:.2f} retiradas, saldo resultante: {novo_saldo:.2f})".strip()
         audit = AuditoriaEstoque(
-            empresa_id=current_user.empresa_id,
+            empresa_id=empresa.id,
             produto_id=produto.id,
             venda_id=None,
             usuario_id=current_user.id,
@@ -305,7 +310,7 @@ def registrar_saida_estoque(
         obs_str = data.observacao
 
     mov = MovimentacaoEstoque(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         produto_id=produto.id,
         tipo="SAIDA",
         quantidade=qtd_saida,
@@ -325,6 +330,7 @@ def registrar_ajuste_estoque(
     data: AjusteEstoqueRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Ajusta a quantidade de estoque para um valor absoluto após conferência/inventário.
@@ -334,7 +340,7 @@ def registrar_ajuste_estoque(
 
     produto = db.query(Produto).filter(
         Produto.id == data.produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
 
     if not produto:
@@ -349,7 +355,7 @@ def registrar_ajuste_estoque(
         obs += f" Obs: {data.observacao}"
 
     mov = MovimentacaoEstoque(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         produto_id=produto.id,
         tipo="AJUSTE",
         quantidade=abs(diferenca),
@@ -369,6 +375,7 @@ def registrar_movimentacao_generica(
     data: MovimentacaoEstoqueCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa),
 ):
     """
     Endpoint unificado de movimentação de estoque (ENTRADA, SAIDA, AJUSTE).
@@ -387,7 +394,8 @@ def registrar_movimentacao_generica(
                 observacao=data.observacao,
             ),
             db,
-            current_user
+            current_user,
+            empresa
         )
     elif tipo_upper == "SAIDA":
         return registrar_saida_estoque(
@@ -398,7 +406,8 @@ def registrar_movimentacao_generica(
                 observacao=data.observacao,
             ),
             db,
-            current_user
+            current_user,
+            empresa
         )
     else:  # AJUSTE
         return registrar_ajuste_estoque(
@@ -409,6 +418,7 @@ def registrar_movimentacao_generica(
                 observacao=data.observacao,
             ),
             db,
-            current_user
+            current_user,
+            empresa
         )
 

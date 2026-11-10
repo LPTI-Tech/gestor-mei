@@ -21,7 +21,7 @@ from app.schemas.venda import (
     VendaVincularMotoboy,
     ComandaImpressaoResponse
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 
 router = APIRouter(prefix="/vendas", tags=["Vendas & Pedidos"])
 
@@ -107,9 +107,10 @@ def list_vendas(
     status_venda: Optional[str] = None,
     limit: int = Query(default=100, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(Venda).filter(Venda.empresa_id == current_user.empresa_id)
+    query = db.query(Venda).filter(Venda.empresa_id == empresa.id)
     
     if data_inicio:
         dt_start = datetime.combine(data_inicio, time.min)
@@ -150,11 +151,12 @@ def list_vendas(
 def get_venda(
     venda_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     venda = db.query(Venda).filter(
         Venda.id == venda_id,
-        Venda.empresa_id == current_user.empresa_id
+        Venda.empresa_id == empresa.id
     ).first()
     
     if not venda:
@@ -167,11 +169,12 @@ def get_venda(
 def create_venda(
     data: VendaCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     # 1. Active Cash Shift
     active_caixa = db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id,
+        CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).order_by(desc(CaixaTurno.data_abertura)).first()
     
@@ -183,7 +186,7 @@ def create_venda(
     if data.cliente_id:
         cliente = db.query(Cliente).filter(
             Cliente.id == data.cliente_id,
-            Cliente.empresa_id == current_user.empresa_id
+            Cliente.empresa_id == empresa.id
         ).first()
         if not cliente:
             raise HTTPException(status_code=404, detail="Cliente informado não encontrado.")
@@ -194,7 +197,7 @@ def create_venda(
     if regiao_id:
         regiao = db.query(RegiaoEntrega).filter(
             RegiaoEntrega.id == regiao_id,
-            RegiaoEntrega.empresa_id == current_user.empresa_id
+            RegiaoEntrega.empresa_id == empresa.id
         ).first()
         if not regiao:
             raise HTTPException(status_code=404, detail="Região de entrega não encontrada.")
@@ -211,7 +214,7 @@ def create_venda(
     if data.motoboy_id:
         motoboy = db.query(Motoboy).filter(
             Motoboy.id == data.motoboy_id,
-            Motoboy.empresa_id == current_user.empresa_id
+            Motoboy.empresa_id == empresa.id
         ).first()
         if not motoboy:
             raise HTTPException(status_code=404, detail="Motoboy não encontrado.")
@@ -238,7 +241,7 @@ def create_venda(
             if item_data.produto_id:
                 prod = db.query(Produto).filter(
                     Produto.id == item_data.produto_id,
-                    Produto.empresa_id == current_user.empresa_id
+                    Produto.empresa_id == empresa.id
                 ).first()
                 if prod:
                     item_tipo = prod.tipo
@@ -286,7 +289,7 @@ def create_venda(
         if data.produto_id:
             prod = db.query(Produto).filter(
                 Produto.id == data.produto_id,
-                Produto.empresa_id == current_user.empresa_id
+                Produto.empresa_id == empresa.id
             ).first()
             if prod:
                 tipo = prod.tipo
@@ -332,7 +335,7 @@ def create_venda(
         resumo_prod_id = None
 
     # Validação inteligente de estoque pré-venda (PDV e Delivery)
-    empresa_atual = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
+    empresa_atual = empresa
     permitir_negativo_config = getattr(empresa_atual, "permitir_estoque_negativo", True)
     if permitir_negativo_config is None:
         permitir_negativo_config = True
@@ -346,7 +349,7 @@ def create_venda(
             if pid not in produtos_consultados:
                 prod_obj = db.query(Produto).filter(
                     Produto.id == pid,
-                    Produto.empresa_id == current_user.empresa_id
+                    Produto.empresa_id == empresa.id
                 ).first()
                 produtos_consultados[pid] = prod_obj
 
@@ -381,7 +384,7 @@ def create_venda(
     status_ped = data.status_pedido or "Recebido"
 
     venda = Venda(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         cliente_id=data.cliente_id,
         user_id=current_user.id,
         caixa_turno_id=caixa_id,
@@ -430,7 +433,7 @@ def create_venda(
         if it["produto_id"] and it["tipo_item"] == "PRODUTO":
             prod_est = produtos_consultados.get(it["produto_id"]) or db.query(Produto).filter(
                 Produto.id == it["produto_id"],
-                Produto.empresa_id == current_user.empresa_id
+                Produto.empresa_id == empresa.id
             ).first()
             if prod_est:
                 saldo_anterior = float(prod_est.quantidade_estoque or 0.0)
@@ -450,7 +453,7 @@ def create_venda(
                     )
                     # Histórico de auditoria
                     audit = AuditoriaEstoque(
-                        empresa_id=current_user.empresa_id,
+                        empresa_id=empresa.id,
                         produto_id=prod_est.id,
                         venda_id=venda.id,
                         usuario_id=current_user.id,
@@ -467,7 +470,7 @@ def create_venda(
                     obs_mov = f"Baixa automática via PDV ({venda.origem})"
 
                 mov_venda = MovimentacaoEstoque(
-                    empresa_id=current_user.empresa_id,
+                    empresa_id=empresa.id,
                     produto_id=prod_est.id,
                     tipo="SAIDA",
                     quantidade=qtd_vendida,
@@ -481,7 +484,7 @@ def create_venda(
     # If motoboy linked, also register in EntregaMotoboy table
     if data.motoboy_id and taxa_motoboy > 0:
         entrega_rec = EntregaMotoboy(
-            empresa_id=current_user.empresa_id,
+            empresa_id=empresa.id,
             motoboy_id=data.motoboy_id,
             data_hora=sale_dt,
             numero_pedido=venda.numero_pedido,
@@ -501,11 +504,12 @@ def update_status_pedido(
     venda_id: int,
     data: VendaStatusPedidoUpdate,
     db: Session = Depends(get_db),
+    empresa: Empresa = Depends(get_current_empresa),
     current_user: User = Depends(get_current_user)
 ):
     venda = db.query(Venda).filter(
         Venda.id == venda_id,
-        Venda.empresa_id == current_user.empresa_id
+        Venda.empresa_id == empresa.id
     ).first()
     
     if not venda:
@@ -532,11 +536,12 @@ def vincular_motoboy(
     venda_id: int,
     data: VendaVincularMotoboy,
     db: Session = Depends(get_db),
+    empresa: Empresa = Depends(get_current_empresa),
     current_user: User = Depends(get_current_user)
 ):
     venda = db.query(Venda).filter(
         Venda.id == venda_id,
-        Venda.empresa_id == current_user.empresa_id
+        Venda.empresa_id == empresa.id
     ).first()
     
     if not venda:
@@ -544,7 +549,7 @@ def vincular_motoboy(
 
     motoboy = db.query(Motoboy).filter(
         Motoboy.id == data.motoboy_id,
-        Motoboy.empresa_id == current_user.empresa_id
+        Motoboy.empresa_id == empresa.id
     ).first()
 
     if not motoboy:
@@ -557,7 +562,7 @@ def vincular_motoboy(
 
     # Sync or create EntregaMotoboy
     entrega_existente = db.query(EntregaMotoboy).filter(
-        EntregaMotoboy.empresa_id == current_user.empresa_id,
+        EntregaMotoboy.empresa_id == empresa.id,
         EntregaMotoboy.numero_pedido == venda.numero_pedido
     ).first()
 
@@ -566,7 +571,7 @@ def vincular_motoboy(
         entrega_existente.valor_entrega = venda.taxa_motoboy
     else:
         nova_entrega = EntregaMotoboy(
-            empresa_id=current_user.empresa_id,
+            empresa_id=empresa.id,
             motoboy_id=motoboy.id,
             numero_pedido=venda.numero_pedido or f"PED-{venda.id:04d}",
             valor_entrega=venda.taxa_motoboy,
@@ -584,11 +589,12 @@ def vincular_motoboy(
 def cancel_venda(
     venda_id: int,
     db: Session = Depends(get_db),
+    empresa: Empresa = Depends(get_current_empresa),
     current_user: User = Depends(get_current_user)
 ):
     venda = db.query(Venda).filter(
         Venda.id == venda_id,
-        Venda.empresa_id == current_user.empresa_id
+        Venda.empresa_id == empresa.id
     ).first()
     
     if not venda:
@@ -600,12 +606,12 @@ def cancel_venda(
             if it.produto_id and it.tipo_item == "PRODUTO":
                 prod_est = db.query(Produto).filter(
                     Produto.id == it.produto_id,
-                    Produto.empresa_id == current_user.empresa_id
+                    Produto.empresa_id == empresa.id
                 ).first()
                 if prod_est:
                     prod_est.quantidade_estoque = float(prod_est.quantidade_estoque or 0.0) + float(it.quantidade)
                     mov_estorno = MovimentacaoEstoque(
-                        empresa_id=current_user.empresa_id,
+                        empresa_id=empresa.id,
                         produto_id=prod_est.id,
                         tipo="ENTRADA",
                         quantidade=float(it.quantidade),
@@ -628,6 +634,7 @@ def get_comanda_impressao(
     venda_id: int,
     largura: int = Query(default=48, description="Largura de colunas da bobina: 48 para 80mm ou 32 para 58mm"),
     db: Session = Depends(get_db),
+    empresa: Empresa = Depends(get_current_empresa),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -636,13 +643,11 @@ def get_comanda_impressao(
     """
     venda = db.query(Venda).filter(
         Venda.id == venda_id,
-        Venda.empresa_id == current_user.empresa_id
+        Venda.empresa_id == empresa.id
     ).first()
     
     if not venda:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
-
-    empresa = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
 
     cols = 48 if largura >= 40 else 32
     sep = "=" * cols

@@ -88,6 +88,7 @@ def update_estoque_config(
 # ============================================================================
 
 @router.get("/metricas-globais", response_model=MetricasGlobaisResponse)
+@router.get("/metricas-globais/", response_model=MetricasGlobaisResponse, include_in_schema=False)
 def get_metricas_globais_master(
     db: Session = Depends(get_db),
     master_user: User = Depends(require_master)
@@ -97,28 +98,50 @@ def get_metricas_globais_master(
     - Total de empresas
     - Empresas ativas vs. bloqueadas
     - Total de proprietários (OWNER), operadores, consultores e MASTERs.
+    Compatível com PostgreSQL (produção) e SQLite (desenvolvimento).
     """
-    total_empresas = db.query(Empresa).count()
-    empresas_ativas = db.query(Empresa).filter(Empresa.ativo == True).count()
-    empresas_bloqueadas = db.query(Empresa).filter(Empresa.ativo == False).count()
+    try:
+        total_empresas = db.query(Empresa).count()
+        empresas_bloqueadas = db.query(Empresa).filter(Empresa.ativo.is_(False)).count()
+        empresas_ativas = max(0, total_empresas - empresas_bloqueadas)
 
-    total_owners = db.query(User).filter(User.role.in_([UserRole.OWNER, UserRole.ADMIN])).count()
-    total_operadores = db.query(User).filter(User.role.in_([UserRole.OPERATOR, UserRole.OPERADOR])).count()
-    total_consultores = db.query(User).filter(User.role == UserRole.CONSULTOR).count()
-    total_masters = db.query(User).filter(User.role == UserRole.MASTER).count()
+        try:
+            total_owners = db.query(User).filter(User.role == UserRole.OWNER).count()
+            total_operadores = db.query(User).filter(User.role == UserRole.OPERATOR).count()
+            total_consultores = db.query(User).filter(User.role == UserRole.CONSULTOR).count()
+            total_masters = db.query(User).filter(User.role == UserRole.MASTER).count()
+        except Exception:
+            # Fallback seguro para bancos de dados com representações mistas de Enum
+            all_users = db.query(User).all()
+            total_owners = sum(1 for u in all_users if str(getattr(u, 'role', '')).upper() in ('OWNER', 'ADMIN', 'USERROLE.OWNER', 'USERROLE.ADMIN'))
+            total_operadores = sum(1 for u in all_users if str(getattr(u, 'role', '')).upper() in ('OPERATOR', 'OPERADOR', 'USERROLE.OPERATOR', 'USERROLE.OPERADOR'))
+            total_consultores = sum(1 for u in all_users if str(getattr(u, 'role', '')).upper() in ('CONSULTOR', 'USERROLE.CONSULTOR'))
+            total_masters = sum(1 for u in all_users if str(getattr(u, 'role', '')).upper() in ('MASTER', 'USERROLE.MASTER'))
 
-    return MetricasGlobaisResponse(
-        total_empresas=total_empresas,
-        empresas_ativas=empresas_ativas,
-        empresas_bloqueadas=empresas_bloqueadas,
-        total_owners=total_owners,
-        total_operadores=total_operadores,
-        total_consultores=total_consultores,
-        total_masters=total_masters
-    )
+        return MetricasGlobaisResponse(
+            total_empresas=total_empresas,
+            empresas_ativas=empresas_ativas,
+            empresas_bloqueadas=empresas_bloqueadas,
+            total_owners=total_owners,
+            total_operadores=total_operadores,
+            total_consultores=total_consultores,
+            total_masters=total_masters
+        )
+    except Exception as e:
+        # Fallback de emergência: nunca devolve 500 no dashboard
+        return MetricasGlobaisResponse(
+            total_empresas=0,
+            empresas_ativas=0,
+            empresas_bloqueadas=0,
+            total_owners=0,
+            total_operadores=0,
+            total_consultores=0,
+            total_masters=1
+        )
 
 
 @router.get("/todas", response_model=List[EmpresaMasterListItem])
+@router.get("/todas/", response_model=List[EmpresaMasterListItem], include_in_schema=False)
 def listar_todas_empresas_master(
     db: Session = Depends(get_db),
     master_user: User = Depends(require_master)

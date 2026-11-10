@@ -7,12 +7,13 @@ from app.database import get_db
 from app.models.venda import Venda
 from app.models.despesa import Despesa
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.saude_negocio import (
     SaudeNegocioResponse,
     EvolucaoMensalSaude,
     InsightSaude
 )
-from app.dependencies import get_current_user, require_consultor_or_admin
+from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
 
 router = APIRouter(prefix="/saude-negocio", tags=["Saúde do Negócio"], dependencies=[Depends(require_consultor_or_admin)])
 
@@ -22,9 +23,10 @@ MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "O
 def get_saude_negocio(
     dias: int = Query(default=30, ge=7, le=365),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    empresa_id = current_user.empresa_id
+    empresa_id = empresa.id
     today = date.today()
     dt_inicio = datetime.utcnow() - timedelta(days=dias)
     d_inicio_date = dt_inicio.date()

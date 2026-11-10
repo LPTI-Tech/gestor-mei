@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.caixa import CaixaTurno, CaixaLancamento
 from app.models.venda import Venda
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.caixa import (
     CaixaAberturaRequest,
     CaixaFechamentoRequest,
@@ -15,17 +16,18 @@ from app.schemas.caixa import (
     CaixaTurnoResponse,
     CaixaStatusResponse
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 
 router = APIRouter(prefix="/caixa", tags=["Caixa"])
 
 @router.get("/status", response_model=CaixaStatusResponse)
 def get_caixa_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     turno = db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id,
+        CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).order_by(desc(CaixaTurno.data_abertura)).first()
     
@@ -45,7 +47,7 @@ def get_caixa_status(
     
     # 2. Vendas em dinheiro neste turno
     vendas_dinheiro = db.query(func.coalesce(func.sum(Venda.valor_total), 0.0)).filter(
-        Venda.empresa_id == current_user.empresa_id,
+        Venda.empresa_id == empresa.id,
         Venda.caixa_turno_id == turno.id,
         Venda.forma_pagamento == "Dinheiro",
         Venda.status == "Concluída"
@@ -79,11 +81,12 @@ def get_caixa_status(
 def abrir_caixa(
     data: CaixaAberturaRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     # Check if there is an active shift
     aberto = db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id,
+        CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).first()
     
@@ -94,7 +97,7 @@ def abrir_caixa(
         )
         
     novo_turno = CaixaTurno(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         user_abertura_id=current_user.id,
         valor_inicial=data.valor_inicial,
         observacoes=data.observacoes,
@@ -111,10 +114,11 @@ def abrir_caixa(
 def add_lancamento(
     data: CaixaLancamentoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     turno = db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id,
+        CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).order_by(desc(CaixaTurno.data_abertura)).first()
     
@@ -125,7 +129,7 @@ def add_lancamento(
         )
         
     lancamento = CaixaLancamento(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         caixa_turno_id=turno.id,
         user_id=current_user.id,
         tipo=data.tipo.upper(),
@@ -144,10 +148,11 @@ def add_lancamento(
 def fechar_caixa(
     data: CaixaFechamentoRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     turno = db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id,
+        CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).order_by(desc(CaixaTurno.data_abertura)).first()
     
@@ -159,7 +164,7 @@ def fechar_caixa(
         
     # Compute expected balance
     vendas_dinheiro = db.query(func.coalesce(func.sum(Venda.valor_total), 0.0)).filter(
-        Venda.empresa_id == current_user.empresa_id,
+        Venda.empresa_id == empresa.id,
         Venda.caixa_turno_id == turno.id,
         Venda.forma_pagamento == "Dinheiro",
         Venda.status == "Concluída"
@@ -196,8 +201,9 @@ def fechar_caixa(
 def get_caixa_historico(
     limit: int = 50,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     return db.query(CaixaTurno).filter(
-        CaixaTurno.empresa_id == current_user.empresa_id
+        CaixaTurno.empresa_id == empresa.id
     ).order_by(desc(CaixaTurno.data_abertura)).limit(limit).all()

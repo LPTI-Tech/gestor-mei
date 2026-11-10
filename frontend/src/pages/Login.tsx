@@ -290,22 +290,22 @@ export const Login: React.FC = () => {
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-          gap: 1.2,
-          mb: 2,
+          gap: 0.8,
+          mb: 0.8,
         }}
       >
         <Button
           fullWidth
           variant="outlined"
-          size="medium"
+          size="small"
           disabled={loading || socialLoading !== null}
           onClick={handleGoogleClick}
           sx={{
-            height: 42,
+            height: 34,
             borderRadius: 2,
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             borderColor: 'rgba(255, 255, 255, 0.18)',
             bgcolor: 'rgba(255, 255, 255, 0.05)',
             color: '#f8fafc',
@@ -317,7 +317,7 @@ export const Login: React.FC = () => {
           }}
         >
           {socialLoading === 'google' ? (
-            <CircularProgress size={18} sx={{ color: '#4285F4', mr: 1 }} />
+            <CircularProgress size={15} sx={{ color: '#4285F4', mr: 0.8 }} />
           ) : (
             <GoogleIcon />
           )}
@@ -327,15 +327,15 @@ export const Login: React.FC = () => {
         <Button
           fullWidth
           variant="outlined"
-          size="medium"
+          size="small"
           disabled={loading || socialLoading !== null}
           onClick={handleMicrosoftClick}
           sx={{
-            height: 42,
+            height: 34,
             borderRadius: 2,
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             borderColor: 'rgba(255, 255, 255, 0.18)',
             bgcolor: 'rgba(255, 255, 255, 0.05)',
             color: '#f8fafc',
@@ -347,7 +347,7 @@ export const Login: React.FC = () => {
           }}
         >
           {socialLoading === 'microsoft' ? (
-            <CircularProgress size={18} sx={{ color: '#05a6f0', mr: 1 }} />
+            <CircularProgress size={15} sx={{ color: '#05a6f0', mr: 0.8 }} />
           ) : (
             <MicrosoftIcon />
           )}
@@ -360,7 +360,7 @@ export const Login: React.FC = () => {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          my: 2,
+          my: 0.6,
           '::before, ::after': {
             content: '""',
             flex: 1,
@@ -371,10 +371,10 @@ export const Login: React.FC = () => {
         <Typography
           variant="caption"
           sx={{
-            px: 1.5,
+            px: 1,
             color: 'rgba(255, 255, 255, 0.6)',
             fontWeight: 500,
-            fontSize: '0.78rem',
+            fontSize: '0.7rem',
           }}
         >
           ou
@@ -384,16 +384,16 @@ export const Login: React.FC = () => {
       {/* Formulário de Acesso Tradicional com Senha */}
       <Box component="form" onSubmit={handleLoginSubmit} noValidate>
         {/* Campo de Email */}
-        <Box sx={{ mb: 1.8 }}>
+        <Box sx={{ mb: 0.8 }}>
           <Typography
             component="label"
             htmlFor="login-email"
             variant="caption"
             sx={{
               display: 'block',
-              mb: 0.5,
+              mb: 0.2,
               fontWeight: 600,
-              fontSize: '0.82rem',
+              fontSize: '0.74rem',
               color: '#e2e8f0',
             }}
           >
@@ -413,14 +413,14 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <MailOutline sx={{ fontSize: 18, color: '#38bdf8' }} />
+                  <MailOutline sx={{ fontSize: 16, color: '#38bdf8' }} />
                 </InputAdornment>
               ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-                height: 42,
+                height: 34,
                 color: '#ffffff',
                 bgcolor: 'rgba(255, 255, 255, 0.05)',
                 '& fieldset': {
@@ -436,6 +436,7 @@ export const Login: React.FC = () => {
                 '& input::placeholder': {
                   color: 'rgba(148, 163, 184, 0.8)',
                   opacity: 1,
+                  fontSize: '0.8rem',
                 },
               },
             }}
@@ -443,15 +444,15 @@ export const Login: React.FC = () => {
         </Box>
 
         {/* Campo de Senha com Link Esqueceu a Senha */}
-        <Box sx={{ mb: 1.2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+        <Box sx={{ mb: 0.8 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.2 }}>
             <Typography
               component="label"
               htmlFor="login-password"
               variant="caption"
               sx={{
                 fontWeight: 600,
-                fontSize: '0.82rem',
+                fontSize: '0.74rem',
                 color: '#e2e8f0',
               }}
             >
@@ -464,7 +465,7 @@ export const Login: React.FC = () => {
               sx={{
                 textDecoration: 'none',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.72rem',
                 color: '#38bdf8',
                 '&:hover': { color: '#7dd3fc', textDecoration: 'underline' },
               }}
@@ -485,7 +486,7 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined sx={{ fontSize: 18, color: '#38bdf8' }} />
+                  <LockOutlined sx={{ fontSize: 16, color: '#38bdf8' }} />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -498,7 +499,7 @@ export const Login: React.FC = () => {
                     size="small"
                     sx={{ color: '#94a3b8' }}
                   >
-                    {showPassword ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
+                    {showPassword ? <VisibilityOff sx={{ fontSize: 16 }} /> : <Visibility sx={{ fontSize: 16 }} />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -506,7 +507,7 @@ export const Login: React.FC = () => {
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-                height: 42,
+                height: 34,
                 color: '#ffffff',
                 bgcolor: 'rgba(255, 255, 255, 0.05)',
                 '& fieldset': {
@@ -522,6 +523,7 @@ export const Login: React.FC = () => {
                 '& input::placeholder': {
                   color: 'rgba(148, 163, 184, 0.8)',
                   opacity: 1,
+                  fontSize: '0.8rem',
                 },
               },
             }}
@@ -534,27 +536,27 @@ export const Login: React.FC = () => {
           fullWidth
           variant="contained"
           disabled={loading || socialLoading !== null}
-          endIcon={!loading ? <ArrowForward sx={{ fontSize: 18 }} /> : undefined}
+          endIcon={!loading ? <ArrowForward sx={{ fontSize: 16 }} /> : undefined}
           sx={{
-            mt: 2,
-            height: 44,
+            mt: 0.8,
+            height: 36,
             fontWeight: 700,
-            fontSize: '0.94rem',
+            fontSize: '0.88rem',
             borderRadius: 2,
             textTransform: 'none',
             background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #059669 100%)',
-            boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4), 0 2px 8px rgba(16, 185, 129, 0.25)',
+            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4), 0 2px 6px rgba(16, 185, 129, 0.25)',
             transition: 'all 0.2s ease',
             '&:hover': {
               background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #10b981 100%)',
-              boxShadow: '0 6px 20px rgba(2, 132, 199, 0.5), 0 2px 10px rgba(16, 185, 129, 0.35)',
+              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.5), 0 2px 8px rgba(16, 185, 129, 0.35)',
               transform: 'translateY(-1px)',
             },
           }}
         >
           {loading ? (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <CircularProgress size={18} color="inherit" thickness={4} />
+              <CircularProgress size={15} color="inherit" thickness={4} />
               <span>Entrando...</span>
             </Box>
           ) : (
@@ -566,8 +568,8 @@ export const Login: React.FC = () => {
         {isDevOrHomolog() && (
           <Box
             sx={{
-              mt: 2.5,
-              pt: 2,
+              mt: 0.8,
+              pt: 0.6,
               borderTop: '1px dashed rgba(255, 255, 255, 0.15)',
             }}
           >
@@ -576,30 +578,31 @@ export const Login: React.FC = () => {
               sx={{
                 display: 'block',
                 textAlign: 'center',
-                mb: 1.2,
+                mb: 0.4,
                 color: '#94a3b8',
                 fontWeight: 600,
-                fontSize: '0.72rem',
+                fontSize: '0.64rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em',
               }}
             >
               Ambiente de Testes • Acesso Rápido
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8 }}>
               <Button
                 type="button"
                 variant="outlined"
                 size="small"
                 disabled={loading || socialLoading !== null}
                 onClick={() => fillDemo('admin')}
-                startIcon={<Security sx={{ fontSize: 16 }} />}
+                startIcon={<Security sx={{ fontSize: 14 }} />}
                 sx={{
-                  py: 0.8,
-                  borderRadius: 2,
+                  py: 0.2,
+                  height: 26,
+                  borderRadius: 1.5,
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.78rem',
+                  fontSize: '0.7rem',
                   borderColor: 'rgba(255, 255, 255, 0.15)',
                   color: '#f1f5f9',
                   bgcolor: 'rgba(255, 255, 255, 0.04)',
@@ -618,13 +621,14 @@ export const Login: React.FC = () => {
                 size="small"
                 disabled={loading || socialLoading !== null}
                 onClick={() => fillDemo('operador')}
-                startIcon={<FlashOn sx={{ fontSize: 16 }} />}
+                startIcon={<FlashOn sx={{ fontSize: 14 }} />}
                 sx={{
-                  py: 0.8,
-                  borderRadius: 2,
+                  py: 0.2,
+                  height: 26,
+                  borderRadius: 1.5,
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.78rem',
+                  fontSize: '0.7rem',
                   borderColor: 'rgba(255, 255, 255, 0.15)',
                   color: '#f1f5f9',
                   bgcolor: 'rgba(255, 255, 255, 0.04)',

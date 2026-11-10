@@ -49,9 +49,10 @@ import {
   Layers,
   ArrowRight,
   TrendingUp,
+  History,
 } from 'lucide-react';
 import api from '../services/api';
-import { EmpresaMasterListItem, MetricasGlobais, User } from '../types';
+import { EmpresaMasterListItem, MetricasGlobais, User, AuditoriaSuporte } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const MasterDashboard: React.FC = () => {
@@ -66,6 +67,10 @@ export const MasterDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [busca, setBusca] = useState<string>('');
   const [statusFiltro, setStatusFiltro] = useState<'TODAS' | 'ATIVAS' | 'BLOQUEADAS'>('TODAS');
+
+  // Logs de Auditoria de Suporte LPTI Tech
+  const [auditoriaLogs, setAuditoriaLogs] = useState<AuditoriaSuporte[]>([]);
+  const [loadingAuditoria, setLoadingAuditoria] = useState<boolean>(false);
 
   // Modal Bloqueio / Desbloqueio
   const [blockModalOpen, setBlockModalOpen] = useState(false);
@@ -132,17 +137,69 @@ export const MasterDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [resMetricas, resEmpresas] = await Promise.all([
+      const [resMetricas, resEmpresas] = await Promise.allSettled([
         api.get<MetricasGlobais>('/empresa/metricas-globais'),
         api.get<EmpresaMasterListItem[]>('/empresa/todas'),
       ]);
-      setMetricas(resMetricas.data);
-      setEmpresas(resEmpresas.data);
+
+      let metricasCarregadas = false;
+      let empresasData: EmpresaMasterListItem[] = [];
+
+      if (resEmpresas.status === 'fulfilled') {
+        empresasData = resEmpresas.value.data;
+        setEmpresas(empresasData);
+      } else {
+        console.error('Erro ao buscar empresas todas:', resEmpresas.reason);
+      }
+
+      if (resMetricas.status === 'fulfilled') {
+        setMetricas(resMetricas.value.data);
+        metricasCarregadas = true;
+      } else {
+        console.warn('Erro ao buscar metricas-globais diretamente:', resMetricas.reason);
+        // Fallback robusto calculado a partir da lista de empresas se o endpoint falhar:
+        if (empresasData.length > 0) {
+          const ativas = empresasData.filter((e) => e.ativo !== false).length;
+          const bloqueadas = empresasData.filter((e) => e.ativo === false).length;
+          const owners = empresasData.filter((e) => e.owner).length;
+          const totalUsers = empresasData.reduce((acc, e) => acc + (e.total_usuarios || 0), 0);
+          setMetricas({
+            total_empresas: empresasData.length,
+            empresas_ativas: ativas,
+            empresas_bloqueadas: bloqueadas,
+            total_owners: owners,
+            total_operadores: Math.max(0, totalUsers - owners),
+            total_consultores: 0,
+            total_masters: 1,
+          });
+          metricasCarregadas = true;
+        }
+      }
+
+      if (metricasCarregadas || empresasData.length > 0) {
+        setError(null);
+      } else if (resEmpresas.status === 'rejected') {
+        const errorDetail = (resEmpresas.reason as any)?.response?.data?.detail || (resEmpresas.reason as any)?.message;
+        setError(errorDetail ? `Erro na API: ${errorDetail}` : 'Não foi possível carregar as métricas do painel MASTER.');
+      }
     } catch (err: any) {
       console.error('Erro ao carregar métricas globais MASTER:', err);
       setError('Não foi possível carregar as métricas do painel MASTER.');
     } finally {
       setLoading(false);
+    }
+    await carregarAuditoria();
+  };
+
+  const carregarAuditoria = async () => {
+    try {
+      setLoadingAuditoria(true);
+      const res = await api.get<AuditoriaSuporte[]>('/suporte/auditoria?limit=50');
+      setAuditoriaLogs(res.data);
+    } catch (err) {
+      console.warn('Erro ao carregar auditoria de suporte:', err);
+    } finally {
+      setLoadingAuditoria(false);
     }
   };
 
@@ -188,11 +245,16 @@ export const MasterDashboard: React.FC = () => {
     }
   };
 
-  // Handler para alternar contexto e abrir visão operacional da empresa
+  // Handler para alternar contexto e abrir visão operacional da empresa (Modo Suporte)
   const handleAcessarEmpresa = async (empresaId: number) => {
     try {
+      await api.post('/suporte/sessao/iniciar', { empresa_id: empresaId });
+    } catch (err) {
+      console.warn('Erro ao registrar início de auditoria de suporte:', err);
+    }
+    try {
       await setContextEmpresaId(empresaId);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       console.error('Erro ao selecionar empresa:', err);
     }
@@ -818,6 +880,131 @@ export const MasterDashboard: React.FC = () => {
                             </IconButton>
                           </Tooltip>
                         </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Card>
+
+      {/* Auditoria de Suporte LPTI Tech */}
+      <Card
+        elevation={0}
+        sx={{
+          mt: 4,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          sx={{
+            p: 2.5,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'center' },
+            gap: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <History size={18} color="#6366f1" />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Auditoria de Acessos • Modo Suporte LPTI Tech
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Rastreamento em tempo real de acessos, sessões e ações de suporte executadas por usuários MASTER.
+            </Typography>
+          </Box>
+
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={carregarAuditoria}
+            startIcon={<RefreshCw size={14} />}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+            disabled={loadingAuditoria}
+          >
+            Atualizar Auditoria
+          </Button>
+        </Box>
+
+        {loadingAuditoria ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} elevation={0}>
+            <Table size="small">
+              <TableHead sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>DATA / HORA</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>MASTER</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>EMPRESA ACESSADA</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>AÇÃO</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>DETALHES</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>IP / AGENT</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {auditoriaLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                      Nenhum registro de auditoria de suporte encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  auditoriaLogs.map((log) => (
+                    <TableRow key={log.id} hover>
+                      <TableCell sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                        {new Date(log.data_hora).toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.78rem' }}>
+                          {log.master_nome || 'Master'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          {log.master_email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.78rem' }}>
+                          {log.empresa_nome || `Empresa #${log.empresa_id}`}
+                        </Typography>
+                        {log.empresa_cnpj && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', fontFamily: 'monospace' }}>
+                            {log.empresa_cnpj}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={log.acao}
+                          size="small"
+                          color={
+                            log.acao === 'INICIOU_SESSAO_SUPORTE'
+                              ? 'primary'
+                              : log.acao === 'ENCERROU_SESSAO_SUPORTE'
+                              ? 'default'
+                              : 'info'
+                          }
+                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.75rem', maxWidth: 300 }}>
+                        {log.detalhes || '-'}
+                      </TableCell>
+                      <TableCell sx={{ fontSize: '0.7rem', color: 'text.secondary', fontFamily: 'monospace' }}>
+                        {log.ip || '-'}
                       </TableCell>
                     </TableRow>
                   ))

@@ -7,8 +7,9 @@ from app.models.cliente import Cliente
 from app.models.regiao_entrega import RegiaoEntrega
 from app.models.venda import Venda
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
@@ -38,9 +39,10 @@ def list_clientes(
     regiao_id: Optional[int] = None,
     limit: int = Query(default=100, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(Cliente).filter(Cliente.empresa_id == current_user.empresa_id)
+    query = db.query(Cliente).filter(Cliente.empresa_id == empresa.id)
     
     if apenas_ativos:
         query = query.filter(Cliente.ativo == True)
@@ -61,26 +63,27 @@ def list_clientes(
         )
         
     clientes = query.order_by(Cliente.nome.asc()).limit(limit).all()
-    return [_format_cliente_response(c, db, current_user.empresa_id) for c in clientes]
+    return [_format_cliente_response(c, db, empresa.id) for c in clientes]
 
 
 @router.post("", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
 def create_cliente(
     data: ClienteCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     # If regiao_id passed, verify it belongs to current empresa
     if data.regiao_id:
         regiao = db.query(RegiaoEntrega).filter(
             RegiaoEntrega.id == data.regiao_id,
-            RegiaoEntrega.empresa_id == current_user.empresa_id
+            RegiaoEntrega.empresa_id == empresa.id
         ).first()
         if not regiao:
             raise HTTPException(status_code=404, detail="Região de entrega não encontrada.")
 
     cliente = Cliente(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         regiao_id=data.regiao_id,
         nome=data.nome.strip(),
         telefone=data.telefone.strip() if data.telefone else None,
@@ -93,24 +96,25 @@ def create_cliente(
     db.add(cliente)
     db.commit()
     db.refresh(cliente)
-    return _format_cliente_response(cliente, db, current_user.empresa_id)
+    return _format_cliente_response(cliente, db, empresa.id)
 
 
 @router.get("/{cliente_id}", response_model=ClienteResponse)
 def get_cliente(
     cliente_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     cliente = db.query(Cliente).filter(
         Cliente.id == cliente_id,
-        Cliente.empresa_id == current_user.empresa_id
+        Cliente.empresa_id == empresa.id
     ).first()
     
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")
         
-    return _format_cliente_response(cliente, db, current_user.empresa_id)
+    return _format_cliente_response(cliente, db, empresa.id)
 
 
 @router.put("/{cliente_id}", response_model=ClienteResponse)
@@ -118,11 +122,12 @@ def update_cliente(
     cliente_id: int,
     data: ClienteUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     cliente = db.query(Cliente).filter(
         Cliente.id == cliente_id,
-        Cliente.empresa_id == current_user.empresa_id
+        Cliente.empresa_id == empresa.id
     ).first()
     
     if not cliente:
@@ -132,7 +137,7 @@ def update_cliente(
         if data.regiao_id != 0:
             regiao = db.query(RegiaoEntrega).filter(
                 RegiaoEntrega.id == data.regiao_id,
-                RegiaoEntrega.empresa_id == current_user.empresa_id
+                RegiaoEntrega.empresa_id == empresa.id
             ).first()
             if not regiao:
                 raise HTTPException(status_code=404, detail="Região de entrega não encontrada.")
@@ -157,18 +162,19 @@ def update_cliente(
         
     db.commit()
     db.refresh(cliente)
-    return _format_cliente_response(cliente, db, current_user.empresa_id)
+    return _format_cliente_response(cliente, db, empresa.id)
 
 
 @router.delete("/{cliente_id}")
 def delete_cliente(
     cliente_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     cliente = db.query(Cliente).filter(
         Cliente.id == cliente_id,
-        Cliente.empresa_id == current_user.empresa_id
+        Cliente.empresa_id == empresa.id
     ).first()
     
     if not cliente:
@@ -176,7 +182,7 @@ def delete_cliente(
         
     # Check if client has associated sales
     has_sales = db.query(Venda.id).filter(
-        Venda.empresa_id == current_user.empresa_id,
+        Venda.empresa_id == empresa.id,
         Venda.cliente_id == cliente_id
     ).first()
     

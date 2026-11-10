@@ -1,0 +1,54 @@
+[
+  {
+    "usuario_id": 10,
+    "nome": "Leonidas Paulino - LPTI Master",
+    "email": "master.homologacao@lptitech.com.br",
+    "perfil_rbac": "MASTER",
+    "acao_banco": "ATUALIZADO_HOMOLOGACAO",
+    "empresa_vinculada_id": null,
+    "login_autenticado": true,
+    "token_jwt_valido": true,
+    "token_preview": "eyJhbGciOiJIUzI1NiIsInR5c...1MmHYbplBjsMmiw",
+    "contexto_tenant": "MASTER_GLOBAL (Acessando Empresa 1 - Alpha Lanches)",
+    "timestamp_homologacao": "2026-11-10T16:50:22.923602+00:00"
+  },
+  {
+    "usuario_id": 11,
+    "nome": "Rosely Proprietária RD",
+    "email": "owner.homologacao@rdrestaurante.com.br",
+    "perfil_rbac": "OWNER",
+    "acao_banco": "CRIADO_NOVO",
+    "empresa_vinculada_id": 1,
+    "login_autenticado": true,
+    "token_jwt_valido": true,
+    "token_preview": "eyJhbGciOiJIUzI1NiIsInR5c...-wQB7ULauVYO9I8",
+    "contexto_tenant": "VINCULADO_AO_TENANT (Empresa 1 - Alpha Lanches)",
+    "timestamp_homologacao": "2026-11-10T16:50:23.401967+00:00"
+  },
+  {
+    "usuario_id": 12,
+    "nome": "Carlos Consultor Financeiro",
+    "email": "consultor.homologacao@gestormei.com.br",
+    "perfil_rbac": "CONSULTOR",
+    "acao_banco": "CRIADO_NOVO",
+    "empresa_vinculada_id": 1,
+    "login_autenticado": true,
+    "token_jwt_valido": true,
+    "token_preview": "eyJhbGciOiJIUzI1NiIsInR5c...lGC655Yw7-Wsv8M",
+    "contexto_tenant": "VINCULADO_AO_TENANT (Empresa 1 - Alpha Lanches)",
+    "timestamp_homologacao": "2026-11-10T16:50:23.881557+00:00"
+  },
+  {
+    "usuario_id": 13,
+    "nome": "Maria Operadora de Caixa",
+    "email": "operador.homologacao@rdrestaurante.com.br",
+    "perfil_rbac": "OPERATOR",
+    "acao_banco": "CRIADO_NOVO",
+    "empresa_vinculada_id": 1,
+    "login_autenticado": true,
+    "token_jwt_valido": true,
+    "token_preview": "eyJhbGciOiJIUzI1NiIsInR5c...E9nOU42SOMAsZgk",
+    "contexto_tenant": "VINCULADO_AO_TENANT (Empresa 1 - Alpha Lanches)",
+    "timestamp_homologacao": "2026-11-10T16:50:24.353737+00:00"
+  }
+]

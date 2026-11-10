@@ -6,8 +6,9 @@ from sqlalchemy import desc, func, extract
 from app.database import get_db
 from app.models.despesa import Despesa
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.despesa import DespesaCreate, DespesaUpdate, DespesaResponse
-from app.dependencies import get_current_user, require_admin, require_consultor_or_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin, require_consultor_or_admin
 
 router = APIRouter(prefix="/despesas", tags=["Despesas"])
 
@@ -21,9 +22,10 @@ def list_despesas(
     forma_pagamento: Optional[str] = None,
     limit: int = Query(default=100, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_consultor_or_admin)
+    current_user: User = Depends(require_consultor_or_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(Despesa).filter(Despesa.empresa_id == current_user.empresa_id)
+    query = db.query(Despesa).filter(Despesa.empresa_id == empresa.id)
     
     if categoria and categoria != "Todas":
         query = query.filter(Despesa.categoria == categoria)
@@ -49,10 +51,11 @@ def get_resumo_despesas(
     mes: Optional[int] = None,
     ano: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_consultor_or_admin)
+    current_user: User = Depends(require_consultor_or_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     query = db.query(Despesa.categoria, func.sum(Despesa.valor).label("total")).filter(
-        Despesa.empresa_id == current_user.empresa_id
+        Despesa.empresa_id == empresa.id
     )
     
     if mes:
@@ -82,10 +85,11 @@ def get_resumo_despesas(
 def create_despesa(
     data: DespesaCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     despesa = Despesa(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         data=data.data,
         categoria=data.categoria,
         descricao=data.descricao,
@@ -103,11 +107,12 @@ def update_despesa(
     despesa_id: int,
     data: DespesaUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     despesa = db.query(Despesa).filter(
         Despesa.id == despesa_id,
-        Despesa.empresa_id == current_user.empresa_id
+        Despesa.empresa_id == empresa.id
     ).first()
     
     if not despesa:
@@ -126,11 +131,12 @@ def update_despesa(
 def delete_despesa(
     despesa_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     despesa = db.query(Despesa).filter(
         Despesa.id == despesa_id,
-        Despesa.empresa_id == current_user.empresa_id
+        Despesa.empresa_id == empresa.id
     ).first()
     
     if not despesa:

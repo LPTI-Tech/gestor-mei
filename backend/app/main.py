@@ -17,6 +17,7 @@ from app.migrate_operacao_real1 import run_migration as run_migration_operacao_r
 from app.migrate_unique_produto import run_migration as run_migration_unique_produto
 from app.migrate_oauth import run_migration as run_migration_oauth
 from app.migrate_rbac04 import run_migration as run_migration_rbac04
+from app.migrate_suporte import run_migration as run_migration_suporte
 
 # Import routers
 from app.routers import (
@@ -40,7 +41,8 @@ from app.routers import (
     backup,
     nfe,
     compras,
-    consultor
+    consultor,
+    suporte
 )
 from app.rate_limiter import limiter, rate_limit_exceeded_handler, RateLimitExceeded
 
@@ -89,6 +91,7 @@ def on_startup():
     run_migration_unique_produto()
     run_migration_oauth()
     run_migration_rbac04()
+    run_migration_suporte()
 
     if not settings.is_production and settings.should_seed:
         seed_database()
@@ -123,6 +126,7 @@ app.include_router(backup.router, prefix=settings.API_PREFIX)
 app.include_router(nfe.router, prefix=settings.API_PREFIX)
 app.include_router(compras.router, prefix=settings.API_PREFIX)
 app.include_router(consultor.router, prefix=settings.API_PREFIX)
+app.include_router(suporte.router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 def root():

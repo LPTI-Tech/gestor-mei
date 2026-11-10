@@ -954,3 +954,19 @@ export interface ResumoConsultor {
   total_atencao: number;
   total_criticos: number;
 }
+
+
+export interface AuditoriaSuporte {
+  id: number;
+  master_id: number;
+  master_email?: string | null;
+  master_nome?: string | null;
+  empresa_id: number;
+  empresa_nome?: string | null;
+  empresa_cnpj?: string | null;
+  acao: string;
+  detalhes?: string | null;
+  ip?: string | null;
+  user_agent?: string | null;
+  data_hora: string;
+}

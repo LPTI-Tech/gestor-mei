@@ -6,6 +6,7 @@ from sqlalchemy import desc, func
 from app.database import get_db
 from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.motoboy import (
     MotoboyCreate,
     MotoboyUpdate,
@@ -15,7 +16,7 @@ from app.schemas.motoboy import (
     MotoboyRelatorioResponse,
     MotoboyResumoItem
 )
-from app.dependencies import get_current_user, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin
 
 router = APIRouter(prefix="/motoboys", tags=["Motoboys"])
 
@@ -23,9 +24,10 @@ router = APIRouter(prefix="/motoboys", tags=["Motoboys"])
 def list_motoboys(
     apenas_ativos: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(Motoboy).filter(Motoboy.empresa_id == current_user.empresa_id)
+    query = db.query(Motoboy).filter(Motoboy.empresa_id == empresa.id)
     if apenas_ativos:
         query = query.filter(Motoboy.ativo == True)
     return query.order_by(Motoboy.nome.asc()).all()
@@ -35,10 +37,11 @@ def list_motoboys(
 def create_motoboy(
     data: MotoboyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = Motoboy(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         nome=data.nome,
         telefone=data.telefone,
         valor_por_entrega=data.valor_por_entrega,
@@ -55,11 +58,12 @@ def update_motoboy(
     motoboy_id: int,
     data: MotoboyUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = db.query(Motoboy).filter(
         Motoboy.id == motoboy_id,
-        Motoboy.empresa_id == current_user.empresa_id
+        Motoboy.empresa_id == empresa.id
     ).first()
     
     if not motoboy:
@@ -78,11 +82,12 @@ def update_motoboy(
 def delete_motoboy(
     motoboy_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = db.query(Motoboy).filter(
         Motoboy.id == motoboy_id,
-        Motoboy.empresa_id == current_user.empresa_id
+        Motoboy.empresa_id == empresa.id
     ).first()
     
     if not motoboy:
@@ -100,9 +105,10 @@ def list_entregas(
     status_pagamento: Optional[str] = None,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(EntregaMotoboy).filter(EntregaMotoboy.empresa_id == current_user.empresa_id)
+    query = db.query(EntregaMotoboy).filter(EntregaMotoboy.empresa_id == empresa.id)
     
     if motoboy_id:
         query = query.filter(EntregaMotoboy.motoboy_id == motoboy_id)
@@ -125,11 +131,12 @@ def list_entregas(
 def create_entrega(
     data: EntregaMotoboyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = db.query(Motoboy).filter(
         Motoboy.id == data.motoboy_id,
-        Motoboy.empresa_id == current_user.empresa_id
+        Motoboy.empresa_id == empresa.id
     ).first()
     
     if not motoboy:
@@ -140,7 +147,7 @@ def create_entrega(
     dt_pgto = datetime.utcnow() if data.status_pagamento == "PAGO" else None
     
     entrega = EntregaMotoboy(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         motoboy_id=motoboy.id,
         numero_pedido=data.numero_pedido,
         valor_entrega=val,
@@ -162,11 +169,12 @@ def create_entrega(
 def quitar_entrega(
     entrega_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     entrega = db.query(EntregaMotoboy).filter(
         EntregaMotoboy.id == entrega_id,
-        EntregaMotoboy.empresa_id == current_user.empresa_id
+        EntregaMotoboy.empresa_id == empresa.id
     ).first()
     
     if not entrega:
@@ -186,10 +194,11 @@ def quitar_entrega(
 def quitar_todas_motoboy(
     motoboy_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     entregas = db.query(EntregaMotoboy).filter(
-        EntregaMotoboy.empresa_id == current_user.empresa_id,
+        EntregaMotoboy.empresa_id == empresa.id,
         EntregaMotoboy.motoboy_id == motoboy_id,
         EntregaMotoboy.status_pagamento == "PENDENTE"
     ).all()
@@ -206,9 +215,10 @@ def quitar_todas_motoboy(
 @router.get("/relatorio", response_model=MotoboyRelatorioResponse)
 def get_motoboy_relatorio(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    motoboys = db.query(Motoboy).filter(Motoboy.empresa_id == current_user.empresa_id).all()
+    motoboys = db.query(Motoboy).filter(Motoboy.empresa_id == empresa.id).all()
     
     resumos = []
     total_geral_devido = 0.0
@@ -217,7 +227,7 @@ def get_motoboy_relatorio(
     
     for mb in motoboys:
         entregas = db.query(EntregaMotoboy).filter(
-            EntregaMotoboy.empresa_id == current_user.empresa_id,
+            EntregaMotoboy.empresa_id == empresa.id,
             EntregaMotoboy.motoboy_id == mb.id
         ).all()
         

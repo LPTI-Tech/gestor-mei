@@ -7,7 +7,8 @@ from sqlalchemy import func
 from app.database import get_db
 from app.models.das import DasMensal
 from app.models.user import User
-from app.dependencies import get_current_user, require_consultor_or_admin
+from app.models.empresa import Empresa
+from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
 from app.schemas.das import (
     DasMensalCreate,
     DasMensalUpdate,
@@ -121,13 +122,14 @@ def listar_das(
     status_filter: Optional[str] = Query(None, alias="status", description="Filtrar por status: Pago, Pendente, Atrasado"),
     auto_gerar: bool = Query(True, description="Gera automaticamente os 12 meses se não existirem"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Lista todos os DAS da empresa logada para o ano selecionado.
     Por padrão, inicializa automaticamente as guias do ano para conveniência do MEI.
     """
-    empresa_id = current_user.empresa_id
+    empresa_id = empresa.id
     ano_alvo = ano or date.today().year
 
     if auto_gerar:
@@ -150,7 +152,8 @@ def listar_das(
 def consultar_vencimentos(
     ano: Optional[int] = Query(None, description="Ano de competência"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Consulta os vencimentos e alertas ativos:
@@ -159,7 +162,7 @@ def consultar_vencimentos(
     - Guias pagas
     - Próximo vencimento prioritário
     """
-    empresa_id = current_user.empresa_id
+    empresa_id = empresa.id
     ano_alvo = ano or date.today().year
     hoje = date.today()
 
@@ -254,12 +257,13 @@ def consultar_vencimentos(
 def obter_resumo_das(
     ano: Optional[int] = Query(None, description="Ano de competência"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Retorna o resumo consolidado de valores, status e alertas do DAS para o ano.
     """
-    vencimentos_resp = consultar_vencimentos(ano=ano, db=db, current_user=current_user)
+    vencimentos_resp = consultar_vencimentos(ano=ano, db=db, current_user=current_user, empresa=empresa)
     return vencimentos_resp.resumo
 
 
@@ -267,12 +271,13 @@ def obter_resumo_das(
 def gerar_guias_ano(
     payload: DasGerarAnoRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Gera ou sincroniza as 12 guias mensais para o ano especificado.
     """
-    empresa_id = current_user.empresa_id
+    empresa_id = empresa.id
     todos = sincronizar_e_garantir_ano(
         db, empresa_id, payload.ano, payload.valor_mensal or 75.60
     )
@@ -284,11 +289,12 @@ def gerar_guias_ano(
 def obter_das(
     das_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     das = db.query(DasMensal).filter(
         DasMensal.id == das_id,
-        DasMensal.empresa_id == current_user.empresa_id
+        DasMensal.empresa_id == empresa.id
     ).first()
 
     if not das:
@@ -305,7 +311,8 @@ def registrar_pagamento(
     das_id: int,
     payload: DasRegistrarPagamentoRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Registra o pagamento da guia DAS:
@@ -315,7 +322,7 @@ def registrar_pagamento(
     """
     das = db.query(DasMensal).filter(
         DasMensal.id == das_id,
-        DasMensal.empresa_id == current_user.empresa_id
+        DasMensal.empresa_id == empresa.id
     ).first()
 
     if not das:
@@ -345,7 +352,8 @@ def alterar_status(
     das_id: int,
     payload: DasAlterarStatusRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Altera manualmente o status da guia DAS:
@@ -361,7 +369,7 @@ def alterar_status(
 
     das = db.query(DasMensal).filter(
         DasMensal.id == das_id,
-        DasMensal.empresa_id == current_user.empresa_id
+        DasMensal.empresa_id == empresa.id
     ).first()
 
     if not das:
@@ -393,11 +401,12 @@ def atualizar_das(
     das_id: int,
     payload: DasMensalUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     das = db.query(DasMensal).filter(
         DasMensal.id == das_id,
-        DasMensal.empresa_id == current_user.empresa_id
+        DasMensal.empresa_id == empresa.id
     ).first()
 
     if not das:

@@ -151,7 +151,13 @@ def download_comprovante_compra(
                 )
 
     # 2. Resolução do arquivo via StorageService (Cloudflare R2 com fallback local)
-    target_empresa_id = compra_associada.empresa_id if compra_associada else current_user.empresa_id
+    target_empresa_id = compra_associada.empresa_id if compra_associada else None
+    if not target_empresa_id and safe_filename.startswith("emp_"):
+        parts = safe_filename.split("_")
+        if len(parts) >= 2 and parts[1].isdigit():
+            target_empresa_id = int(parts[1])
+    if not target_empresa_id:
+        target_empresa_id = current_user.empresa_id
     stream_data = storage_service.get_comprovante_stream(safe_filename, target_empresa_id)
 
     if not stream_data:

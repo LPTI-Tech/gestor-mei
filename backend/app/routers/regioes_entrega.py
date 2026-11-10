@@ -6,12 +6,13 @@ from app.database import get_db
 from app.models.regiao_entrega import RegiaoEntrega
 from app.models.venda import Venda
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.regiao_entrega import (
     RegiaoEntregaCreate,
     RegiaoEntregaUpdate,
     RegiaoEntregaResponse
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 
 router = APIRouter(prefix="/regioes-entrega", tags=["Regiões de Entrega"])
 
@@ -20,9 +21,10 @@ def list_regioes(
     apenas_ativas: bool = True,
     q: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(RegiaoEntrega).filter(RegiaoEntrega.empresa_id == current_user.empresa_id)
+    query = db.query(RegiaoEntrega).filter(RegiaoEntrega.empresa_id == empresa.id)
     
     if apenas_ativas:
         query = query.filter(RegiaoEntrega.ativo == True)
@@ -36,7 +38,7 @@ def list_regioes(
     result = []
     for r in regioes:
         count_pedidos = db.query(func.count(Venda.id)).filter(
-            Venda.empresa_id == current_user.empresa_id,
+            Venda.empresa_id == empresa.id,
             Venda.regiao_entrega_id == r.id,
             Venda.status == "Concluída"
         ).scalar() or 0
@@ -52,11 +54,12 @@ def list_regioes(
 def create_regiao(
     data: RegiaoEntregaCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     # Check if duplicate name in company
     existing = db.query(RegiaoEntrega).filter(
-        RegiaoEntrega.empresa_id == current_user.empresa_id,
+        RegiaoEntrega.empresa_id == empresa.id,
         RegiaoEntrega.nome.ilike(data.nome.strip())
     ).first()
     
@@ -64,7 +67,7 @@ def create_regiao(
         raise HTTPException(status_code=400, detail="Já existe uma região com este nome cadastrada.")
         
     regiao = RegiaoEntrega(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         nome=data.nome.strip(),
         taxa_entrega=round(float(data.taxa_entrega), 2),
         tempo_estimado_minutos=data.tempo_estimado_minutos or 30,
@@ -83,18 +86,19 @@ def create_regiao(
 def get_regiao(
     regiao_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     regiao = db.query(RegiaoEntrega).filter(
         RegiaoEntrega.id == regiao_id,
-        RegiaoEntrega.empresa_id == current_user.empresa_id
+        RegiaoEntrega.empresa_id == empresa.id
     ).first()
     
     if not regiao:
         raise HTTPException(status_code=404, detail="Região de entrega não encontrada.")
         
     count_pedidos = db.query(func.count(Venda.id)).filter(
-        Venda.empresa_id == current_user.empresa_id,
+        Venda.empresa_id == empresa.id,
         Venda.regiao_entrega_id == regiao.id,
         Venda.status == "Concluída"
     ).scalar() or 0
@@ -109,11 +113,12 @@ def update_regiao(
     regiao_id: int,
     data: RegiaoEntregaUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     regiao = db.query(RegiaoEntrega).filter(
         RegiaoEntrega.id == regiao_id,
-        RegiaoEntrega.empresa_id == current_user.empresa_id
+        RegiaoEntrega.empresa_id == empresa.id
     ).first()
     
     if not regiao:
@@ -132,7 +137,7 @@ def update_regiao(
     db.refresh(regiao)
     
     count_pedidos = db.query(func.count(Venda.id)).filter(
-        Venda.empresa_id == current_user.empresa_id,
+        Venda.empresa_id == empresa.id,
         Venda.regiao_entrega_id == regiao.id,
         Venda.status == "Concluída"
     ).scalar() or 0
@@ -146,11 +151,12 @@ def update_regiao(
 def delete_regiao(
     regiao_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     regiao = db.query(RegiaoEntrega).filter(
         RegiaoEntrega.id == regiao_id,
-        RegiaoEntrega.empresa_id == current_user.empresa_id
+        RegiaoEntrega.empresa_id == empresa.id
     ).first()
     
     if not regiao:

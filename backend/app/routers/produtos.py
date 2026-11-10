@@ -9,8 +9,9 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.produto import Produto
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.produto import ProdutoCreate, ProdutoUpdate, ProdutoResponse
-from app.dependencies import get_current_user, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin
 from app.services.storage_service import storage_service
 from app.services.image_service import validate_image_upload, optimize_and_convert_to_webp
 
@@ -23,9 +24,10 @@ def list_produtos(
     apenas_ativos: bool = False,
     busca: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(Produto).filter(Produto.empresa_id == current_user.empresa_id)
+    query = db.query(Produto).filter(Produto.empresa_id == empresa.id)
     
     if categoria and categoria != "Todos":
         query = query.filter(Produto.categoria == categoria)
@@ -49,7 +51,8 @@ def list_produtos(
 def create_produto(
     data: ProdutoCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     nome_clean = (data.nome or "").strip()
     if not nome_clean:
@@ -60,7 +63,7 @@ def create_produto(
 
     # Validação de unicidade por empresa (case-insensitive e trim)
     existente = db.query(Produto).filter(
-        Produto.empresa_id == current_user.empresa_id,
+        Produto.empresa_id == empresa.id,
         func.lower(func.trim(Produto.nome)) == nome_clean.lower()
     ).first()
 
@@ -71,7 +74,7 @@ def create_produto(
         )
 
     produto = Produto(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         nome=nome_clean,
         tipo=data.tipo,
         categoria=data.categoria,
@@ -100,11 +103,12 @@ def create_produto(
 def get_produto(
     produto_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
     
     if not produto:
@@ -119,11 +123,12 @@ def update_produto(
     produto_id: int,
     data: ProdutoUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
     
     if not produto:
@@ -141,7 +146,7 @@ def update_produto(
 
         # Validação de unicidade por empresa (excluindo o próprio item)
         existente = db.query(Produto).filter(
-            Produto.empresa_id == current_user.empresa_id,
+            Produto.empresa_id == empresa.id,
             Produto.id != produto_id,
             func.lower(func.trim(Produto.nome)) == nome_clean.lower()
         ).first()
@@ -174,18 +179,19 @@ def update_produto(
 def delete_produto(
     produto_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
     
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
         
     if produto.imagem_nome:
-        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+        storage_service.delete_product_image(produto.imagem_nome, empresa.id)
 
     db.delete(produto)
     db.commit()
@@ -201,7 +207,8 @@ def upload_produto_imagem(
     produto_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Upload de foto principal do produto.
@@ -210,7 +217,7 @@ def upload_produto_imagem(
     """
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
 
     if not produto:
@@ -232,14 +239,14 @@ def upload_produto_imagem(
 
     # Remove imagem antiga do storage se existir
     if produto.imagem_nome:
-        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+        storage_service.delete_product_image(produto.imagem_nome, empresa.id)
 
     # Gera nome seguro: prod_{id}_{timestamp}.webp
     safe_name = f"prod_{produto_id}_{int(time.time())}.webp"
     storage_service.save_product_image(
         webp_bytes,
         safe_name,
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         produto_id=produto_id,
         content_type=content_type
     )
@@ -298,21 +305,22 @@ def get_produto_imagem(
 def delete_produto_imagem(
     produto_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     """
     Remove a imagem do produto do storage e limpa a referência no banco de dados.
     """
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == current_user.empresa_id
+        Produto.empresa_id == empresa.id
     ).first()
 
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
     if produto.imagem_nome:
-        storage_service.delete_product_image(produto.imagem_nome, current_user.empresa_id)
+        storage_service.delete_product_image(produto.imagem_nome, empresa.id)
 
     produto.imagem_nome = None
     produto.imagem_url = None

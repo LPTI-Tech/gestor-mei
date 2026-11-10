@@ -69,9 +69,8 @@ export const Dashboard: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
-  const { user, empresa, isAdmin, isConsultor, isMaster, setContextEmpresaId } = useAuth();
+  const { user, empresa, isAdmin, isConsultor, isMaster, isSupportMode, activeEmpresaId, setContextEmpresaId } = useAuth();
   const isGestor = isAdmin || isConsultor;
-  const activeEmpresaId = localStorage.getItem('gestor_mei_active_empresa_id');
   const isMasterGlobalView = isMaster && !activeEmpresaId;
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);

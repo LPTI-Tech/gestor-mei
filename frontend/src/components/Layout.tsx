@@ -96,9 +96,20 @@ export const Layout: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, empresa, logout, isAdmin, isOwner, isMaster, isConsultor, isOperator, setContextEmpresaId } = useAuth();
+  const {
+    user,
+    empresa,
+    logout,
+    isAdmin,
+    isOwner,
+    isMaster,
+    isConsultor,
+    isOperator,
+    activeEmpresaId,
+    isSupportMode,
+    setContextEmpresaId,
+  } = useAuth();
   // Tenant Switcher State (MASTER)
-  const activeEmpresaId = localStorage.getItem('gestor_mei_active_empresa_id');
   const [tenantAnchorEl, setTenantAnchorEl] = useState<null | HTMLElement>(null);
   const [todasEmpresas, setTodasEmpresas] = useState<EmpresaMasterListItem[]>([]);
 
@@ -120,8 +131,17 @@ export const Layout: React.FC = () => {
 
   const handleSelectTenant = async (empresaId: number | null) => {
     handleCloseTenantMenu();
+    try {
+      if (empresaId) {
+        await api.post('/suporte/sessao/iniciar', { empresa_id: empresaId });
+      } else if (activeEmpresaId) {
+        await api.post('/suporte/sessao/encerrar', { empresa_id: Number(activeEmpresaId) });
+      }
+    } catch (err) {
+      console.warn('Erro ao auditar sessão de suporte:', err);
+    }
     await setContextEmpresaId(empresaId);
-    navigate('/dashboard');
+    navigate('/');
   };
   const { mode, toggleTheme } = useAppTheme();
 
@@ -283,6 +303,12 @@ export const Layout: React.FC = () => {
   // Filtro de visibilidade baseado em papéis RBAC e feature flags
   const filterSectionItems = (items: NavItemDef[]) => {
     return items.filter((item) => {
+      // No perfil MASTER (visão global ou modo suporte na empresa cliente),
+      // o MASTER possui acesso irrestrito a todos os módulos operacionais, fiscais e administrativos
+      if (isMaster) {
+        if (item.consultorOnly) return false;
+        return true;
+      }
       if (item.consultorOnly && !isConsultor) return false;
       if (item.adminOnly && !isAdmin) return false;
       if (item.adminOrConsultorOnly && !isAdmin && !isConsultor) return false;
@@ -614,18 +640,115 @@ export const Layout: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Barra Fixa Superior de Modo Suporte LPTI Tech */}
+      {isSupportMode && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 42,
+            zIndex: 1400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: { xs: 1.5, sm: 2.5 },
+            background: 'linear-gradient(90deg, #1e1b4b 0%, #312e81 40%, #1e1b4b 100%)',
+            color: '#ffffff',
+            borderBottom: '1px solid rgba(129, 140, 248, 0.4)',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.25)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <Chip
+              icon={<ShieldCheck size={14} color="#a5b4fc" />}
+              label="Modo Suporte LPTI Tech"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(99, 102, 241, 0.25)',
+                color: '#e0e7ff',
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                border: '1px solid rgba(165, 180, 252, 0.4)',
+                height: 24,
+              }}
+            />
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: '0.78rem',
+                display: { xs: 'none', md: 'inline-block' },
+                color: '#c7d2fe',
+              }}
+            >
+              Empresa: <strong style={{ color: '#ffffff' }}>{empresa?.nome_fantasia || `Empresa #${activeEmpresaId}`}</strong>
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: '0.78rem',
+                display: { xs: 'none', lg: 'inline-block' },
+                color: '#c7d2fe',
+                borderLeft: '1px solid rgba(255,255,255,0.2)',
+                pl: 1.5,
+              }}
+            >
+              MASTER: <strong style={{ color: '#ffffff' }}>{user?.nome || user?.email}</strong>
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: '0.72rem',
+                display: { xs: 'inline-block', md: 'none' },
+                color: '#e0e7ff',
+                fontWeight: 700,
+                maxWidth: 140,
+              }}
+              noWrap
+            >
+              {empresa?.nome_fantasia || `Empresa #${activeEmpresaId}`}
+            </Typography>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => handleSelectTenant(null)}
+              startIcon={<Globe size={14} />}
+              sx={{
+                height: 28,
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'none',
+                bgcolor: '#4f46e5',
+                color: '#ffffff',
+                borderRadius: 1.5,
+                px: 1.5,
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#4338ca' },
+              }}
+            >
+              Voltar para Visão Global
+            </Button>
+          </Box>
+        </Box>
+      )}
+
       {/* Topbar Executiva */}
       <AppBar
         position="fixed"
         elevation={0}
         sx={{
+          top: isSupportMode ? '42px' : 0,
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           ml: { md: `${currentDrawerWidth}px` },
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
           borderColor: 'divider',
-          transition: theme.transitions.create(['width', 'margin-left'], {
+          transition: theme.transitions.create(['width', 'margin-left', 'top'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,
           }),
@@ -765,7 +888,7 @@ export const Layout: React.FC = () => {
                   </Box>
 
                   {todasEmpresas.map((emp) => {
-                    const isSelected = activeEmpresaId === String(emp.id);
+                    const isSelected = activeEmpresaId === emp.id;
                     return (
                       <MenuItem
                         key={emp.id}
@@ -1084,7 +1207,9 @@ export const Layout: React.FC = () => {
               borderRight: 1,
               borderColor: 'divider',
               overflowX: 'hidden',
-              transition: theme.transitions.create('width', {
+              top: isSupportMode ? '42px' : 0,
+              height: isSupportMode ? 'calc(100% - 42px)' : '100%',
+              transition: theme.transitions.create(['width', 'top', 'height'], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.shorter,
               }),
@@ -1103,10 +1228,10 @@ export const Layout: React.FC = () => {
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
-          mt: { xs: '56px', sm: '60px' },
+          mt: isSupportMode ? { xs: '98px', sm: '102px' } : { xs: '56px', sm: '60px' },
           mb: { xs: '65px', md: 0 },
-          minHeight: 'calc(100vh - 60px)',
-          transition: theme.transitions.create(['width', 'margin-left'], {
+          minHeight: isSupportMode ? 'calc(100vh - 102px)' : 'calc(100vh - 60px)',
+          transition: theme.transitions.create(['width', 'margin-left', 'margin-top'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,
           }),

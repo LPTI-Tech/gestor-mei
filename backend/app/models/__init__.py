@@ -16,6 +16,7 @@ from app.models.fornecedor import Fornecedor
 from app.models.password_reset import PasswordResetToken, AuditoriaRecuperacaoSenha
 from app.models.user_oauth import UserOAuthAccount
 from app.models.login_audit import AuditoriaLogin
+from app.models.suporte_audit import AuditoriaSuporte
 
 __all__ = [
     "Empresa",
@@ -43,5 +44,6 @@ __all__ = [
     "PasswordResetToken",
     "AuditoriaRecuperacaoSenha",
     "UserOAuthAccount",
-    "AuditoriaLogin"
+    "AuditoriaLogin",
+    "AuditoriaSuporte"
 ]

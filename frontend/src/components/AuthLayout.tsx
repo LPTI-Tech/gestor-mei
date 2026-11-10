@@ -44,7 +44,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   return (
     <Box
       sx={{
+        height: '100vh',
         minHeight: '100vh',
+        maxHeight: '100vh',
         width: '100%',
         position: 'relative',
         display: 'flex',
@@ -52,6 +54,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         justifyContent: 'space-between',
         alignItems: 'center',
         overflowX: 'hidden',
+        overflowY: { xs: 'auto', md: 'hidden' }, // Eliminação total de rolagem em desktops e laptops 1366x768
+        boxSizing: 'border-box',
         // Fundo 100% da tela: Experiência única em Azul Sentinel escuro com profundidade
         bgcolor: '#071933',
         background: `
@@ -61,8 +65,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           linear-gradient(160deg, #071933 0%, #0a2540 40%, #0d3257 75%, #071933 100%)
         `,
         color: '#ffffff',
-        py: { xs: 3, md: 4 },
-        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 0.8, md: 1 },
+        px: { xs: 2, sm: 3 },
       }}
     >
       {/* ==================================================================== */}
@@ -168,7 +172,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           justifyContent: 'space-between',
           position: 'relative',
           zIndex: 2,
-          mb: { xs: 2, md: 3 },
+          mb: 0.5,
         }}
       >
         {backTo ? (
@@ -180,10 +184,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               color: 'rgba(255, 255, 255, 0.75)',
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.84rem',
+              fontSize: '0.76rem',
               borderRadius: 2,
-              px: 1.5,
-              py: 0.6,
+              px: 1,
+              py: 0.3,
               bgcolor: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(8px)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -205,13 +209,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           sx={{
             display: 'inline-flex',
             alignItems: 'center',
-            px: 1.5,
-            py: 0.5,
+            px: 1,
+            py: 0.2,
             borderRadius: 3,
             bgcolor: 'rgba(10, 37, 64, 0.65)',
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(16, 185, 129, 0.25)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
           }}
         >
           <ApiStatusIndicator variant="text" size="small" />
@@ -224,22 +228,25 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <Box
         sx={{
           width: '100%',
-          maxWidth: 480,
+          maxWidth: 430,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
           position: 'relative',
           zIndex: 2,
           my: 'auto',
         }}
       >
-        {/* PARTE 1 - ITEM 3: A LOGO VOLTA A SER O PRINCIPAL DESTAQUE VISUAL */}
+        {/* PARTE 1 - ITEM 3: A LOGO CENTRALIZADA COM DIMENSÃO OTIMIZADA */}
         <Box
           sx={{
+            width: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            mb: { xs: 2.5, md: 3 },
+            justifyContent: 'center',
+            mb: 0.8,
             textAlign: 'center',
           }}
         >
@@ -249,24 +256,26 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              p: { xs: 1.8, sm: 2.2 },
-              borderRadius: 4,
+              mx: 'auto',
+              px: 1.5,
+              py: 0.4,
+              borderRadius: 2.5,
               bgcolor: 'rgba(7, 25, 51, 0.85)',
               backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              border: '1px solid rgba(56, 189, 248, 0.28)',
               boxShadow: `
-                0 16px 36px -8px rgba(0, 0, 0, 0.6),
-                0 0 24px -4px rgba(16, 185, 129, 0.22),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12)
+                0 8px 20px -4px rgba(0, 0, 0, 0.6),
+                0 0 16px -4px rgba(16, 185, 129, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15)
               `,
-              mb: 1.8,
+              mb: 0.4,
               transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               '&:hover': {
-                transform: 'translateY(-2px)',
+                transform: 'translateY(-1px)',
                 boxShadow: `
-                  0 20px 44px -8px rgba(0, 0, 0, 0.7),
-                  0 0 32px -4px rgba(16, 185, 129, 0.3),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.18)
+                  0 12px 24px -4px rgba(0, 0, 0, 0.7),
+                  0 0 20px -4px rgba(16, 185, 129, 0.35),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.2)
                 `,
               },
             }}
@@ -276,52 +285,42 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               src={logoOficial}
               alt="Logo Oficial Gestor MEI"
               sx={{
-                width: { xs: 190, sm: 220, md: 235 },
+                width: { xs: 130, sm: 135, md: 140 },
                 height: 'auto',
                 display: 'block',
-                filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35))',
+                margin: '0 auto',
+                filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35))',
               }}
             />
           </Box>
 
           <Typography
-            variant="h6"
             sx={{
               color: '#38bdf8',
-              fontWeight: 700,
-              fontSize: { xs: '0.95rem', sm: '1.05rem' },
+              fontWeight: 600,
+              fontSize: '0.74rem',
               letterSpacing: '-0.01em',
-              lineHeight: 1.3,
+              lineHeight: 1.2,
+              textAlign: 'center',
             }}
           >
-            A gestão do seu negócio ficou simples.
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: '#94a3b8',
-              fontSize: '0.78rem',
-              mt: 0.4,
-              display: 'block',
-            }}
-          >
-            Vendas, estoque, compras, financeiro e obrigações fiscais em um único lugar.
+            A gestão completa do seu negócio MEI
           </Typography>
         </Box>
 
-        {/* CARD CENTRAL DE LOGIN (GLASSMORPHISM PREMIUM REDUZIDO EM ALTURA) */}
+        {/* CARD CENTRAL DE LOGIN (GLASSMORPHISM MAIS EVIDENTE E CONTRASTE REFORÇADO) */}
         <Card
           elevation={0}
           sx={{
             width: '100%',
-            borderRadius: 4,
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            bgcolor: 'rgba(10, 37, 64, 0.78)',
-            backdropFilter: 'blur(20px)',
+            borderRadius: 3,
+            border: '1px solid rgba(56, 189, 248, 0.32)',
+            background: 'linear-gradient(150deg, rgba(20, 46, 82, 0.88) 0%, rgba(12, 30, 56, 0.94) 100%)',
+            backdropFilter: 'blur(24px) saturate(160%)',
             boxShadow: `
-              0 24px 60px -12px rgba(0, 0, 0, 0.7),
-              0 0 32px -8px rgba(2, 132, 199, 0.18),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+              0 20px 50px -10px rgba(0, 0, 0, 0.7),
+              0 0 32px -6px rgba(14, 165, 233, 0.22),
+              inset 0 1px 1px rgba(255, 255, 255, 0.22)
             `,
             overflow: 'hidden',
           }}
@@ -329,10 +328,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           {/* Faixa Superior de Proteção e Blindagem RBAC */}
           <Box
             sx={{
-              py: 1,
-              px: { xs: 2.5, sm: 3 },
-              bgcolor: 'rgba(2, 132, 199, 0.14)',
-              borderBottom: '1px solid rgba(56, 189, 248, 0.16)',
+              py: 0.4,
+              px: 2,
+              bgcolor: 'rgba(56, 189, 248, 0.12)',
+              borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -343,11 +342,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               sx={{
                 color: '#38bdf8',
                 fontWeight: 700,
-                fontSize: '0.78rem',
+                fontSize: '0.7rem',
                 letterSpacing: '0.01em',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.6,
+                gap: 0.5,
               }}
             >
               {badgeText}
@@ -357,33 +356,33 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               sx={{
                 color: '#94a3b8',
                 fontWeight: 600,
-                fontSize: '0.72rem',
+                fontSize: '0.66rem',
               }}
             >
               {securitySubtext}
             </Typography>
           </Box>
 
-          <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+          <CardContent sx={{ p: { xs: 1.5, sm: 1.8 }, '&:last-child': { pb: { xs: 1.5, sm: 1.8 } } }}>
             {/* Título & Subtítulo Interno */}
-            <Box sx={{ mb: 2, textAlign: 'left' }}>
+            <Box sx={{ mb: 1, textAlign: 'left' }}>
               <Typography
-                variant="h5"
+                variant="subtitle1"
                 sx={{
                   fontWeight: 800,
-                  fontSize: { xs: '1.25rem', sm: '1.4rem' },
+                  fontSize: '1.05rem',
                   letterSpacing: '-0.02em',
                   color: '#ffffff',
+                  lineHeight: 1.2,
                 }}
               >
                 {title}
               </Typography>
               <Typography
-                variant="body2"
+                variant="caption"
                 sx={{
                   color: '#94a3b8',
-                  fontSize: '0.84rem',
-                  mt: 0.3,
+                  fontSize: '0.74rem',
                 }}
               >
                 {subtitle}
@@ -394,49 +393,49 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </CardContent>
         </Card>
 
-        {/* Benefícios em Pílulas Sutis */}
+        {/* Benefícios em Pílulas Sutis (Chips Inferiores Compactos) */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: { xs: 1.2, sm: 2 },
-            mt: 2.5,
+            gap: 1,
+            mt: 0.8,
             flexWrap: 'wrap',
           }}
         >
-          {['Vendas e PDV', 'Estoque e Compras', 'Gestão Fiscal MEI'].map((item) => (
+          {['Vendas & PDV', 'Estoque & Compras', 'Gestão Fiscal MEI'].map((item) => (
             <Box
               key={item}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.6,
-                px: 1.2,
-                py: 0.4,
-                borderRadius: 2,
+                gap: 0.4,
+                px: 0.8,
+                py: 0.2,
+                borderRadius: 1,
                 bgcolor: 'rgba(10, 37, 64, 0.45)',
                 backdropFilter: 'blur(6px)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
               <Box
                 sx={{
-                  width: 14,
-                  height: 14,
+                  width: 11,
+                  height: 11,
                   borderRadius: '50%',
                   bgcolor: 'rgba(16, 185, 129, 0.2)',
                   color: '#10b981',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.62rem',
+                  fontSize: '0.52rem',
                   fontWeight: 900,
                 }}
               >
                 ✓
               </Box>
-              <Typography sx={{ color: '#cbd5e1', fontSize: '0.74rem', fontWeight: 600 }}>
+              <Typography sx={{ color: '#cbd5e1', fontSize: '0.66rem', fontWeight: 600 }}>
                 {item}
               </Typography>
             </Box>
@@ -445,65 +444,45 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       </Box>
 
       {/* ==================================================================== */}
-      {/* PARTE 1 - ITEM 4: RODAPÉ INSTITUCIONAL DE ALTA CREDIBILIDADE          */}
+      {/* PARTE 1 - ITEM 4: RODAPÉ INSTITUCIONAL ULTRA COMPACTO EM LINHA ÚNICA   */}
       {/* ==================================================================== */}
       <Box
         sx={{
           width: '100%',
-          maxWidth: 960,
+          maxWidth: 900,
           position: 'relative',
           zIndex: 2,
-          mt: { xs: 3, md: 4 },
-          pt: 2,
+          mt: 0.6,
+          pt: 0.6,
           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          gap: 1.5,
+          justifyContent: 'center',
+          gap: { xs: 1.5, sm: 2.5 },
+          flexWrap: 'wrap',
         }}
       >
-        {/* Badges de Confiança */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: { xs: 1.5, sm: 3 },
-            flexWrap: 'wrap',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
-            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
-              Login Seguro
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
-            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
-              Microsoft e Google
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-            <CheckCircle sx={{ fontSize: 16, color: '#10b981' }} />
-            <Typography variant="caption" sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.78rem' }}>
-              Proteção de Dados (LGPD)
-            </Typography>
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+          <CheckCircle sx={{ fontSize: 13, color: '#10b981' }} />
+          <Typography sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.68rem' }}>
+            Login Seguro (LGPD)
+          </Typography>
         </Box>
 
-        {/* Informações Institucionais Finais */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+          <CheckCircle sx={{ fontSize: 13, color: '#10b981' }} />
+          <Typography sx={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.68rem' }}>
+            Google e Microsoft
+          </Typography>
+        </Box>
+
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1.2,
+            gap: 0.8,
             color: '#64748b',
-            fontSize: '0.72rem',
-            flexWrap: 'wrap',
+            fontSize: '0.66rem',
           }}
         >
           <span>Gestor MEI © 2026</span>

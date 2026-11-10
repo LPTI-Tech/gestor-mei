@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -52,6 +52,7 @@ def _formatar_usuario_response(u: User) -> UserResponse:
 @router.get("", response_model=List[UserResponse])
 def list_users(
     empresa_id: Optional[int] = Query(None, description="Filtrar por empresa (apenas para MASTER)"),
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
@@ -62,11 +63,18 @@ def list_users(
     """
     if current_user.role == UserRole.MASTER:
         query = db.query(User)
-        if empresa_id is not None:
-            query = query.filter(User.empresa_id == empresa_id)
+        target_empresa_id = empresa_id
+        if target_empresa_id is None and x_empresa_id and isinstance(x_empresa_id, str):
+            try:
+                target_empresa_id = int(str(x_empresa_id).strip())
+            except (ValueError, TypeError):
+                pass
+
+        if target_empresa_id is not None:
+            query = query.filter(User.empresa_id == target_empresa_id)
         elif current_user.empresa_id is not None:
             query = query.filter(User.empresa_id == current_user.empresa_id)
-        # Se for MASTER e empresa_id for omitido, retorna todos os usuários (incluindo MASTERs)
+        # Se for MASTER e nenhum contexto de empresa for fornecido, retorna todos os usuários (incluindo MASTERs)
     else:
         # Usuário OWNER ou operador: apenas usuários da própria empresa e NUNCA perfil MASTER
         query = db.query(User).filter(User.role != UserRole.MASTER).filter(User.empresa_id == current_user.empresa_id)
@@ -82,6 +90,7 @@ def list_users(
 @router.post("", response_model=UserResponse)
 def create_user(
     data: UserCreate,
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
@@ -112,10 +121,15 @@ def create_user(
     # 3. Define a empresa vinculada
     target_empresa_id = current_user.empresa_id
     if current_user.role == UserRole.MASTER:
-        if data.empresa_id is not None:
-            target_empresa_id = data.empresa_id
-        elif data.role == UserRole.MASTER:
+        if data.role == UserRole.MASTER:
             target_empresa_id = None
+        elif data.empresa_id is not None:
+            target_empresa_id = data.empresa_id
+        elif x_empresa_id and isinstance(x_empresa_id, str):
+            try:
+                target_empresa_id = int(str(x_empresa_id).strip())
+            except (ValueError, TypeError):
+                pass
 
     if target_empresa_id is None and data.role != UserRole.MASTER:
         raise HTTPException(
@@ -415,15 +429,23 @@ def delete_user(
 
 @router.get("/consultores/vinculados", response_model=List[VinculoConsultorResponse])
 def listar_consultores_vinculados(
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
     """
     Lista todos os consultores vinculados à empresa atual.
     """
+    target_empresa_id = current_user.empresa_id
+    if current_user.role == UserRole.MASTER and x_empresa_id and isinstance(x_empresa_id, str):
+        try:
+            target_empresa_id = int(str(x_empresa_id).strip())
+        except (ValueError, TypeError):
+            pass
+
     vinculos = (
         db.query(EmpresaConsultor)
-        .filter(EmpresaConsultor.empresa_id == current_user.empresa_id)
+        .filter(EmpresaConsultor.empresa_id == target_empresa_id)
         .all()
     )
 
@@ -449,6 +471,7 @@ def listar_consultores_vinculados(
 @router.post("/consultores/vincular", response_model=VinculoConsultorResponse)
 def vincular_consultor(
     data: VinculoConsultorCreate,
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_owner_or_master)
 ):
@@ -463,8 +486,14 @@ def vincular_consultor(
         )
 
     target_empresa_id = current_user.empresa_id
-    if current_user.role == UserRole.MASTER and data.empresa_id:
-        target_empresa_id = data.empresa_id
+    if current_user.role == UserRole.MASTER:
+        if data.empresa_id:
+            target_empresa_id = data.empresa_id
+        elif x_empresa_id:
+            try:
+                target_empresa_id = int(str(x_empresa_id).strip())
+            except (ValueError, TypeError):
+                pass
 
     empresa = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
     if not empresa:

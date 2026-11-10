@@ -1,0 +1,95 @@
+{
+  "usuario_master_autenticado": {
+    "id": 1,
+    "email": "master@lptitech.com.br",
+    "nome": "Administrador MASTER (LPTI Tech)",
+    "role": "MASTER"
+  },
+  "endpoint_metricas_globais": {
+    "rota": "GET /api/empresa/metricas-globais",
+    "resposta_real": {
+      "total_empresas": 5,
+      "empresas_ativas": 5,
+      "empresas_bloqueadas": 0,
+      "total_owners": 5,
+      "total_operadores": 8,
+      "total_consultores": 3,
+      "total_masters": 7
+    }
+  },
+  "endpoint_todas_empresas": {
+    "rota": "GET /api/empresa/todas",
+    "total_empresas_retornadas": 5,
+    "empresas": [
+      {
+        "id": 1,
+        "nome_fantasia": "Alpha Lanches",
+        "razao_social": "Empresa Alpha MEI LTDA",
+        "cnpj": "11.111.111/0001-11",
+        "ativo": true,
+        "total_usuarios": 13,
+        "owner": {
+          "id": 18,
+          "nome": "Novo Proprietario MEI",
+          "email": "owner_novo_1794340602@homologamei.com.br",
+          "ativo": true,
+          "ultimo_acesso": "2026-11-10T16:56:44.441222"
+        }
+      },
+      {
+        "id": 2,
+        "nome_fantasia": "Beta Auto Peças",
+        "razao_social": "Empresa Beta MEI LTDA",
+        "cnpj": "22.222.222/0001-22",
+        "ativo": true,
+        "total_usuarios": 0,
+        "owner": null
+      },
+      {
+        "id": 3,
+        "nome_fantasia": "Padaria Pao de Ouro",
+        "razao_social": "Padaria Pao de Ouro MEI",
+        "cnpj": "44.555.666/0001-77",
+        "ativo": true,
+        "total_usuarios": 1,
+        "owner": {
+          "id": 14,
+          "nome": "Jose da Padaria",
+          "email": "owner_paodeouro@teste.com",
+          "ativo": true,
+          "ultimo_acesso": null
+        }
+      },
+      {
+        "id": 4,
+        "nome_fantasia": "RD Restaurante",
+        "razao_social": "RD Restaurante Betim LTDA",
+        "cnpj": "99888777000199",
+        "ativo": true,
+        "total_usuarios": 1,
+        "owner": {
+          "id": 16,
+          "nome": "Rosely Oliveira de Freitas",
+          "email": "drrestaurantebetim_test@hotmail.com",
+          "ativo": true,
+          "ultimo_acesso": "2026-11-10T16:56:42.840001"
+        }
+      },
+      {
+        "id": 5,
+        "nome_fantasia": "Empresa B",
+        "razao_social": "Empresa B Teste MEI",
+        "cnpj": "22.222.222/0002-22",
+        "ativo": true,
+        "total_usuarios": 1,
+        "owner": {
+          "id": 23,
+          "nome": "Admin Empresa B",
+          "email": "admin_emp_b@test.com",
+          "ativo": true,
+          "ultimo_acesso": null
+        }
+      }
+    ]
+  }
+}

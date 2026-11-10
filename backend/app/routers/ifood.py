@@ -6,12 +6,13 @@ from sqlalchemy import desc, func, extract
 from app.database import get_db
 from app.models.ifood import LancamentoIFood
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.ifood import (
     LancamentoIFoodCreate,
     LancamentoIFoodResponse,
     IFoodSummaryResponse
 )
-from app.dependencies import get_current_user, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin
 
 router = APIRouter(prefix="/ifood", tags=["iFood"])
 
@@ -22,9 +23,10 @@ def list_ifood(
     mes: Optional[int] = None,
     ano: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    query = db.query(LancamentoIFood).filter(LancamentoIFood.empresa_id == current_user.empresa_id)
+    query = db.query(LancamentoIFood).filter(LancamentoIFood.empresa_id == empresa.id)
     
     if data_inicio:
         query = query.filter(LancamentoIFood.data >= data_inicio)
@@ -56,14 +58,15 @@ def list_ifood(
 def create_ifood_lancamento(
     data: LancamentoIFoodCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     liquido = data.valor_liquido
     if liquido is None or liquido <= 0:
         liquido = round(data.valor_bruto - data.taxa_ifood, 2)
         
     lancamento = LancamentoIFood(
-        empresa_id=current_user.empresa_id,
+        empresa_id=empresa.id,
         data=data.data,
         numero_pedido=data.numero_pedido,
         valor_bruto=data.valor_bruto,
@@ -81,11 +84,12 @@ def create_ifood_lancamento(
 def delete_ifood_lancamento(
     lancamento_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
     item = db.query(LancamentoIFood).filter(
         LancamentoIFood.id == lancamento_id,
-        LancamentoIFood.empresa_id == current_user.empresa_id
+        LancamentoIFood.empresa_id == empresa.id
     ).first()
     
     if not item:

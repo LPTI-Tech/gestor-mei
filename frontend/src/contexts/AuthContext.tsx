@@ -6,12 +6,14 @@ interface AuthContextType {
   token: string | null;
   user: User | null;
   empresa: Empresa | null;
+  activeEmpresaId: number | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isOwner: boolean;
   isMaster: boolean;
   isConsultor: boolean;
   isOperator: boolean;
+  isSupportMode: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<void>;
@@ -32,6 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [empresa, setEmpresa] = useState<Empresa | null>(() => {
     const saved = localStorage.getItem('gestor_mei_empresa');
     return saved ? JSON.parse(saved) : null;
+  });
+  const [activeEmpresaId, setActiveEmpresaId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('gestor_mei_active_empresa_id');
+    return saved ? Number(saved) : null;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -90,8 +96,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setContextEmpresaId = async (empresaId: number | null) => {
     if (empresaId) {
       localStorage.setItem('gestor_mei_active_empresa_id', String(empresaId));
+      setActiveEmpresaId(empresaId);
     } else {
       localStorage.removeItem('gestor_mei_active_empresa_id');
+      setActiveEmpresaId(null);
     }
     await refreshUserData();
   };
@@ -100,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setUser(null);
     setEmpresa(null);
+    setActiveEmpresaId(null);
     localStorage.removeItem('gestor_mei_token');
     localStorage.removeItem('gestor_mei_user');
     localStorage.removeItem('gestor_mei_empresa');
@@ -112,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isOperator = user?.role === 'OPERATOR' || user?.role === 'OPERADOR';
   const isAdmin = isOwner || isMaster;
   const isConsultor = user?.role === 'CONSULTOR' || isMaster;
+  const isSupportMode = Boolean(isMaster && activeEmpresaId);
 
   return (
     <AuthContext.Provider
@@ -119,12 +129,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         user,
         empresa,
+        activeEmpresaId,
         isAuthenticated,
         isAdmin,
         isOwner,
         isMaster,
         isConsultor,
         isOperator,
+        isSupportMode,
         isLoading,
         login,
         loginWithGoogle,

@@ -8,12 +8,13 @@ from app.models.venda import Venda
 from app.models.regiao_entrega import RegiaoEntrega
 from app.models.motoboy import Motoboy
 from app.models.user import User
+from app.models.empresa import Empresa
 from app.schemas.relatorio_entrega import (
     RelatorioEntregasResponse,
     RegiaoEntregaStat,
     MotoboyEntregaStat
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_empresa
 
 router = APIRouter(prefix="/relatorio-entregas", tags=["Relatórios de Entrega"])
 
@@ -22,9 +23,10 @@ def get_relatorio_entregas(
     data_inicio: Optional[date] = None,
     data_fim: Optional[date] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    empresa: Empresa = Depends(get_current_empresa)
 ):
-    empresa_id = current_user.empresa_id
+    empresa_id = empresa.id
     
     # Query base para pedidos de entrega
     query = db.query(Venda).filter(
