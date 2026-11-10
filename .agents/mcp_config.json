@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\LeonidasPaulino\\AppData\\Roaming\\npm\\node_modules\\@playwright\\mcp\\cli.js",
+        "--headless",
+        "--viewport-size=1366x768",
+        "--user-data-dir=C:\\Users\\LeonidasPaulino\\AppData\\Local\\ms-playwright-mcp"
+      ],
+      "env": {
+        "PLAYWRIGHT_HEADLESS": "true",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
