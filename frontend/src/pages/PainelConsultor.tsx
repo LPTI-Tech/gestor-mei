@@ -48,8 +48,20 @@ import {
 import api from '../services/api';
 import { ClienteConsultorItem, ResumoConsultor, ScoreClienteTipo } from '../types';
 import { formatCurrency, formatDate } from '../services/exportUtils';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 export const PainelConsultor: React.FC = () => {
+  const { isMaster } = useAuth();
   const [resumo, setResumo] = useState<ResumoConsultor | null>(null);
   const [clientes, setClientes] = useState<ClienteConsultorItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -121,28 +133,27 @@ export const PainelConsultor: React.FC = () => {
   };
 
   const renderScoreChip = (score: ScoreClienteTipo, motivo: string) => {
-    let color: 'success' | 'warning' | 'error' = 'success';
-    let icon = <CheckCircle fontSize="small" />;
-    let label = '🟢 Saudável';
+    let variant: 'active' | 'warning' | 'error' = 'active';
+    let label = 'SAUDÁVEL';
 
     if (score === 'ATENCAO') {
-      color = 'warning';
-      icon = <WarningAmber fontSize="small" />;
-      label = '🟡 Atenção';
+      variant = 'warning';
+      label = 'ATENÇÃO';
     } else if (score === 'CRITICO') {
-      color = 'error';
-      icon = <ReportProblem fontSize="small" />;
-      label = '🔴 Crítico';
+      variant = 'error';
+      label = 'CRÍTICO';
     }
 
     return (
       <Tooltip title={motivo} arrow>
-        <Chip
-          label={label}
-          color={color}
-          size="small"
-          sx={{ fontWeight: 700, fontSize: '0.78rem' }}
-        />
+        <Box component="span" sx={{ display: 'inline-flex' }}>
+          <SentinelBadge
+            sentinelVariant={variant}
+            size="small"
+            withDot
+            label={label}
+          />
+        </Box>
       </Tooltip>
     );
   };
@@ -161,15 +172,29 @@ export const PainelConsultor: React.FC = () => {
         }}
       >
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <SupervisorAccount color="primary" fontSize="large" />
-            <Typography variant="h4" fontWeight={800}>
-              Painel do Consultor
+            <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
+              {isMaster ? 'Governança Multiempresa & Carteira' : 'Painel do Consultor'}
             </Typography>
-            <Chip label="LPTI Tech" color="primary" size="small" sx={{ fontWeight: 700 }} />
+            {isMaster ? (
+              <SentinelBadge
+                sentinelVariant="master"
+                size="small"
+                withDot
+                pulse
+                label="CENTRO DE COMANDO MASTER"
+              />
+            ) : (
+              <SentinelBadge
+                sentinelVariant="consultor"
+                size="small"
+                label="CONSULTORIA LPTI"
+              />
+            )}
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Visão consolidada da carteira de clientes MEI: conformidade com o DAS, estoque crítico, teto de faturamento e scores de saúde.
+            Visão consolidada da carteira de empresas MEI: conformidade com o DAS, estoque crítico, teto de faturamento e scores de saúde.
           </Typography>
         </Box>
 
@@ -180,7 +205,7 @@ export const PainelConsultor: React.FC = () => {
             onClick={fetchData}
             disabled={loading}
             size="small"
-            sx={{ borderRadius: 2 }}
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, height: 38 }}
           >
             Atualizar Carteira
           </Button>
@@ -193,126 +218,154 @@ export const PainelConsultor: React.FC = () => {
         </Alert>
       )}
 
-      {/* DASHBOARD DE TOPO (4 CARDS DE INDICADORES EXECUTIVOS) */}
-      <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+      {/* DASHBOARD DE TOPO (4 CARDS DE INDICADORES EXECUTIVOS SENTINEL) */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* 1. Clientes Ativos */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #0288d1',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Clientes Ativos
-                </Typography>
-                <Store color="primary" />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="primary.main">
-                {resumo?.total_clientes_ativos ?? 0}
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
+              >
+                Clientes Ativos
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Empresas MEI sob consultoria ativa
-              </Typography>
-            </CardContent>
-          </Card>
+              <Store color="primary" fontSize="small" />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'primary.main',
+                fontFeatureSettings: '"tnum"',
+                letterSpacing: '-0.02em',
+                mb: 0.3,
+              }}
+            >
+              {resumo?.total_clientes_ativos ?? 0}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+              Empresas MEI sob consultoria ativa
+            </Typography>
+          </SentinelCard>
         </Grid>
 
         {/* 2. DAS em Atraso */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #d32f2f',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  DAS em Atraso
-                </Typography>
-                <ReportProblem color="error" />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="error.main">
-                {resumo?.total_das_atrasado ?? 0}
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
+              >
+                DAS em Atraso
               </Typography>
-              <Typography variant="caption" color="error.light" fontWeight={600}>
-                {resumo?.total_das_atrasado ? 'Exigem regularização fiscal urgente' : 'Nenhuma empresa inadimplente'}
-              </Typography>
-            </CardContent>
-          </Card>
+              <ReportProblem color="error" fontSize="small" />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'error.main',
+                fontFeatureSettings: '"tnum"',
+                letterSpacing: '-0.02em',
+                mb: 0.3,
+              }}
+            >
+              {resumo?.total_das_atrasado ?? 0}
+            </Typography>
+            <Typography variant="caption" color="error.light" sx={{ fontWeight: 600, fontSize: '0.72rem' }}>
+              {resumo?.total_das_atrasado ? 'Exigem regularização fiscal urgente' : 'Nenhuma empresa inadimplente'}
+            </Typography>
+          </SentinelCard>
         </Grid>
 
         {/* 3. Estoque Crítico */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #ed6c02',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Estoque Crítico
-                </Typography>
-                <Inventory2 color="warning" />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="warning.main">
-                {resumo?.total_estoque_critico ?? 0}
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
+              >
+                Estoque Crítico
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Clientes com produtos zerados ou no mínimo
-              </Typography>
-            </CardContent>
-          </Card>
+              <Inventory2 color="warning" fontSize="small" />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'warning.main',
+                fontFeatureSettings: '"tnum"',
+                letterSpacing: '-0.02em',
+                mb: 0.3,
+              }}
+            >
+              {resumo?.total_estoque_critico ?? 0}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+              Clientes com produtos zerados ou no mínimo
+            </Typography>
+          </SentinelCard>
         </Grid>
 
         {/* 4. Próximos do Limite MEI */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #9c27b0',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Próximos do Limite MEI
-                </Typography>
-                <TrendingUp color="secondary" />
-              </Box>
-              <Typography variant="h4" fontWeight={800} color="secondary.main">
-                {resumo?.total_proximo_limite ?? 0}
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
+              >
+                Próximos do Limite MEI
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Faturamento anual ≥ 80% (teto R$ 81k)
-              </Typography>
-            </CardContent>
-          </Card>
+              <TrendingUp color="secondary" fontSize="small" />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'secondary.main',
+                fontFeatureSettings: '"tnum"',
+                letterSpacing: '-0.02em',
+                mb: 0.3,
+              }}
+            >
+              {resumo?.total_proximo_limite ?? 0}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+              Faturamento anual ≥ 80% (teto R$ 81k)
+            </Typography>
+          </SentinelCard>
         </Grid>
       </Grid>
 
-      {/* BARRA DE FILTROS & PESQUISA */}
-      <Paper elevation={2} sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+      {/* BARRA DE FILTROS & PESQUISA COM SENTINELINPUT */}
+      <SentinelCard dense sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Busca Textual */}
-          <TextField
+          <SentinelInput
             size="small"
             placeholder="Buscar por cliente, razão social ou CNPJ..."
             value={searchTerm}
@@ -320,11 +373,11 @@ export const PainelConsultor: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search fontSize="small" />
+                  <Search fontSize="small" sx={{ color: 'text.secondary' }} />
                 </InputAdornment>
               ),
             }}
-            sx={{ width: { xs: '100%', md: 320 } }}
+            sx={{ width: { xs: '100%', md: 340 } }}
           />
 
           {/* Filtros de Score */}
@@ -394,210 +447,193 @@ export const PainelConsultor: React.FC = () => {
             />
           </Box>
         </Box>
-      </Paper>
+      </SentinelCard>
 
-      {/* LISTAGEM DE CLIENTES */}
-      <Paper elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h6" fontWeight={700}>
-              Clientes da Carteira LPTI Tech
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Exibindo {clientesFiltrados.length} cliente(s)
-            </Typography>
-          </Box>
+      {/* LISTAGEM DE CLIENTES COM SENTINELTABLE */}
+      {loading ? (
+        <Box sx={{ p: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 2 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">
+            Carregando indicadores dos clientes...
+          </Typography>
         </Box>
+      ) : clientesFiltrados.length === 0 ? (
+        <SentinelCard dense sx={{ p: 6, textAlign: 'center' }}>
+          <SupervisorAccount sx={{ fontSize: 60, color: 'text.disabled', mb: 1 }} />
+          <Typography variant="h6" color="text.secondary" fontWeight={600}>
+            Nenhum cliente atende aos filtros selecionados.
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ mt: 1.5 }}
+            onClick={() => {
+              setSearchTerm('');
+              setFiltroScore('TODOS');
+              setFiltroDasAtrasado(false);
+              setFiltroEstoqueCritico(false);
+              setFiltroProximoLimite(false);
+            }}
+          >
+            Limpar Filtros
+          </Button>
+        </SentinelCard>
+      ) : (
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
+              <TableRow>
+                <TableCell>Cliente / Empresa</TableCell>
+                <TableCell align="center">Score Saúde</TableCell>
+                <TableCell align="center">Status DAS</TableCell>
+                <TableCell>Faturamento Anual & Teto MEI</TableCell>
+                <TableCell align="center">Estoque Crítico</TableCell>
+                <TableCell>Última Compra</TableCell>
+                <TableCell align="center">Ações</TableCell>
+              </TableRow>
+            </SentinelTableHead>
+            <TableBody>
+              {clientesFiltrados.map((c) => (
+                <SentinelTableRow key={c.id}>
+                  {/* Nome / Empresa */}
+                  <SentinelTableCell tabular={false}>
+                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
+                      {c.nome_fantasia}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
+                      {c.nome_empresarial}
+                    </Typography>
+                    <Typography variant="caption" color="primary" sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
+                      CNPJ: {c.cnpj}
+                    </Typography>
+                  </SentinelTableCell>
 
-        {loading ? (
-          <Box sx={{ p: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 2 }}>
-            <CircularProgress />
-            <Typography variant="body2" color="text.secondary">
-              Carregando indicadores dos clientes...
-            </Typography>
-          </Box>
-        ) : clientesFiltrados.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <SupervisorAccount sx={{ fontSize: 60, color: 'text.disabled', mb: 1 }} />
-            <Typography variant="h6" color="text.secondary" fontWeight={600}>
-              Nenhum cliente atende aos filtros selecionados.
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{ mt: 1.5 }}
-              onClick={() => {
-                setSearchTerm('');
-                setFiltroScore('TODOS');
-                setFiltroDasAtrasado(false);
-                setFiltroEstoqueCritico(false);
-                setFiltroProximoLimite(false);
-              }}
-            >
-              Limpar Filtros
-            </Button>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ bgcolor: (th) => th.palette.action.hover }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Cliente / Empresa</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Score</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Status DAS</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Faturamento Anual & Teto MEI</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Estoque Crítico</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Última Compra</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {clientesFiltrados.map((c) => (
-                  <TableRow key={c.id} hover>
-                    {/* Nome / Empresa */}
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={700}>
-                        {c.nome_fantasia}
+                  {/* Score */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    {renderScoreChip(c.score, c.score_motivo)}
+                  </SentinelTableCell>
+
+                  {/* Status DAS */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    {c.status_das === 'Atrasado' ? (
+                      <SentinelBadge
+                        sentinelVariant="error"
+                        size="small"
+                        label={`${c.qtd_das_atrasados} EM ATRASO`}
+                      />
+                    ) : c.status_das === 'Pendente' ? (
+                      <SentinelBadge
+                        sentinelVariant="warning"
+                        size="small"
+                        label={c.das_vence_em_breve ? 'VENCE EM 7 DIAS' : 'PENDENTE'}
+                      />
+                    ) : (
+                      <SentinelBadge
+                        sentinelVariant="active"
+                        size="small"
+                        label="EM DIA"
+                      />
+                    )}
+                  </SentinelTableCell>
+
+                  {/* Faturamento Anual & % Limite MEI */}
+                  <SentinelTableCell sx={{ minWidth: 200 }} tabular={true}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
+                        {formatCurrency(c.faturamento_anual)}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {c.nome_empresarial}
-                      </Typography>
-                      <Typography variant="caption" color="primary" sx={{ fontFamily: 'monospace' }}>
-                        CNPJ: {c.cnpj}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Score */}
-                    <TableCell align="center">
-                      {renderScoreChip(c.score, c.score_motivo)}
-                    </TableCell>
-
-                    {/* Status DAS */}
-                    <TableCell align="center">
-                      {c.status_das === 'Atrasado' ? (
-                        <Chip
-                          label={`${c.qtd_das_atrasados} em Atraso`}
-                          color="error"
-                          size="small"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      ) : c.status_das === 'Pendente' ? (
-                        <Chip
-                          label={c.das_vence_em_breve ? 'Vence em 7 dias' : 'Pendente'}
-                          color="warning"
-                          size="small"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      ) : (
-                        <Chip
-                          label="Em dia"
-                          color="success"
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      )}
-                    </TableCell>
-
-                    {/* Faturamento Anual & % Limite MEI */}
-                    <TableCell sx={{ minWidth: 200 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="body2" fontWeight={700}>
-                          {formatCurrency(c.faturamento_anual)}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          fontWeight={800}
-                          color={
-                            c.estourou_limite_mei
-                              ? 'error.main'
-                              : c.proximo_limite_mei
-                              ? 'warning.main'
-                              : 'success.main'
-                          }
-                        >
-                          {c.percentual_limite_mei}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(c.percentual_limite_mei, 100)}
+                      <Typography
+                        variant="caption"
+                        fontWeight={800}
+                        sx={{ fontFeatureSettings: '"tnum"' }}
                         color={
                           c.estourou_limite_mei
-                            ? 'error'
+                            ? 'error.main'
                             : c.proximo_limite_mei
-                            ? 'warning'
-                            : 'success'
+                            ? 'warning.main'
+                            : 'success.main'
                         }
-                        sx={{ height: 6, borderRadius: 3 }}
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                        Teto anual: {formatCurrency(c.limite_mei_anual)}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Quantidade de Produtos Críticos */}
-                    <TableCell align="center">
-                      {c.quantidade_produtos_criticos > 0 ? (
-                        <Tooltip title={c.produtos_criticos_nomes.join(', ')} arrow>
-                          <Chip
-                            label={`${c.quantidade_produtos_criticos} item(ns)`}
-                            color="warning"
-                            size="small"
-                            sx={{ fontWeight: 700 }}
-                          />
-                        </Tooltip>
-                      ) : (
-                        <Chip
-                          label="Estoque Regular"
-                          color="default"
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontSize: '0.75rem' }}
-                        />
-                      )}
-                    </TableCell>
-
-                    {/* Última Compra Registrada */}
-                    <TableCell>
-                      {c.ultima_compra ? (
-                        <>
-                          <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 160 }}>
-                            {c.ultima_compra.fornecedor_nome}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            NF nº {c.ultima_compra.numero_nota} • {formatCurrency(c.ultima_compra.valor_total)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(c.ultima_compra.data)}
-                          </Typography>
-                        </>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Nenhuma compra NF-e
-                        </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Ações */}
-                    <TableCell align="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Visibility />}
-                        onClick={() => handleOpenDiagnostico(c)}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
                       >
-                        Diagnóstico
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+                        {c.percentual_limite_mei}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(c.percentual_limite_mei, 100)}
+                      color={
+                        c.estourou_limite_mei
+                          ? 'error'
+                          : c.proximo_limite_mei
+                          ? 'warning'
+                          : 'success'
+                      }
+                      sx={{ height: 5, borderRadius: 3 }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.72rem', fontFeatureSettings: '"tnum"' }}>
+                      Teto anual: {formatCurrency(c.limite_mei_anual)}
+                    </Typography>
+                  </SentinelTableCell>
+
+                  {/* Quantidade de Produtos Críticos */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    {c.quantidade_produtos_criticos > 0 ? (
+                      <Tooltip title={c.produtos_criticos_nomes.join(', ')} arrow>
+                        <Box component="span">
+                          <SentinelBadge
+                            sentinelVariant="warning"
+                            size="small"
+                            label={`${c.quantidade_produtos_criticos} ITENS`}
+                          />
+                        </Box>
+                      </Tooltip>
+                    ) : (
+                      <SentinelBadge
+                        sentinelVariant="default"
+                        size="small"
+                        label="REGULAR"
+                      />
+                    )}
+                  </SentinelTableCell>
+
+                  {/* Última Compra Registrada */}
+                  <SentinelTableCell tabular={true}>
+                    {c.ultima_compra ? (
+                      <>
+                        <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 160, fontSize: '0.8125rem' }}>
+                          {c.ultima_compra.fornecedor_nome}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem', fontFeatureSettings: '"tnum"' }}>
+                          NF nº {c.ultima_compra.numero_nota} • {formatCurrency(c.ultima_compra.valor_total)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+                          {formatDate(c.ultima_compra.data)}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                        Nenhuma compra NF-e
+                      </Typography>
+                    )}
+                  </SentinelTableCell>
+
+                  {/* Ações */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Visibility />}
+                      onClick={() => handleOpenDiagnostico(c)}
+                      sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, height: 32, fontSize: '0.75rem' }}
+                    >
+                      Diagnóstico
+                    </Button>
+                  </SentinelTableCell>
+                </SentinelTableRow>
+              ))}
+            </TableBody>
+          </SentinelTable>
+        </SentinelTableContainer>
+      )}
 
       {/* MODAL DE DIAGNÓSTICO DO CLIENTE */}
       <Dialog

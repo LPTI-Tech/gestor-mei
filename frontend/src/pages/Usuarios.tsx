@@ -53,6 +53,16 @@ import { User, UserRole } from '../types';
 import { formatDateTime } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 export const Usuarios: React.FC = () => {
   const { user: currentUser, isMaster } = useAuth();
@@ -324,9 +334,18 @@ export const Usuarios: React.FC = () => {
         }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={800} display="flex" alignItems="center" gap={1}>
-            <People color="primary" /> Gestão de Usuários & RBAC
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Typography variant="h5" fontWeight={800} display="flex" alignItems="center" gap={1} sx={{ letterSpacing: '-0.02em' }}>
+              <People color="primary" /> Gestão de Usuários & RBAC
+            </Typography>
+            <SentinelBadge
+              sentinelVariant={isMaster ? 'master' : 'owner'}
+              size="small"
+              withDot={isMaster}
+              pulse={isMaster}
+              label={isMaster ? 'CENTRO DE COMANDO' : 'MULTIEMPRESA'}
+            />
+          </Box>
           <Typography variant="body2" color="text.secondary">
             Controle os acessos internos da sua empresa com perfis de Proprietário (OWNER), Consultor e Operadores.
           </Typography>
@@ -337,7 +356,7 @@ export const Usuarios: React.FC = () => {
           color="primary"
           startIcon={<Add />}
           onClick={handleOpenCreateModal}
-          sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
+          sx={{ fontWeight: 700, height: 40, borderRadius: 2, px: 2.5, textTransform: 'none', fontSize: '0.875rem' }}
         >
           Novo Usuário
         </Button>
@@ -354,89 +373,156 @@ export const Usuarios: React.FC = () => {
         </Alert>
       )}
 
-      {/* Cards de Resumo Executivo */}
+      {/* Cards de Resumo Executivo (Sentinel Design System) */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: 48, height: 48 }}>
-                <People />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
                   EQUIPE TOTAL
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalUsuarios}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(25, 118, 210, 0.12)', color: 'primary.main', width: 40, height: 40 }}>
+                <People fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#ede7f6', color: '#7b1fa2', width: 48, height: 48 }}>
-                <AdminPanelSettings />
-              </Avatar>
-              <Box sx={{ overflow: 'hidden' }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ overflow: 'hidden', minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
                   PROPRIETÁRIO (OWNER)
                 </Typography>
-                <Typography variant="body1" fontWeight={700} noWrap title={ownerUser?.nome || 'Não definido'}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                    fontSize: '1.05rem',
+                  }}
+                  noWrap
+                  title={ownerUser?.nome || 'Não definido'}
+                >
                   {ownerUser ? ownerUser.nome.split(' ')[0] : 'Nenhum'}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(123, 31, 162, 0.12)', color: '#7b1fa2', width: 40, height: 40 }}>
+                <AdminPanelSettings fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#eceff1', color: '#455a64', width: 48, height: 48 }}>
-                <Person />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  OPERADORES DE CAIXA
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  OPERADORES CAIXA
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalOperadores}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(69, 90, 100, 0.12)', color: '#455a64', width: 40, height: 40 }}>
+                <Person fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#e1f5fe', color: '#0288d1', width: 48, height: 48 }}>
-                <BusinessCenter />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  CONSULTORES
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  CONSULTORES LPTI
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalConsultores}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(2, 136, 209, 0.12)', color: '#0288d1', width: 40, height: 40 }}>
+                <BusinessCenter fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
       </Grid>
 
-      {/* Barra de Filtro / Busca */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
-        <TextField
+      {/* Barra de Filtro / Busca com SentinelInput */}
+      <Box sx={{ mb: 2.5, display: 'flex', justifyContent: 'flex-start' }}>
+        <SentinelInput
           size="small"
           placeholder="Buscar por nome ou e-mail..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          sx={{ width: { xs: '100%', sm: 340 } }}
+          sx={{ width: { xs: '100%', sm: 360 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -453,71 +539,81 @@ export const Usuarios: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <Table>
-            <TableHead sx={{ bgcolor: 'background.default' }}>
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Usuário</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Perfil / Nível</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Último Acesso</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Criado Por</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>
+                <TableCell>Usuário</TableCell>
+                <TableCell>Perfil / RBAC</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Último Acesso</TableCell>
+                <TableCell>Criado Por</TableCell>
+                <TableCell align="right">Ações</TableCell>
               </TableRow>
-            </TableHead>
+            </SentinelTableHead>
             <TableBody>
               {usersFiltrados.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <SentinelTableRow>
+                  <SentinelTableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                     Nenhum usuário encontrado com os filtros aplicados.
-                  </TableCell>
-                </TableRow>
+                  </SentinelTableCell>
+                </SentinelTableRow>
               ) : (
                 usersFiltrados.map((u) => {
                   const roleConfig = getRoleConfig(u.role);
                   const isOwnerUser = u.role === 'OWNER' || u.role === 'ADMIN';
                   const isSelf = u.id === currentUser?.id;
 
+                  const getSentinelRoleBadge = (role: string) => {
+                    switch (role) {
+                      case 'MASTER':
+                        return <SentinelBadge sentinelVariant="master" withDot pulse label="MASTER PLATAFORMA" />;
+                      case 'OWNER':
+                      case 'ADMIN':
+                        return <SentinelBadge sentinelVariant="owner" label="PROPRIETÁRIO (OWNER)" />;
+                      case 'CONSULTOR':
+                        return <SentinelBadge sentinelVariant="consultor" label="CONSULTOR LPTI" />;
+                      case 'OPERATOR':
+                      case 'OPERADOR':
+                      default:
+                        return <SentinelBadge sentinelVariant="operator" label="OPERADOR CAIXA" />;
+                    }
+                  };
+
                   return (
-                    <TableRow key={u.id} hover>
+                    <SentinelTableRow key={u.id}>
                       {/* Usuário (Avatar + Nome + Email) */}
-                      <TableCell>
+                      <SentinelTableCell tabular={false}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           <Avatar
                             sx={{
-                              width: 38,
-                              height: 38,
+                              width: 34,
+                              height: 34,
                               bgcolor: roleConfig.bgColor,
                               fontWeight: 700,
-                              fontSize: '0.9rem',
+                              fontSize: '0.825rem',
                             }}
                           >
                             {u.nome.charAt(0).toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" fontWeight={700}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
                               {u.nome} {isSelf && <Typography component="span" variant="caption" color="primary">(Você)</Typography>}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                               {u.email}
                             </Typography>
                           </Box>
                         </Box>
-                      </TableCell>
+                      </SentinelTableCell>
 
-                      {/* Perfil */}
-                      <TableCell>
-                        <Chip
-                          icon={roleConfig.icon}
-                          label={roleConfig.label}
-                          size="small"
-                          color={roleConfig.color}
-                          sx={{ fontWeight: 600, px: 0.5 }}
-                        />
-                      </TableCell>
+                      {/* Perfil SentinelBadge */}
+                      <SentinelTableCell tabular={false}>
+                        {getSentinelRoleBadge(u.role)}
+                      </SentinelTableCell>
 
-                      {/* Status */}
-                      <TableCell>
+                      {/* Status SentinelBadge */}
+                      <SentinelTableCell tabular={false}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Switch
                             size="small"
@@ -526,41 +622,39 @@ export const Usuarios: React.FC = () => {
                             onChange={() => handleToggleStatus(u)}
                             color="success"
                           />
-                          <Chip
-                            label={u.ativo ? 'Ativo' : 'Bloqueado'}
+                          <SentinelBadge
+                            sentinelVariant={u.ativo ? 'active' : 'error'}
                             size="small"
-                            color={u.ativo ? 'success' : 'default'}
-                            variant={u.ativo ? 'filled' : 'outlined'}
-                            sx={{ height: 22, fontSize: '0.75rem' }}
+                            label={u.ativo ? 'ATIVO' : 'BLOQUEADO'}
                           />
                         </Box>
-                      </TableCell>
+                      </SentinelTableCell>
 
-                      {/* Último Acesso */}
-                      <TableCell>
+                      {/* Último Acesso (Tabular) */}
+                      <SentinelTableCell tabular={true}>
                         {u.ultimo_acesso ? (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                             <Schedule fontSize="inherit" color="action" />
-                            <Typography variant="body2" fontSize="0.82rem">
+                            <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
                               {formatDateTime(u.ultimo_acesso)}
                             </Typography>
                           </Box>
                         ) : (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                             Nunca acessou
                           </Typography>
                         )}
-                      </TableCell>
+                      </SentinelTableCell>
 
                       {/* Criado Por */}
-                      <TableCell>
-                        <Typography variant="body2" fontSize="0.82rem">
+                      <SentinelTableCell tabular={false}>
+                        <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                           {u.criado_por_nome || 'Sistema (Inicial)'}
                         </Typography>
-                      </TableCell>
+                      </SentinelTableCell>
 
                       {/* Ações */}
-                      <TableCell align="right">
+                      <SentinelTableCell align="right" tabular={false}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                           {/* Editar */}
                           <Tooltip title="Editar Dados">
@@ -608,14 +702,14 @@ export const Usuarios: React.FC = () => {
                             </span>
                           </Tooltip>
                         </Box>
-                      </TableCell>
-                    </TableRow>
+                      </SentinelTableCell>
+                    </SentinelTableRow>
                   );
                 })
               )}
             </TableBody>
-          </Table>
-        </TableContainer>
+          </SentinelTable>
+        </SentinelTableContainer>
       )}
 
       {/* ==================================================================== */}
@@ -633,7 +727,7 @@ export const Usuarios: React.FC = () => {
               </Alert>
             )}
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="Nome Completo"
               required
@@ -643,7 +737,7 @@ export const Usuarios: React.FC = () => {
               autoFocus
             />
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="E-mail de Acesso"
               type="email"
@@ -654,7 +748,7 @@ export const Usuarios: React.FC = () => {
             />
 
             {!editingUserId && (
-              <TextField
+              <SentinelInput
                 fullWidth
                 label="Senha Inicial"
                 type={showPassword ? 'text' : 'password'}
@@ -739,7 +833,7 @@ export const Usuarios: React.FC = () => {
               Defina uma nova senha para <strong>{targetUser?.nome}</strong> ({targetUser?.email}).
             </Typography>
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="Nova Senha"
               type={showResetPassword ? 'text' : 'password'}
@@ -760,7 +854,7 @@ export const Usuarios: React.FC = () => {
               }}
             />
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="Confirmar Nova Senha"
               type={showResetPassword ? 'text' : 'password'}

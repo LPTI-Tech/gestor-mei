@@ -3,25 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
-  TextField,
   InputAdornment,
-  Table,
   TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
   IconButton,
   Tooltip,
   CircularProgress,
   Alert,
-  Divider,
 } from '@mui/material';
 import {
   ShoppingBag,
@@ -41,6 +30,17 @@ import {
 import api from '../services/api';
 import { ResumoCompras, CompraItemResumo } from '../types';
 import { formatCurrency, formatDate } from '../services/exportUtils';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+  sentinelTokens,
+} from '../design-system';
 
 export const Compras: React.FC = () => {
   const navigate = useNavigate();
@@ -155,169 +155,201 @@ export const Compras: React.FC = () => {
         </Alert>
       )}
 
-      {/* DASHBOARD DE COMPRAS (4 CARDS DE INDICADORES) */}
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+      {/* DASHBOARD DE COMPRAS (4 CARDS DE INDICADORES SENTINEL) */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* 1. Total Comprado no Mês */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #2e7d32',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Total no Mês Corrente
-                </Typography>
-                <AttachMoney color="success" />
-              </Box>
-              <Typography variant="h5" fontWeight={800} color="success.main">
-                {resumo ? formatCurrency(resumo.total_comprado_mes) : 'R$ 0,00'}
+          <SentinelCard dense sx={{ height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.6875rem',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Total no Mês Corrente
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {resumo ? `${resumo.numero_notas_mes} nota(s) faturada(s) este mês` : 'Nenhuma nota'}
-              </Typography>
-            </CardContent>
-          </Card>
+              <AttachMoney sx={{ fontSize: 18, color: sentinelTokens.colors.owner.accent }} />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'text.primary',
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: '1.45rem',
+                mb: 0.5,
+              }}
+            >
+              {resumo ? formatCurrency(resumo.total_comprado_mes) : 'R$ 0,00'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+              {resumo ? `${resumo.numero_notas_mes} nota(s) faturada(s) este mês` : 'Nenhuma nota registrada'}
+            </Typography>
+          </SentinelCard>
         </Grid>
 
         {/* 2. Última Compra */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #0288d1',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Última Compra
+          <SentinelCard dense sx={{ height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.6875rem',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Última Compra
+              </Typography>
+              <CalendarToday sx={{ fontSize: 18, color: sentinelTokens.colors.master.accent }} />
+            </Box>
+            {resumo?.ultima_compra ? (
+              <>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    color: 'text.primary',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: '1.45rem',
+                    mb: 0.5,
+                  }}
+                >
+                  {formatCurrency(resumo.ultima_compra.valor_total)}
                 </Typography>
-                <CalendarToday color="primary" />
-              </Box>
-              {resumo?.ultima_compra ? (
-                <>
-                  <Typography variant="h6" fontWeight={800} noWrap title={resumo.ultima_compra.fornecedor_nome}>
-                    {resumo.ultima_compra.fornecedor_nome}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    NF nº {resumo.ultima_compra.numero_nota} • {formatCurrency(resumo.ultima_compra.valor_total)}
-                  </Typography>
-                  <Typography variant="caption" color="primary.main" fontWeight={600}>
-                    {formatDate(resumo.ultima_compra.data)}
-                  </Typography>
-                </>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem', display: 'block' }} noWrap>
+                  {resumo.ultima_compra.fornecedor_nome} • {formatDate(resumo.ultima_compra.data)}
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.secondary', fontSize: '1.25rem', mb: 0.5 }}>
+                  R$ 0,00
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
                   Nenhuma compra registrada
                 </Typography>
-              )}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </SentinelCard>
         </Grid>
 
         {/* 3. Número de Notas */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #ed6c02',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Notas Fiscais
-                </Typography>
-                <ReceiptLong color="warning" />
-              </Box>
-              <Typography variant="h5" fontWeight={800} color="warning.main">
-                {resumo?.numero_notas_total ?? 0}
+          <SentinelCard dense sx={{ height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.6875rem',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Notas Fiscais
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {resumo ? `Total anual: ${formatCurrency(resumo.total_comprado_ano)}` : 'R$ 0,00'}
-              </Typography>
-            </CardContent>
-          </Card>
+              <ReceiptLong sx={{ fontSize: 18, color: sentinelTokens.colors.owner.warning }} />
+            </Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: 'text.primary',
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: '1.45rem',
+                mb: 0.5,
+              }}
+            >
+              {resumo?.numero_notas_total ?? 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+              {resumo ? `Total anual: ${formatCurrency(resumo.total_comprado_ano)}` : 'R$ 0,00'}
+            </Typography>
+          </SentinelCard>
         </Grid>
 
         {/* 4. Fornecedor Principal */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{
-              borderRadius: 3,
-              p: 1,
-              borderLeft: '5px solid #9c27b0',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-                  Fornecedor Principal
+          <SentinelCard dense sx={{ height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.6875rem',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Fornecedor Principal
+              </Typography>
+              <Store sx={{ fontSize: 18, color: sentinelTokens.colors.master.accent }} />
+            </Box>
+            {resumo?.fornecedor_principal ? (
+              <>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    color: 'text.primary',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: '1.45rem',
+                    mb: 0.5,
+                  }}
+                  noWrap
+                >
+                  {formatCurrency(resumo.fornecedor_principal.total_comprado)}
                 </Typography>
-                <Store color="secondary" />
-              </Box>
-              {resumo?.fornecedor_principal ? (
-                <>
-                  <Typography variant="h6" fontWeight={800} noWrap title={resumo.fornecedor_principal.nome}>
-                    {resumo.fornecedor_principal.nome}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {resumo.fornecedor_principal.quantidade_notas} nota(s) • {formatCurrency(resumo.fornecedor_principal.total_comprado)}
-                  </Typography>
-                  <Typography variant="caption" color="secondary.main" fontWeight={600}>
-                    Maior volume financeiro
-                  </Typography>
-                </>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem', display: 'block' }} noWrap>
+                  {resumo.fornecedor_principal.nome} ({resumo.fornecedor_principal.quantidade_notas} NFs)
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.secondary', fontSize: '1.25rem', mb: 0.5 }}>
+                  R$ 0,00
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
                   Sem dados acumulados
                 </Typography>
-              )}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </SentinelCard>
         </Grid>
       </Grid>
 
-      {/* HISTÓRICO DE COMPRAS (TABELA & FILTROS) */}
-      <Paper elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+      {/* BARRA DE FILTROS E PESQUISA SENTINEL */}
+      <SentinelCard dense sx={{ mb: 2, p: 2 }}>
         <Box
           sx={{
-            p: 2.5,
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
             alignItems: { xs: 'stretch', sm: 'center' },
             gap: 2,
-            bgcolor: 'background.paper',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
           }}
         >
           <Box>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.9375rem' }}>
               Histórico de Compras Faturadas
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Notas fiscais de entrada importadas ({filteredCompras.length} registro(s))
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Notas fiscais de entrada importadas ({filteredCompras.length} registros)
             </Typography>
           </Box>
 
-          <TextField
-            size="small"
+          <SentinelInput
             placeholder="Buscar por fornecedor, CNPJ, nota ou chave..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -328,173 +360,174 @@ export const Compras: React.FC = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: { xs: '100%', sm: 340 } }}
+            sx={{ width: { xs: '100%', sm: 360 } }}
           />
         </Box>
+      </SentinelCard>
 
-        {loading ? (
-          <Box sx={{ p: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 2 }}>
-            <CircularProgress />
-            <Typography variant="body2" color="text.secondary">
-              Carregando compras...
-            </Typography>
+      {loading ? (
+        <SentinelCard dense sx={{ p: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 2 }}>
+          <CircularProgress size={36} />
+          <Typography variant="body2" color="text.secondary">
+            Carregando compras...
+          </Typography>
+        </SentinelCard>
+      ) : filteredCompras.length === 0 ? (
+        <SentinelCard dense sx={{ p: 6, textAlign: 'center' }}>
+          <ReceiptLong sx={{ fontSize: 60, color: 'text.disabled', mb: 1 }} />
+          <Typography variant="h6" color="text.secondary" fontWeight={600}>
+            {searchTerm ? 'Nenhuma compra encontrada para os termos informados.' : 'Nenhuma compra registrada ainda.'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Importe seus arquivos XML de NF-e para alimentar automaticamente o estoque, custos e o histórico de compras.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<AddShoppingCart />}
+              onClick={() => navigate('/compras/nova')}
+              sx={{ borderRadius: 2, fontWeight: 700 }}
+            >
+              + Lançar Compra Manual
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<CloudUpload />}
+              onClick={() => navigate('/nfe')}
+              sx={{ borderRadius: 2, fontWeight: 700 }}
+            >
+              Importar XML NF-e
+            </Button>
           </Box>
-        ) : filteredCompras.length === 0 ? (
-          <Box sx={{ p: 6, textAlign: 'center' }}>
-            <ReceiptLong sx={{ fontSize: 60, color: 'text.disabled', mb: 1 }} />
-            <Typography variant="h6" color="text.secondary" fontWeight={600}>
-              {searchTerm ? 'Nenhuma compra encontrada para os termos informados.' : 'Nenhuma compra registrada ainda.'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Importe seus arquivos XML de NF-e para alimentar automaticamente o estoque, custos e o histórico de compras.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<AddShoppingCart />}
-                onClick={() => navigate('/compras/nova')}
-                sx={{ borderRadius: 2, fontWeight: 700 }}
-              >
-                + Lançar Compra Manual
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<CloudUpload />}
-                onClick={() => navigate('/nfe')}
-                sx={{ borderRadius: 2, fontWeight: 700 }}
-              >
-                Importar XML NF-e
-              </Button>
-            </Box>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ bgcolor: (th) => th.palette.action.hover }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Fornecedor</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Nota Fiscal</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Data</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Itens</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="right">Valor Total</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">Ações</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredCompras.map((c) => (
-                  <TableRow key={c.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    {/* Fornecedor */}
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={700}>
-                        {c.fornecedor_nome}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        CNPJ: {c.fornecedor_cnpj} {c.fornecedor_uf && `(${c.fornecedor_uf})`}
-                      </Typography>
-                    </TableCell>
+        </SentinelCard>
+      ) : (
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
+              <SentinelTableRow>
+                <SentinelTableCell tabular={false}>Fornecedor</SentinelTableCell>
+                <SentinelTableCell tabular={false}>Documento / NF</SentinelTableCell>
+                <SentinelTableCell tabular={false}>Data</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false}>Itens</SentinelTableCell>
+                <SentinelTableCell align="right" tabular={false}>Valor Total</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false}>Ações</SentinelTableCell>
+              </SentinelTableRow>
+            </SentinelTableHead>
+            <TableBody>
+              {filteredCompras.map((c) => (
+                <SentinelTableRow key={c.id}>
+                  {/* Fornecedor */}
+                  <SentinelTableCell tabular={false}>
+                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
+                      {c.fornecedor_nome}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+                      CNPJ: {c.fornecedor_cnpj} {c.fornecedor_uf && `(${c.fornecedor_uf})`}
+                    </Typography>
+                  </SentinelTableCell>
 
-                    {/* Nota Fiscal */}
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="body2" fontWeight={700}>
-                          {c.origem === 'MANUAL' ? 'Doc' : 'Nº'} {c.numero_nota}
-                        </Typography>
-                        <Chip
-                          label={c.origem === 'MANUAL' ? 'Manual' : 'NF-e'}
-                          size="small"
-                          color={c.origem === 'MANUAL' ? 'secondary' : 'primary'}
-                          sx={{ fontSize: '0.68rem', height: 20, fontWeight: 700 }}
-                        />
-                        {c.anexo_url && (
-                          <Tooltip title={`Comprovante anexado (${c.anexo_nome || 'Arquivo'})`}>
-                            <Chip
-                              icon={<AttachFile sx={{ fontSize: '0.85rem !important' }} />}
-                              label="Anexo"
-                              size="small"
-                              color="success"
-                              variant="outlined"
-                              component="a"
-                              href={c.anexo_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              clickable
-                              sx={{ fontSize: '0.68rem', height: 20 }}
-                            />
-                          </Tooltip>
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            maxWidth: 160,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontFamily: 'monospace',
-                          }}
-                        >
-                          {c.chave_acesso}
-                        </Typography>
-                        <Tooltip title={copiedKey === c.chave_acesso ? 'Copiado!' : 'Copiar Chave'}>
-                          <IconButton size="small" onClick={() => handleCopyChave(c.chave_acesso)}>
-                            {copiedKey === c.chave_acesso ? <CheckCircle fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-
-                    {/* Data */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDate(c.data_importacao)}
+                  {/* Nota Fiscal */}
+                  <SentinelTableCell tabular={false}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
+                        {c.origem === 'MANUAL' ? 'Doc' : 'Nº'} {c.numero_nota}
                       </Typography>
-                      {c.data_emissao && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Emissão: {c.data_emissao.split('T')[0]}
-                        </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Quantidade de Itens */}
-                    <TableCell align="center">
-                      <Chip
-                        label={`${c.total_itens} item(ns)`}
+                      <SentinelBadge
+                        sentinelVariant={c.origem === 'MANUAL' ? 'warning' : 'info'}
                         size="small"
-                        color="default"
-                        sx={{ fontWeight: 600 }}
+                        label={c.origem === 'MANUAL' ? 'MANUAL' : 'NF-E'}
                       />
-                    </TableCell>
-
-                    {/* Valor Total */}
-                    <TableCell align="right">
-                      <Typography variant="body1" fontWeight={800} color="success.main">
-                        {formatCurrency(c.valor_total)}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Ações */}
-                    <TableCell align="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Visibility />}
-                        onClick={() => navigate(`/compras/${c.id}`)}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+                      {c.anexo_url && (
+                        <Tooltip title={`Comprovante anexado (${c.anexo_nome || 'Arquivo'})`}>
+                          <Box component="span">
+                            <SentinelBadge
+                              sentinelVariant="active"
+                              size="small"
+                              label="ANEXO"
+                            />
+                          </Box>
+                        </Tooltip>
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          maxWidth: 160,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontFamily: 'monospace',
+                          fontSize: '0.7rem',
+                          color: 'text.secondary',
+                        }}
                       >
-                        Detalhes
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+                        {c.chave_acesso}
+                      </Typography>
+                      <Tooltip title={copiedKey === c.chave_acesso ? 'Copiado!' : 'Copiar Chave'}>
+                        <IconButton size="small" onClick={() => handleCopyChave(c.chave_acesso)} sx={{ p: 0.2 }}>
+                          {copiedKey === c.chave_acesso ? <CheckCircle sx={{ fontSize: 14 }} color="success" /> : <ContentCopy sx={{ fontSize: 14 }} />}
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </SentinelTableCell>
+
+                  {/* Data */}
+                  <SentinelTableCell tabular={false}>
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                      {formatDate(c.data_importacao)}
+                    </Typography>
+                    {c.data_emissao && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem', display: 'block' }}>
+                        Emissão: {c.data_emissao.split('T')[0]}
+                      </Typography>
+                    )}
+                  </SentinelTableCell>
+
+                  {/* Quantidade de Itens */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    <SentinelBadge
+                      sentinelVariant="default"
+                      size="small"
+                      label={`${c.total_itens} ITENS`}
+                    />
+                  </SentinelTableCell>
+
+                  {/* Valor Total */}
+                  <SentinelTableCell align="right" tabular={true}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 800,
+                        color: sentinelTokens.colors.owner.accent,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      {formatCurrency(c.valor_total)}
+                    </Typography>
+                  </SentinelTableCell>
+
+                  {/* Ações */}
+                  <SentinelTableCell align="center" tabular={false}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Visibility sx={{ fontSize: 14 }} />}
+                      onClick={() => navigate(`/compras/${c.id}`)}
+                      sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600, height: 28, fontSize: '0.75rem' }}
+                    >
+                      Detalhes
+                    </Button>
+                  </SentinelTableCell>
+                </SentinelTableRow>
+              ))}
+            </TableBody>
+          </SentinelTable>
+        </SentinelTableContainer>
+      )}
     </Box>
   );
 };

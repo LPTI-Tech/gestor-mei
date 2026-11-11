@@ -1,15 +1,22 @@
 {
   "mcpServers": {
+    "playwright": {
+      "command": "cmd.exe",
+      "args": ["/c", "npx", "-y", "@playwright/mcp@latest"],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    },
+    "chrome-devtools": {
+      "command": "cmd.exe",
+      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--headless=false"]
+    },
     "github": {
       "command": "cmd.exe",
       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "COLOQUE_SEU_GITHUB_PAT_AQUI"
       }
-    },
-    "puppeteer-browser": {
-      "command": "cmd.exe",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-puppeteer"]
     }
   }
 }

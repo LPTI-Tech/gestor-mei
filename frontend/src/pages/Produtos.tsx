@@ -57,6 +57,16 @@ import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 const CATEGORIAS_SUGERIDAS = [
   // Alimentação & Comércio
@@ -368,7 +378,7 @@ export const Produtos: React.FC = () => {
       >
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={5}>
-            <TextField
+            <SentinelInput
               fullWidth
               size="small"
               placeholder="Buscar por nome ou categoria..."
@@ -380,11 +390,6 @@ export const Produtos: React.FC = () => {
                     <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
                   </InputAdornment>
                 ),
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
-                  '& fieldset': { borderColor: 'divider' },
-                },
               }}
             />
           </Grid>
@@ -555,116 +560,19 @@ export const Produtos: React.FC = () => {
           </Button>
         </Paper>
       ) : (
-        <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-          }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow
-                sx={{
-                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC'),
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Item / Mercadoria
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Classificação Fiscal
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Categoria
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Preço de Venda
-                </TableCell>
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Estoque Atual
-                </TableCell>
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Ações
-                </TableCell>
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
+              <TableRow>
+                <TableCell>Item / Mercadoria</TableCell>
+                <TableCell>Classificação Fiscal</TableCell>
+                <TableCell>Categoria</TableCell>
+                <TableCell align="right">Preço de Venda</TableCell>
+                <TableCell align="center">Estoque Atual</TableCell>
+                <TableCell align="center">Status</TableCell>
+                <TableCell align="right">Ações</TableCell>
               </TableRow>
-            </TableHead>
+            </SentinelTableHead>
             <TableBody>
               {filteredProdutos.map((prod) => {
                 const isServico = prod.tipo === 'SERVICO';
@@ -675,24 +583,14 @@ export const Produtos: React.FC = () => {
                     : null;
 
                 return (
-                  <TableRow
-                    key={prod.id}
-                    hover
-                    sx={{
-                      '&:hover': {
-                        bgcolor: (theme) =>
-                          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#FBFDFF',
-                      },
-                      transition: 'background-color 0.15s ease',
-                    }}
-                  >
+                  <SentinelTableRow key={prod.id}>
                     {/* Item / Mercadoria */}
-                    <TableCell sx={{ py: 1.5 }}>
+                    <SentinelTableCell tabular={false}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
                           sx={{
-                            width: 36,
-                            height: 36,
+                            width: 34,
+                            height: 34,
                             borderRadius: 2,
                             bgcolor: isServico
                               ? 'rgba(123, 31, 162, 0.1)'
@@ -700,67 +598,43 @@ export const Produtos: React.FC = () => {
                             color: isServico ? '#7B1FA2' : 'primary.main',
                           }}
                         >
-                          {isServico ? <Build sx={{ fontSize: 18 }} /> : <ShoppingBag sx={{ fontSize: 18 }} />}
+                          {isServico ? <Build sx={{ fontSize: 16 }} /> : <ShoppingBag sx={{ fontSize: 16 }} />}
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary' }}>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', fontSize: '0.8125rem' }}>
                             {prod.nome}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                             Ref #{prod.id}
                           </Typography>
                         </Box>
                       </Box>
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Classificação Fiscal */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        icon={
-                          isServico ? (
-                            <Build sx={{ '&&': { fontSize: 13, color: '#7B1FA2' } }} />
-                          ) : (
-                            <ShoppingBag sx={{ '&&': { fontSize: 13, color: '#1976D2' } }} />
-                          )
-                        }
-                        label={isServico ? 'Serviço (ISS)' : 'Produto (Comércio)'}
+                    <SentinelTableCell tabular={false}>
+                      <SentinelBadge
+                        sentinelVariant={isServico ? 'consultor' : 'info'}
                         size="small"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          bgcolor: isServico ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
-                          color: isServico ? '#7B1FA2' : '#1976D2',
-                          border: '1px solid',
-                          borderColor: isServico ? 'rgba(123, 31, 162, 0.2)' : 'rgba(25, 118, 210, 0.2)',
-                          height: 24,
-                        }}
+                        label={isServico ? 'Serviço (ISS)' : 'Produto (Comércio)'}
                       />
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Categoria */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        label={prod.categoria}
+                    <SentinelTableCell tabular={false}>
+                      <SentinelBadge
+                        sentinelVariant="default"
                         size="small"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                          color: 'text.primary',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          height: 24,
-                        }}
+                        label={prod.categoria}
                       />
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Preço de Venda */}
-                    <TableCell align="right" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="right" tabular={true}>
                       <Typography
                         variant="body2"
                         fontWeight={700}
-                        sx={{ fontFeatureSettings: '"tnum"', color: '#1B5E20' }}
+                        sx={{ fontFeatureSettings: '"tnum"', color: '#107C41', fontSize: '0.8125rem' }}
                       >
                         {formatCurrency(prod.preco_venda)}
                       </Typography>
@@ -777,73 +651,38 @@ export const Produtos: React.FC = () => {
                           Custo {formatCurrency(prod.custo_unitario || 0)} • Margem {margem}%
                         </Typography>
                       )}
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Estoque */}
-                    <TableCell align="center" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="center" tabular={false}>
                       {!isServico ? (
-                        <Chip
-                          icon={
-                            prod.estoque_baixo ? (
-                              <WarningAmber sx={{ '&&': { fontSize: 13, color: '#D32F2F' } }} />
-                            ) : undefined
-                          }
-                          label={`${(prod.quantidade_estoque || 0).toFixed(0)} un`}
+                        <SentinelBadge
+                          sentinelVariant={prod.estoque_baixo ? 'error' : 'active'}
                           size="small"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            fontFeatureSettings: '"tnum"',
-                            bgcolor: prod.estoque_baixo
-                              ? 'rgba(211, 47, 47, 0.08)'
-                              : 'rgba(46, 125, 50, 0.08)',
-                            color: prod.estoque_baixo ? '#D32F2F' : '#2E7D32',
-                            border: '1px solid',
-                            borderColor: prod.estoque_baixo
-                              ? 'rgba(211, 47, 47, 0.22)'
-                              : 'rgba(46, 125, 50, 0.22)',
-                            height: 24,
-                          }}
+                          label={`${(prod.quantidade_estoque || 0).toFixed(0)} UN`}
                         />
                       ) : (
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
                           Ilimitado
                         </Typography>
                       )}
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Status */}
-                    <TableCell align="center" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="center" tabular={false}>
                       <Tooltip title="Clique para alternar status do item">
-                        <Chip
-                          icon={
-                            prod.ativo ? (
-                              <CheckCircle sx={{ '&&': { fontSize: 14, color: '#2E7D32' } }} />
-                            ) : (
-                              <Cancel sx={{ '&&': { fontSize: 14, color: '#64748B' } }} />
-                            )
-                          }
-                          label={prod.ativo ? 'Disponível' : 'Inativo'}
-                          size="small"
-                          clickable
-                          onClick={() => handleToggleAtivo(prod)}
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            bgcolor: prod.ativo ? 'rgba(46, 125, 50, 0.08)' : 'rgba(100, 116, 139, 0.08)',
-                            color: prod.ativo ? '#2E7D32' : '#64748B',
-                            border: '1px solid',
-                            borderColor: prod.ativo
-                              ? 'rgba(46, 125, 50, 0.22)'
-                              : 'rgba(100, 116, 139, 0.22)',
-                            height: 24,
-                          }}
-                        />
+                        <Box component="span" onClick={() => handleToggleAtivo(prod)} sx={{ cursor: 'pointer' }}>
+                          <SentinelBadge
+                            sentinelVariant={prod.ativo ? 'active' : 'default'}
+                            size="small"
+                            label={prod.ativo ? 'DISPONÍVEL' : 'INATIVO'}
+                          />
+                        </Box>
                       </Tooltip>
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Ações */}
-                    <TableCell align="right" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="right" tabular={false}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
                         <Tooltip title="Editar Item">
                           <IconButton
@@ -874,13 +713,13 @@ export const Produtos: React.FC = () => {
                           </Tooltip>
                         )}
                       </Box>
-                    </TableCell>
-                  </TableRow>
+                    </SentinelTableCell>
+                  </SentinelTableRow>
                 );
               })}
             </TableBody>
-          </Table>
-        </TableContainer>
+          </SentinelTable>
+        </SentinelTableContainer>
       )}
 
       {/* Modal Add / Edit (Organizado em Seções Executivas) */}

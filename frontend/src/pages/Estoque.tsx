@@ -56,6 +56,16 @@ import {
 import { StatCard } from '../components/StatCard';
 import { formatCurrency } from '../services/exportUtils';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 export const Estoque: React.FC = () => {
   const { empresa } = useAuth();
@@ -590,7 +600,7 @@ export const Estoque: React.FC = () => {
                   gap: 2,
                 }}
               >
-                <TextField
+                <SentinelInput
                   size="small"
                   placeholder="Buscar por nome do produto ou categoria..."
                   value={searchTerm}
@@ -601,7 +611,6 @@ export const Estoque: React.FC = () => {
                         <Search fontSize="small" sx={{ color: 'text.secondary' }} />
                       </InputAdornment>
                     ),
-                    sx: { borderRadius: 2, bgcolor: 'background.paper', fontSize: '0.85rem' },
                   }}
                   sx={{ width: { xs: '100%', sm: 340 } }}
                 />
@@ -662,236 +671,87 @@ export const Estoque: React.FC = () => {
                   Nenhum produto encontrado com os filtros aplicados.
                 </Typography>
               ) : (
-                <TableContainer
-                  sx={{
-                    borderRadius: 2.5,
-                    border: '1px solid',
-                    borderColor: (theme) =>
-                      theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(7, 25, 51, 0.06)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow
-                        sx={{
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
-                        }}
-                      >
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Produto
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Categoria
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Custo Un.
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Preço Venda
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Estoque Atual
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Mínimo
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Status
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Ações Rápidas
-                        </TableCell>
+                <SentinelTableContainer>
+                  <SentinelTable>
+                    <SentinelTableHead>
+                      <TableRow>
+                        <TableCell>Produto</TableCell>
+                        <TableCell>Categoria</TableCell>
+                        <TableCell align="right">Custo Un.</TableCell>
+                        <TableCell align="right">Preço Venda</TableCell>
+                        <TableCell align="center">Estoque Atual</TableCell>
+                        <TableCell align="center">Mínimo</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações Rápidas</TableCell>
                       </TableRow>
-                    </TableHead>
+                    </SentinelTableHead>
                     <TableBody>
                       {filteredItems.map((item) => (
-                        <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{item.nome}</TableCell>
-                          <TableCell>
-                            <Chip
+                        <SentinelTableRow key={item.id}>
+                          <SentinelTableCell tabular={false}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
+                              {item.nome}
+                            </Typography>
+                          </SentinelTableCell>
+                          <SentinelTableCell tabular={false}>
+                            <SentinelBadge
+                              sentinelVariant="default"
+                              size="small"
                               label={item.categoria}
-                              size="small"
-                              sx={{
-                                fontWeight: 600,
-                                fontSize: '0.72rem',
-                                borderRadius: 1.5,
-                                bgcolor: (theme) =>
-                                  theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(7, 25, 51, 0.04)',
-                                color: 'text.secondary',
-                              }}
                             />
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontFeatureSettings: '"tnum"', fontWeight: 600, fontSize: '0.82rem' }}>
-                            {formatCurrency(item.custo_unitario)}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontFeatureSettings: '"tnum"', fontWeight: 700, fontSize: '0.85rem', color: 'text.primary' }}>
-                            {formatCurrency(item.preco_venda)}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
+                          </SentinelTableCell>
+                          <SentinelTableCell align="right" tabular={true}>
+                            <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
+                              {formatCurrency(item.custo_unitario)}
+                            </Typography>
+                          </SentinelTableCell>
+                          <SentinelTableCell align="right" tabular={true}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
+                              {formatCurrency(item.preco_venda)}
+                            </Typography>
+                          </SentinelTableCell>
+                          <SentinelTableCell align="center" tabular={true}>
+                            <SentinelBadge
+                              sentinelVariant={
+                                item.quantidade_estoque <= 0
+                                  ? 'error'
+                                  : item.estoque_baixo
+                                  ? 'warning'
+                                  : 'active'
+                              }
                               size="small"
-                              label={`${item.quantidade_estoque.toFixed(item.quantidade_estoque % 1 === 0 ? 0 : 2)} un`}
-                              sx={{
-                                fontWeight: 800,
-                                fontFeatureSettings: '"tnum"',
-                                fontSize: '0.75rem',
-                                height: 24,
-                                borderRadius: 1.5,
-                                bgcolor:
-                                  item.quantidade_estoque <= 0
-                                    ? 'rgba(211, 47, 47, 0.12)'
-                                    : item.estoque_baixo
-                                    ? 'rgba(237, 108, 2, 0.12)'
-                                    : 'rgba(46, 125, 50, 0.12)',
-                                color:
-                                  item.quantidade_estoque <= 0
-                                    ? '#D32F2F'
-                                    : item.estoque_baixo
-                                    ? '#ED6C02'
-                                    : '#2E7D32',
-                                border: '1px solid',
-                                borderColor:
-                                  item.quantidade_estoque <= 0
-                                    ? 'rgba(211, 47, 47, 0.3)'
-                                    : item.estoque_baixo
-                                    ? 'rgba(237, 108, 2, 0.3)'
-                                    : 'rgba(46, 125, 50, 0.3)',
-                              }}
+                              label={`${item.quantidade_estoque.toFixed(item.quantidade_estoque % 1 === 0 ? 0 : 2)} UN`}
                             />
-                          </TableCell>
-                          <TableCell align="center" sx={{ color: 'text.secondary', fontFeatureSettings: '"tnum"', fontWeight: 600, fontSize: '0.82rem' }}>
-                            {item.estoque_minimo.toFixed(item.estoque_minimo % 1 === 0 ? 0 : 2)} un
-                          </TableCell>
-                          <TableCell align="center">
-                            {item.estoque_baixo ? (
-                              <Chip
-                                label="Estoque Baixo"
-                                size="small"
-                                icon={<WarningAmber sx={{ fontSize: '0.9rem !important' }} />}
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.7rem',
-                                  height: 24,
-                                  borderRadius: 1.5,
-                                  bgcolor: 'rgba(211, 47, 47, 0.08)',
-                                  color: '#D32F2F',
-                                  border: '1px solid rgba(211, 47, 47, 0.25)',
-                                }}
-                              />
-                            ) : (
-                              <Chip
-                                label="Normal"
-                                size="small"
-                                icon={<CheckCircle sx={{ fontSize: '0.9rem !important' }} />}
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.7rem',
-                                  height: 24,
-                                  borderRadius: 1.5,
-                                  bgcolor: 'rgba(46, 125, 50, 0.08)',
-                                  color: '#2E7D32',
-                                  border: '1px solid rgba(46, 125, 50, 0.25)',
-                                }}
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell align="center">
+                          </SentinelTableCell>
+                          <SentinelTableCell align="center" tabular={true}>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
+                              {item.estoque_minimo.toFixed(item.estoque_minimo % 1 === 0 ? 0 : 2)} un
+                            </Typography>
+                          </SentinelTableCell>
+                          <SentinelTableCell align="center" tabular={false}>
+                            <SentinelBadge
+                              sentinelVariant={item.estoque_baixo ? 'error' : 'active'}
+                              size="small"
+                              label={item.estoque_baixo ? 'ESTOQUE BAIXO' : 'NORMAL'}
+                            />
+                          </SentinelTableCell>
+                          <SentinelTableCell align="center" tabular={false}>
                             <Box sx={{ display: 'inline-flex', gap: 0.8 }}>
                               <Tooltip title="Entrada / Reposição de Mercadoria">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleOpenEntrada(item.id)}
                                   sx={{
-                                    width: 32,
-                                    height: 32,
+                                    width: 30,
+                                    height: 30,
                                     borderRadius: 1.5,
-                                    bgcolor: 'rgba(46, 125, 50, 0.08)',
-                                    color: '#2E7D32',
-                                    border: '1px solid rgba(46, 125, 50, 0.15)',
-                                    '&:hover': { bgcolor: 'rgba(46, 125, 50, 0.16)' },
+                                    bgcolor: 'rgba(16, 124, 65, 0.08)',
+                                    color: '#107C41',
+                                    border: '1px solid rgba(16, 124, 65, 0.2)',
+                                    '&:hover': { bgcolor: 'rgba(16, 124, 65, 0.16)' },
                                   }}
                                 >
-                                  <AddCircleOutline sx={{ fontSize: '1.15rem' }} />
+                                  <AddCircleOutline sx={{ fontSize: '1rem' }} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Baixa Manual / Perda / Consumo">
@@ -899,16 +759,16 @@ export const Estoque: React.FC = () => {
                                   size="small"
                                   onClick={() => handleOpenSaida(item.id)}
                                   sx={{
-                                    width: 32,
-                                    height: 32,
+                                    width: 30,
+                                    height: 30,
                                     borderRadius: 1.5,
                                     bgcolor: 'rgba(211, 47, 47, 0.08)',
                                     color: '#D32F2F',
-                                    border: '1px solid rgba(211, 47, 47, 0.15)',
+                                    border: '1px solid rgba(211, 47, 47, 0.2)',
                                     '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.16)' },
                                   }}
                                 >
-                                  <RemoveCircleOutline sx={{ fontSize: '1.15rem' }} />
+                                  <RemoveCircleOutline sx={{ fontSize: '1rem' }} />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Ajuste de Inventário Físico">
@@ -916,25 +776,25 @@ export const Estoque: React.FC = () => {
                                   size="small"
                                   onClick={() => handleOpenAjuste(item.id)}
                                   sx={{
-                                    width: 32,
-                                    height: 32,
+                                    width: 30,
+                                    height: 30,
                                     borderRadius: 1.5,
                                     bgcolor: 'rgba(25, 118, 210, 0.08)',
                                     color: '#1976D2',
-                                    border: '1px solid rgba(25, 118, 210, 0.15)',
+                                    border: '1px solid rgba(25, 118, 210, 0.2)',
                                     '&:hover': { bgcolor: 'rgba(25, 118, 210, 0.16)' },
                                   }}
                                 >
-                                  <Tune sx={{ fontSize: '1.15rem' }} />
+                                  <Tune sx={{ fontSize: '1rem' }} />
                                 </IconButton>
                               </Tooltip>
                             </Box>
-                          </TableCell>
-                        </TableRow>
+                          </SentinelTableCell>
+                        </SentinelTableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </TableContainer>
+                  </SentinelTable>
+                </SentinelTableContainer>
               )}
             </Box>
           )}
@@ -987,172 +847,65 @@ export const Estoque: React.FC = () => {
                   Nenhuma movimentação de estoque registrada até o momento.
                 </Typography>
               ) : (
-                <TableContainer
-                  sx={{
-                    borderRadius: 2.5,
-                    border: '1px solid',
-                    borderColor: (theme) =>
-                      theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(7, 25, 51, 0.06)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow
-                        sx={{
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
-                        }}
-                      >
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Data / Hora
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Produto
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Tipo
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Quantidade
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Motivo
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Usuário
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: 'text.secondary',
-                            py: 1.8,
-                          }}
-                        >
-                          Observações
-                        </TableCell>
+                <SentinelTableContainer>
+                  <SentinelTable>
+                    <SentinelTableHead>
+                      <TableRow>
+                        <TableCell>Data / Hora</TableCell>
+                        <TableCell>Produto</TableCell>
+                        <TableCell align="center">Tipo</TableCell>
+                        <TableCell align="right">Quantidade</TableCell>
+                        <TableCell>Motivo</TableCell>
+                        <TableCell>Usuário</TableCell>
+                        <TableCell>Observações</TableCell>
                       </TableRow>
-                    </TableHead>
+                    </SentinelTableHead>
                     <TableBody>
                       {filteredMovs.map((mov) => {
                         const isEntrada = mov.tipo === 'ENTRADA';
                         const isSaida = mov.tipo === 'SAIDA';
                         return (
-                          <TableRow key={mov.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                            <TableCell sx={{ whiteSpace: 'nowrap', fontFeatureSettings: '"tnum"', fontSize: '0.8rem', color: 'text.secondary' }}>
+                          <SentinelTableRow key={mov.id}>
+                            <SentinelTableCell tabular={true} sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem', color: 'text.secondary' }}>
                               {new Date(mov.data_movimentacao).toLocaleString('pt-BR')}
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                            </SentinelTableCell>
+                            <SentinelTableCell tabular={false} sx={{ fontWeight: 700, fontSize: '0.8125rem' }}>
                               {mov.produto_nome || `Produto #${mov.produto_id}`}
-                            </TableCell>
-                            <TableCell align="center">
-                              <Chip
-                                label={mov.tipo}
+                            </SentinelTableCell>
+                            <SentinelTableCell align="center" tabular={false}>
+                              <SentinelBadge
+                                sentinelVariant={isEntrada ? 'active' : isSaida ? 'error' : 'info'}
                                 size="small"
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.7rem',
-                                  height: 22,
-                                  borderRadius: 1.5,
-                                  bgcolor: isEntrada
-                                    ? 'rgba(46, 125, 50, 0.1)'
-                                    : isSaida
-                                    ? 'rgba(211, 47, 47, 0.1)'
-                                    : 'rgba(123, 31, 162, 0.1)',
-                                  color: isEntrada
-                                    ? '#2E7D32'
-                                    : isSaida
-                                    ? '#D32F2F'
-                                    : '#7B1FA2',
-                                  border: '1px solid',
-                                  borderColor: isEntrada
-                                    ? 'rgba(46, 125, 50, 0.25)'
-                                    : isSaida
-                                    ? 'rgba(211, 47, 47, 0.25)'
-                                    : 'rgba(123, 31, 162, 0.25)',
-                                }}
+                                label={mov.tipo}
                               />
-                            </TableCell>
-                            <TableCell
+                            </SentinelTableCell>
+                            <SentinelTableCell
                               align="right"
+                              tabular={true}
                               sx={{
                                 fontWeight: 800,
-                                fontFeatureSettings: '"tnum"',
-                                fontSize: '0.85rem',
-                                color: isEntrada ? '#1B5E20' : isSaida ? '#B71C1C' : 'text.primary',
+                                fontSize: '0.8125rem',
+                                color: isEntrada ? '#107C41' : isSaida ? '#C5221F' : 'text.primary',
                               }}
                             >
                               {isEntrada ? '+' : isSaida ? '-' : '±'}
                               {mov.quantidade.toFixed(mov.quantidade % 1 === 0 ? 0 : 2)}
-                            </TableCell>
-                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 500 }}>{mov.motivo || '—'}</TableCell>
-                            <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>{mov.usuario_nome || 'Sistema'}</TableCell>
-                            <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary' }}>{mov.observacao || '—'}</TableCell>
-                          </TableRow>
+                            </SentinelTableCell>
+                            <SentinelTableCell tabular={false} sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                              {mov.motivo || '—'}
+                            </SentinelTableCell>
+                            <SentinelTableCell tabular={false} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                              {mov.usuario_nome || 'Sistema'}
+                            </SentinelTableCell>
+                            <SentinelTableCell tabular={false} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                              {mov.observacao || '—'}
+                            </SentinelTableCell>
+                          </SentinelTableRow>
                         );
                       })}
                     </TableBody>
-                  </Table>
-                </TableContainer>
+                  </SentinelTable>
+                </SentinelTableContainer>
               )}
             </Box>
           )}

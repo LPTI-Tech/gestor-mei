@@ -46,6 +46,16 @@ import {
 import api from '../services/api';
 import { Produto, Fornecedor } from '../types';
 import { formatCurrency } from '../services/exportUtils';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  sentinelTokens,
+} from '../design-system';
 
 interface ItemCompraForm {
   produto_id: number | null;
@@ -423,386 +433,414 @@ export const NovaCompraManual: React.FC = () => {
       )}
 
       {/* SEÇÃO 1: DADOS GERAIS DO FORNECEDOR E DOCUMENTO */}
-      <Card elevation={2} sx={{ borderRadius: 3, mb: 3 }}>
-        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Store color="action" /> Dados do Fornecedor e Documento
-          </Typography>
+      <SentinelCard dense sx={{ p: { xs: 2, md: 2.5 }, mb: 3 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.9375rem' }}>
+          <Store sx={{ fontSize: 20, color: sentinelTokens.colors.master.accent }} /> Dados do Fornecedor e Documento
+        </Typography>
 
-          <Grid container spacing={2}>
-            {/* Fornecedor com Autocomplete */}
-            <Grid item xs={12} sm={6} md={4}>
-              <Autocomplete
-                freeSolo
-                options={fornecedores}
-                getOptionLabel={(option) => (typeof option === 'string' ? option : option.nome)}
-                value={fornecedorNome}
-                onInputChange={(_, newInputValue) => setFornecedorNome(newInputValue)}
-                onChange={(_, newValue) => handleSelecionarFornecedor(newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Nome do Fornecedor *"
-                    placeholder="Selecione ou digite um novo..."
-                    helperText="Se não existir, será cadastrado automaticamente"
-                    fullWidth
-                    size="small"
-                  />
-                )}
-              />
-            </Grid>
-
-            {/* CNPJ / CPF */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="CNPJ ou CPF (Opcional)"
-                placeholder="00.000.000/0000-00"
-                value={fornecedorCnpjCpf}
-                onChange={(e) => setFornecedorCnpjCpf(e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-
-            {/* Telefone / Contato */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Telefone do Fornecedor"
-                placeholder="(00) 00000-0000"
-                value={fornecedorTelefone}
-                onChange={(e) => setFornecedorTelefone(e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-
-            {/* UF */}
-            <Grid item xs={6} sm={3} md={2}>
-              <TextField
-                label="UF"
-                placeholder="SP"
-                inputProps={{ maxLength: 2 }}
-                value={fornecedorUf}
-                onChange={(e) => setFornecedorUf(e.target.value.toUpperCase())}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-
-            {/* Nº do Documento / Cupom / Recibo */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="Nº Recibo / Cupom (Opcional)"
-                placeholder="Ex: REC-1029"
-                value={numeroDocumento}
-                onChange={(e) => setNumeroDocumento(e.target.value)}
-                fullWidth
-                size="small"
-                helperText="Se vazio, será gerado automaticamente"
-              />
-            </Grid>
-
-            {/* Data da Compra */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                type="date"
-                label="Data da Compra *"
-                value={dataEmissao}
-                onChange={(e) => setDataEmissao(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-
-            {/* Forma de Pagamento */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                select
-                label="Forma de Pagamento"
-                value={formaPagamento}
-                onChange={(e) => setFormaPagamento(e.target.value)}
-                fullWidth
-                size="small"
-              >
-                <MenuItem value="PIX">PIX</MenuItem>
-                <MenuItem value="DINHEIRO">Dinheiro</MenuItem>
-                <MenuItem value="BOLETO">Boleto Bancário</MenuItem>
-                <MenuItem value="CARTAO_DEBITO">Cartão de Débito</MenuItem>
-                <MenuItem value="CARTAO_CREDITO">Cartão de Crédito</MenuItem>
-                <MenuItem value="OUTRO">Outro / A Prazo</MenuItem>
-              </TextField>
-            </Grid>
-
-            {/* Upload de Comprovante */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ border: '1px dashed #bbb', borderRadius: 2, p: 1, textAlign: 'center' }}>
-                {anexoUrl ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Chip
-                      icon={<AttachFile />}
-                      label={`${anexoNome || 'Comprovante'} (${anexoTipo || 'DOC'})`}
-                      color="success"
-                      size="small"
-                      sx={{ maxWidth: '85%' }}
-                    />
-                    <IconButton size="small" color="error" onClick={handleRemoverAnexo}>
-                      <Close fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ) : (
-                  <Button
-                    component="label"
-                    variant="outlined"
-                    startIcon={uploadingAnexo ? <CircularProgress size={16} /> : <CloudUpload />}
-                    size="small"
-                    fullWidth
-                    disabled={uploadingAnexo}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    {uploadingAnexo ? 'Enviando...' : 'Anexar Comprovante (PDF/Foto)'}
-                    <input
-                      type="file"
-                      hidden
-                      accept=".jpg,.jpeg,.png,.webp,.pdf"
-                      onChange={handleUploadArquivo}
-                    />
-                  </Button>
-                )}
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, fontSize: '0.65rem' }}>
-                  Aceita JPG, PNG, WEBP e PDF (máx 10MB)
-                </Typography>
-              </Box>
-            </Grid>
-
-            {/* Observações */}
-            <Grid item xs={12}>
-              <TextField
-                label="Observações Adicionais"
-                placeholder="Ex: Insumos para estoque de fim de semana, pago à vista com desconto..."
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                fullWidth
-                multiline
-                rows={2}
-                size="small"
-              />
-            </Grid>
+        <Grid container spacing={2}>
+          {/* Fornecedor com Autocomplete */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Autocomplete
+              freeSolo
+              options={fornecedores}
+              getOptionLabel={(option) => (typeof option === 'string' ? option : option.nome)}
+              value={fornecedorNome}
+              onInputChange={(_, newInputValue) => setFornecedorNome(newInputValue)}
+              onChange={(_, newValue) => handleSelecionarFornecedor(newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Nome do Fornecedor *"
+                  placeholder="Selecione ou digite um novo..."
+                  helperText="Se não existir, será cadastrado automaticamente"
+                  fullWidth
+                  size="small"
+                />
+              )}
+            />
           </Grid>
-        </CardContent>
-      </Card>
+
+          {/* CNPJ / CPF */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="CNPJ ou CPF (Opcional)"
+              placeholder="00.000.000/0000-00"
+              value={fornecedorCnpjCpf}
+              onChange={(e) => setFornecedorCnpjCpf(e.target.value)}
+              fullWidth
+              size="small"
+            />
+          </Grid>
+
+          {/* Telefone / Contato */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Telefone do Fornecedor"
+              placeholder="(00) 00000-0000"
+              value={fornecedorTelefone}
+              onChange={(e) => setFornecedorTelefone(e.target.value)}
+              fullWidth
+              size="small"
+            />
+          </Grid>
+
+          {/* UF */}
+          <Grid item xs={6} sm={3} md={2}>
+            <TextField
+              label="UF"
+              placeholder="SP"
+              inputProps={{ maxLength: 2 }}
+              value={fornecedorUf}
+              onChange={(e) => setFornecedorUf(e.target.value.toUpperCase())}
+              fullWidth
+              size="small"
+            />
+          </Grid>
+
+          {/* Nº do Documento / Cupom / Recibo */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="Nº Recibo / Cupom (Opcional)"
+              placeholder="Ex: REC-1029"
+              value={numeroDocumento}
+              onChange={(e) => setNumeroDocumento(e.target.value)}
+              fullWidth
+              size="small"
+              helperText="Se vazio, será gerado automaticamente"
+            />
+          </Grid>
+
+          {/* Data da Compra */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              type="date"
+              label="Data da Compra *"
+              value={dataEmissao}
+              onChange={(e) => setDataEmissao(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              size="small"
+            />
+          </Grid>
+
+          {/* Forma de Pagamento */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              select
+              label="Forma de Pagamento"
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+              fullWidth
+              size="small"
+            >
+              <MenuItem value="PIX">PIX</MenuItem>
+              <MenuItem value="DINHEIRO">Dinheiro</MenuItem>
+              <MenuItem value="BOLETO">Boleto Bancário</MenuItem>
+              <MenuItem value="CARTAO_DEBITO">Cartão de Débito</MenuItem>
+              <MenuItem value="CARTAO_CREDITO">Cartão de Crédito</MenuItem>
+              <MenuItem value="OUTRO">Outro / A Prazo</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Upload de Comprovante */}
+          <Grid item xs={12} sm={6} md={3}>
+            <Box sx={{ border: '1px dashed #bbb', borderRadius: 2, p: 1, textAlign: 'center' }}>
+              {anexoUrl ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Chip
+                    icon={<AttachFile />}
+                    label={`${anexoNome || 'Comprovante'} (${anexoTipo || 'DOC'})`}
+                    color="success"
+                    size="small"
+                    sx={{ maxWidth: '85%' }}
+                  />
+                  <IconButton size="small" color="error" onClick={handleRemoverAnexo}>
+                    <Close fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={uploadingAnexo ? <CircularProgress size={16} /> : <CloudUpload />}
+                  size="small"
+                  fullWidth
+                  disabled={uploadingAnexo}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {uploadingAnexo ? 'Enviando...' : 'Anexar Comprovante (PDF/Foto)'}
+                  <input
+                    type="file"
+                    hidden
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    onChange={handleUploadArquivo}
+                  />
+                </Button>
+              )}
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, fontSize: '0.65rem' }}>
+                Aceita JPG, PNG, WEBP e PDF (máx 10MB)
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* Observações */}
+          <Grid item xs={12}>
+            <TextField
+              label="Observações Adicionais"
+              placeholder="Ex: Insumos para estoque de fim de semana, pago à vista com desconto..."
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              fullWidth
+              multiline
+              rows={2}
+              size="small"
+            />
+          </Grid>
+        </Grid>
+      </SentinelCard>
 
       {/* SEÇÃO 2: ITENS DA COMPRA */}
-      <Card elevation={2} sx={{ borderRadius: 3, mb: 3 }}>
-        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-            <Box>
-              <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Inventory2 color="action" /> Itens e Entrada no Estoque
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Informe os produtos adquiridos, unidades e fator de conversão.
-              </Typography>
-            </Box>
-
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<Add />}
-              size="small"
-              onClick={handleAdicionarItem}
-              sx={{ borderRadius: 2, fontWeight: 700 }}
-            >
-              + Adicionar Item
-            </Button>
+      <SentinelCard dense sx={{ p: { xs: 2, md: 2.5 }, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.9375rem' }}>
+              <Inventory2 sx={{ fontSize: 20, color: sentinelTokens.colors.owner.accent }} /> Itens e Entrada no Estoque
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Informe os produtos adquiridos, unidades e fator de conversão de estoque.
+            </Typography>
           </Box>
 
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-            <Table size="small">
-              <TableHead sx={{ bgcolor: (th) => th.palette.action.hover }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 260 }}>Produto do Catálogo *</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 100 }}>Qtd. Compra *</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 90 }}>Unidade</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 120 }}>
-                    <Tooltip title="Ex: Se comprou 1 Caixa com 12 unidades, o fator é 12. O estoque receberá (Qtd x Fator).">
-                      <span>Fator Conv. (?)</span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 110 }}>Valor Un. (R$)</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 110 }}>Subtotal (R$)</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 140 }}>Entrada Estoque</TableCell>
-                  <TableCell sx={{ fontWeight: 700, minWidth: 120 }}>Atualizar Custo?</TableCell>
-                  <TableCell align="center" sx={{ width: 50 }}>Ação</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {itens.map((item, idx) => {
-                  const fator = item.fator_conversao > 0 ? item.fator_conversao : 1;
-                  const entradaQtd = (Number(item.quantidade) || 0) * fator;
-                  const custoUnitConvertido = fator > 0 ? (Number(item.valor_unitario) || 0) / fator : (Number(item.valor_unitario) || 0);
-
-                  return (
-                    <TableRow key={idx}>
-                      {/* Seletor de Produto com botão de Criar Novo Inline */}
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Autocomplete
-                            options={produtos}
-                            getOptionLabel={(p) => `${p.nome} (Estoque: ${p.quantidade_estoque || 0})`}
-                            value={produtos.find((p) => p.id === item.produto_id) || null}
-                            onChange={(_, novo) => handleItemChange(idx, 'produto_id', novo ? novo.id : null)}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                size="small"
-                                placeholder="Selecione o produto..."
-                                fullWidth
-                              />
-                            )}
-                            sx={{ flexGrow: 1 }}
-                          />
-                          <Tooltip title="Cadastrar novo produto sem sair da compra">
-                            <Button
-                              variant="contained"
-                              color="secondary"
-                              size="small"
-                              onClick={() => handleAbrirModalNovoProduto(idx)}
-                              sx={{ minWidth: 36, px: 1, height: 38, fontWeight: 800 }}
-                            >
-                              + Novo
-                            </Button>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-
-                      {/* Quantidade */}
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          size="small"
-                          inputProps={{ min: 0.01, step: 'any' }}
-                          value={item.quantidade}
-                          onChange={(e) => handleItemChange(idx, 'quantidade', parseFloat(e.target.value) || 0)}
-                          fullWidth
-                        />
-                      </TableCell>
-
-                      {/* Unidade */}
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={item.unidade}
-                          onChange={(e) => handleItemChange(idx, 'unidade', e.target.value.toUpperCase())}
-                          placeholder="UN"
-                          fullWidth
-                        />
-                      </TableCell>
-
-                      {/* Fator de Conversão */}
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          size="small"
-                          inputProps={{ min: 0.001, step: 'any' }}
-                          value={item.fator_conversao}
-                          onChange={(e) => handleItemChange(idx, 'fator_conversao', parseFloat(e.target.value) || 1)}
-                          fullWidth
-                        />
-                      </TableCell>
-
-                      {/* Valor Unitário */}
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          size="small"
-                          inputProps={{ min: 0, step: '0.01' }}
-                          value={item.valor_unitario}
-                          onChange={(e) => handleItemChange(idx, 'valor_unitario', parseFloat(e.target.value) || 0)}
-                          fullWidth
-                        />
-                      </TableCell>
-
-                      {/* Subtotal */}
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={700}>
-                          {formatCurrency(item.valor_total)}
-                        </Typography>
-                      </TableCell>
-
-                      {/* Previsão de Entrada no Estoque */}
-                      <TableCell>
-                        <Typography variant="caption" display="block" fontWeight={700} color="primary.main">
-                          +{entradaQtd.toFixed(2)} un
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Custo: {formatCurrency(custoUnitConvertido)}/un
-                        </Typography>
-                      </TableCell>
-
-                      {/* Atualizar Custo */}
-                      <TableCell>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              size="small"
-                              checked={item.atualizar_custo}
-                              onChange={(e) => handleItemChange(idx, 'atualizar_custo', e.target.checked)}
-                            />
-                          }
-                          label={<Typography variant="caption">{item.atualizar_custo ? 'Sim' : 'Não'}</Typography>}
-                        />
-                      </TableCell>
-
-                      {/* Excluir Linha */}
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleRemoverItem(idx)}
-                          disabled={itens.length <= 1}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Resumo da Compra e Totais */}
-          <Box
-            sx={{
-              mt: 3,
-              p: 2,
-              borderRadius: 2,
-              bgcolor: 'background.default',
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              gap: 2,
-            }}
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<Add sx={{ fontSize: 16 }} />}
+            size="small"
+            onClick={handleAdicionarItem}
+            sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', height: 32, fontSize: '0.75rem' }}
           >
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Total de Linhas: <strong>{itens.length}</strong> | Itens convertidos para estoque: <strong>+{totalUnidadesEstoque.toFixed(2)}</strong> unidades
-              </Typography>
-            </Box>
+            + Adicionar Item
+          </Button>
+        </Box>
 
-            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-              <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight={700}>
-                Total Geral da Compra
-              </Typography>
-              <Typography variant="h4" fontWeight={800} color="success.main">
-                {formatCurrency(totalGeralCompra)}
-              </Typography>
-            </Box>
+        <SentinelTableContainer>
+          <SentinelTable size="small">
+            <SentinelTableHead>
+              <SentinelTableRow>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 260 }}>Produto do Catálogo *</SentinelTableCell>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 100 }}>Qtd. Compra *</SentinelTableCell>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 80 }}>Unidade</SentinelTableCell>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 110 }}>
+                  <Tooltip title="Ex: Se comprou 1 Caixa com 12 unidades, o fator é 12. O estoque receberá (Qtd x Fator).">
+                    <span>Fator Conv. (?)</span>
+                  </Tooltip>
+                </SentinelTableCell>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 110 }}>Valor Un. (R$)</SentinelTableCell>
+                <SentinelTableCell tabular={true} sx={{ minWidth: 110 }}>Subtotal (R$)</SentinelTableCell>
+                <SentinelTableCell tabular={false} sx={{ minWidth: 130 }}>Entrada Estoque</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false} sx={{ minWidth: 110 }}>Atualizar Custo?</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false} sx={{ width: 45 }}>Ação</SentinelTableCell>
+              </SentinelTableRow>
+            </SentinelTableHead>
+            <TableBody>
+              {itens.map((item, idx) => {
+                const fator = item.fator_conversao > 0 ? item.fator_conversao : 1;
+                const entradaQtd = (Number(item.quantidade) || 0) * fator;
+                const custoUnitConvertido = fator > 0 ? (Number(item.valor_unitario) || 0) / fator : (Number(item.valor_unitario) || 0);
+
+                return (
+                  <SentinelTableRow key={idx}>
+                    {/* Seletor de Produto */}
+                    <SentinelTableCell tabular={false}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Autocomplete
+                          options={produtos}
+                          getOptionLabel={(p) => `${p.nome} (Estoque: ${p.quantidade_estoque || 0})`}
+                          value={produtos.find((p) => p.id === item.produto_id) || null}
+                          onChange={(_, novo) => handleItemChange(idx, 'produto_id', novo ? novo.id : null)}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              size="small"
+                              placeholder="Selecione o produto..."
+                              fullWidth
+                            />
+                          )}
+                          sx={{ flexGrow: 1 }}
+                        />
+                        <Tooltip title="Cadastrar novo produto sem sair da compra">
+                          <Button
+                            variant="contained"
+                            color="secondary"
+                            size="small"
+                            onClick={() => handleAbrirModalNovoProduto(idx)}
+                            sx={{ minWidth: 32, px: 1, height: 36, fontWeight: 800, fontSize: '0.75rem' }}
+                          >
+                            + Novo
+                          </Button>
+                        </Tooltip>
+                      </Box>
+                    </SentinelTableCell>
+
+                    {/* Quantidade */}
+                    <SentinelTableCell tabular={false}>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0.01, step: 'any' }}
+                        value={item.quantidade}
+                        onChange={(e) => handleItemChange(idx, 'quantidade', parseFloat(e.target.value) || 0)}
+                        fullWidth
+                      />
+                    </SentinelTableCell>
+
+                    {/* Unidade */}
+                    <SentinelTableCell tabular={false}>
+                      <TextField
+                        size="small"
+                        value={item.unidade}
+                        onChange={(e) => handleItemChange(idx, 'unidade', e.target.value.toUpperCase())}
+                        placeholder="UN"
+                        fullWidth
+                      />
+                    </SentinelTableCell>
+
+                    {/* Fator de Conversão */}
+                    <SentinelTableCell tabular={false}>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0.001, step: 'any' }}
+                        value={item.fator_conversao}
+                        onChange={(e) => handleItemChange(idx, 'fator_conversao', parseFloat(e.target.value) || 1)}
+                        fullWidth
+                      />
+                    </SentinelTableCell>
+
+                    {/* Valor Unitário */}
+                    <SentinelTableCell tabular={false}>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0, step: '0.01' }}
+                        value={item.valor_unitario}
+                        onChange={(e) => handleItemChange(idx, 'valor_unitario', parseFloat(e.target.value) || 0)}
+                        fullWidth
+                      />
+                    </SentinelTableCell>
+
+                    {/* Subtotal */}
+                    <SentinelTableCell tabular={true}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          fontSize: '0.8125rem',
+                          color: 'text.primary',
+                        }}
+                      >
+                        {formatCurrency(item.valor_total)}
+                      </Typography>
+                    </SentinelTableCell>
+
+                    {/* Previsão de Entrada no Estoque */}
+                    <SentinelTableCell tabular={false}>
+                      <SentinelBadge
+                        sentinelVariant="active"
+                        size="small"
+                        label={`+${entradaQtd.toFixed(2)} UN`}
+                      />
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.68rem', mt: 0.5 }}>
+                        Custo: {formatCurrency(custoUnitConvertido)}/un
+                      </Typography>
+                    </SentinelTableCell>
+
+                    {/* Atualizar Custo */}
+                    <SentinelTableCell align="center" tabular={false}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={item.atualizar_custo}
+                            onChange={(e) => handleItemChange(idx, 'atualizar_custo', e.target.checked)}
+                          />
+                        }
+                        label={<Typography variant="caption">{item.atualizar_custo ? 'Sim' : 'Não'}</Typography>}
+                      />
+                    </SentinelTableCell>
+
+                    {/* Excluir Linha */}
+                    <SentinelTableCell align="center" tabular={false}>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleRemoverItem(idx)}
+                        disabled={itens.length <= 1}
+                        sx={{ p: 0.5 }}
+                      >
+                        <Delete sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </SentinelTableCell>
+                  </SentinelTableRow>
+                );
+              })}
+            </TableBody>
+          </SentinelTable>
+        </SentinelTableContainer>
+
+        {/* Resumo da Compra e Totais com Superfície Encastrada */}
+        <Box
+          sx={{
+            mt: 2.5,
+            p: 2,
+            borderRadius: 2,
+            bgcolor: 'action.hover',
+            border: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              Total de Linhas: <strong>{itens.length}</strong> | Itens convertidos para estoque: <strong>+{totalUnidadesEstoque.toFixed(2)}</strong> unidades
+            </Typography>
           </Box>
-        </CardContent>
-      </Card>
+
+          <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                fontSize: '0.6875rem',
+                letterSpacing: '0.05em',
+                display: 'block',
+              }}
+            >
+              Total Geral da Compra
+            </Typography>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                color: sentinelTokens.colors.owner.accent,
+                fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'monospace',
+                fontSize: '1.75rem',
+              }}
+            >
+              {formatCurrency(totalGeralCompra)}
+            </Typography>
+          </Box>
+        </Box>
+      </SentinelCard>
 
       {/* BOTÕES DE AÇÃO FINAL */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3, mb: 4 }}>

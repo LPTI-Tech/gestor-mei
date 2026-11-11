@@ -55,6 +55,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
+import { SentinelBadge } from '../design-system';
 
 const DRAWER_WIDTH = 280;
 
@@ -268,16 +269,33 @@ export const Layout: React.FC = () => {
       {/* User Info footer */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.default' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
-          <Avatar sx={{ width: 34, height: 34, bgcolor: isAdmin ? 'secondary.main' : 'primary.main', fontSize: '0.85rem' }}>
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: isMaster ? '#1976D2' : (isAdmin ? 'secondary.main' : 'primary.main'),
+              color: '#FFFFFF',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+            }}
+          >
             {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}
           </Avatar>
           <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant="body2" fontWeight={600} noWrap>
+            <Typography variant="body2" fontWeight={700} noWrap sx={{ fontSize: '0.825rem' }}>
               {user?.nome}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {getCargoLabel()}
-            </Typography>
+            <Box sx={{ mt: 0.35 }}>
+              {isMaster ? (
+                <SentinelBadge sentinelVariant="master" size="small" label="MASTER" withDot pulse />
+              ) : isOwner ? (
+                <SentinelBadge sentinelVariant="owner" size="small" label="OWNER" />
+              ) : user?.role === 'CONSULTOR' ? (
+                <SentinelBadge sentinelVariant="consultor" size="small" label="CONSULTOR" />
+              ) : (
+                <SentinelBadge sentinelVariant="operator" size="small" label="OPERADOR" />
+              )}
+            </Box>
           </Box>
         </Box>
         <IconButton size="small" onClick={handleLogout} title="Sair da Conta">
@@ -303,14 +321,15 @@ export const Layout: React.FC = () => {
         sx={{
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { md: `${DRAWER_WIDTH}px` },
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderBottom: 1,
-          borderColor: 'divider',
+          bgcolor: isMaster ? '#040D1A' : 'background.paper',
+          color: isMaster ? '#FFFFFF' : 'text.primary',
+          borderBottom: isMaster ? '2px solid #1976D2' : '1px solid',
+          borderColor: isMaster ? undefined : 'divider',
+          boxShadow: isMaster ? '0 4px 20px rgba(4, 13, 26, 0.5)' : 'none',
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 64 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <IconButton
               color="inherit"
               aria-label="abrir menu"
@@ -321,18 +340,26 @@ export const Layout: React.FC = () => {
               <MenuIcon />
             </IconButton>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Storefront color="primary" sx={{ display: { xs: 'none', sm: 'inline-block' } }} />
-              <Typography variant="subtitle1" fontWeight={700} noWrap>
-                {empresa?.nome_fantasia || 'GESTOR MEI'}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Storefront sx={{ color: isMaster ? '#1976D2' : 'primary.main', display: { xs: 'none', sm: 'inline-block' } }} />
+              <Typography variant="subtitle1" fontWeight={800} noWrap sx={{ color: isMaster ? '#FFFFFF' : 'text.primary', letterSpacing: '-0.01em' }}>
+                {isMaster ? 'LPTI Tech — Centro de Comando' : (empresa?.nome_fantasia || 'GESTOR MEI')}
               </Typography>
-              <Chip
-                label="ERP Oficial"
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-              />
+              {isMaster ? (
+                <SentinelBadge
+                  sentinelVariant="master"
+                  size="small"
+                  withDot
+                  pulse
+                  label="MASTER PLATAFORMA"
+                />
+              ) : (
+                <SentinelBadge
+                  sentinelVariant="owner"
+                  size="small"
+                  label={empresa?.nome_fantasia ? 'EMPRESA MEI' : 'ERP OFICIAL'}
+                />
+              )}
               <Box sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}>
                 <ApiStatusIndicator size="small" />
               </Box>
@@ -356,8 +383,11 @@ export const Layout: React.FC = () => {
                 sx={{
                   width: 34,
                   height: 34,
-                  bgcolor: isAdmin ? 'secondary.main' : 'primary.main',
+                  bgcolor: isMaster ? '#1976D2' : (isAdmin ? 'secondary.main' : 'primary.main'),
+                  color: '#FFFFFF',
+                  fontWeight: 700,
                   fontSize: '0.85rem',
+                  border: isMaster ? '1.5px solid rgba(255, 255, 255, 0.4)' : undefined,
                 }}
               >
                 {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}

@@ -10,7 +10,7 @@
 
 - **Empresa Mantenedora:** LPTI Tech
 - **Produto:** GESTOR MEI
-- **Versão Atual:** `1.4.0` (Refinamento Visual 8.5.1 Homologado)
+- **Versão Atual:** `1.4.9` (Sprint A - Fase 3 Design System Sentinel Homologado)
 - **Tipo de Aplicação:** SaaS Multiempresa B2B (Foco em MEIs e Pequenos Negócios)
 
 ---
@@ -34,6 +34,10 @@
 | **Sprint UX 3** | `1.4.3` | **Design System Módulo Clientes:** Page Header padrão Shopify Admin com ações alinhadas à direita, Toolbar de busca Asaas com filtros segmentados, Tabela de Clientes padrão Stripe com cabeçalho ardósia, avatar circular com iniciais, botões rápidos WhatsApp/Telefone, valores em `tnum` e pills de status, Empty State executivo com ícone e CTA, e Modal Novo/Editar categorizado em 4 seções (Identificação, Contato, Endereço e Preferências) com raio de 16px. | Homologado |
 | **Sprint UX 4** | `1.4.4` | **Design System Produtos & Serviços:** Page Header padrão Shopify Admin com badge DASN-SIMEI, 4 KPI cards executivos (Total no Catálogo, Produtos & Mercadorias, Serviços Prestados e Categorias Ativas), Toolbar Asaas com busca rápida, seletor segmentado de tipos e filtro por categoria, Tabela de Produtos padrão Stripe com cabeçalho ardósia, avatar temático por tipo fiscal, preços em `tnum` com detalhamento de custo e margem percentual, pills de estoque com alerta de reposição, e Modal Novo/Editar Item categorizado em 4 seções executivas (Tributação DASN, Identificação, Precificação com cálculo em tempo real de margem bruta, e Controle de Estoque) com raio de 16px. | Homologado |
 | **Sprint UX 5** | `1.4.5` | **Design System PDV / Terminal de Vendas:** Page Header padrão Shopify Admin com indicador de terminal ativo, catálogo estilo Shopify POS com cards táteis e pills de saldo de estoque, seletor segmentado Balcão vs Delivery padrão Asaas, carrinho ágil com steppers de quantidade, breakdown de subtotais e taxas, Totalizador de alto impacto visual (32px em `tnum`), seletor de Formas de Pagamento em botões táteis padrão Stripe Terminal (Dinheiro, PIX, Débito, Crédito) com estados ativos em alto contraste, checkout em 1 clique, tabela de vendas recentes com cabeçalho ardósia e modais refinados (comanda térmica, item avulso e estoque insuficiente) com raio de 16px. | Homologado |
+| **Sprint MCP 01**| `1.4.6` | **Instalação e Homologação do Playwright MCP:** Instalação global do `@playwright/mcp` (v1.66.0), configuração de `mcp_config.json`, engine autônoma de testes (`scripts/playwright_mcp_engine.py`), leitura segura de credenciais via `.env.test`, skill `.agents/skills/gestor-mei-playwright/` e validação 100% autônoma dos 6 cenários oficiais (MASTER Login, Modo Suporte DR Restaurante, Criação de Empresa+OWNER, OWNER Login, Cadastro de Produto e Ciclo PDV com Baixa de Estoque). | Homologado |
+| **Sprint A (Fase 1)**| `1.4.7` | **Design System Sentinel (Fase 1):** Criação dos componentes centrais (`SentinelCard`, `SentinelTable`, `SentinelBadge`, `SentinelInput`, `tokens.ts`), adoção de números tabulares (`tnum`), densidade operacional técnica (13px / hairlines 1px), distinção visual rigorosa MASTER (Dark Obsidian `#040D1A` + Cobalto `#1976D2`) vs OWNER (Inquilino Empresarial), refatoração do Dashboard/TopBar MASTER e da tela de Usuários & Equipe com validação visual autônoma via Playwright MCP. | Homologado |
+| **Sprint A (Fase 2)**| `1.4.8` | **Design System Sentinel (Fase 2):** Expansão do padrão Sentinel para Governança Multiempresa MASTER (`PainelConsultor.tsx`), Catálogo de Produtos & Serviços (`Produtos.tsx`) e Controle de Estoque & Kardex (`Estoque.tsx`). Aplicação dos componentes `SentinelCard`, `SentinelTable`, `SentinelBadge` e `SentinelInput`, densidade de 42-44px em tabelas, preservação estrita de regras de negócio, APIs e RBAC. Homologação visual autônoma via Playwright MCP com relatórios comparativos Antes x Depois. | Homologado |
+| **Sprint A (Fase 3)**| `1.4.9` | **Design System Sentinel (Fase 3):** Expansão do padrão Sentinel para a cadeia de suprimentos: Módulo de Compras Faturadas (`Compras.tsx`), Entrada Manual de Mercadorias (`NovaCompraManual.tsx`), Entrada de Estoque via XML NF-e (`ImportarNfe.tsx`) e Detalhes da Compra (`DetalheCompra.tsx`). Aplicação de `SentinelCard`, `SentinelTable`, `SentinelBadge`, `SentinelInput`, números tabulares (`tnum`), superfícies encastradas e densidade 13px. PDV e Caixa rigorosamente preservados fora do escopo. Homologação visual autônoma via Playwright MCP. | Homologado |
 
 ---
 
@@ -80,23 +84,24 @@ flowchart LR
 | **`gestor-mei-rbac`** | Blindagem das regras de acesso (MASTER, OWNER, CONSULTOR e OPERATOR). | [`.agents/skills/gestor-mei-rbac/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-rbac/) |
 | **`gestor-mei-saas`** | Arquitetura de monetização, planos e ciclo de licenças da Sprint 9. | [`.agents/skills/gestor-mei-saas/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-saas/) |
 | **`lpti-brand-guidelines`** | Proteção da propriedade intelectual: Gestor MEI (Produto) e LPTI Tech (Desenvolvedora). | [`.agents/skills/lpti-brand-guidelines/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/lpti-brand-guidelines/) |
+| **`gestor-mei-playwright`** | Automação e homologação autônoma de jornadas e fluxos via Playwright MCP. | [`.agents/skills/gestor-mei-playwright/`](file:///c:/Users/LeonidasPaulino/Desktop/gestor-mei-main/.agents/skills/gestor-mei-playwright/) |
 
 ---
 
 ## 🔌 MCPs (Model Context Protocol) Planejados & Disponíveis
 
-1. **Google Developer Knowledge:**
+1. **Playwright MCP:**
+   - *Status:* ✅ **Playwright MCP instalado, ativo e homologado** (`@playwright/mcp` v1.66.0 via Stdio JSON-RPC 2.0).
+   - *Função:* Execução autônoma de jornadas de ponta a ponta (E2E), snapshots da árvore de acessibilidade, captura de screenshots de evidência, auditoria de interações e navegação real sem necessidade de scripts manuais `.spec.ts`.
+2. **Google Developer Knowledge:**
    - *Status:* ✅ **Google Developer Knowledge MCP instalado e ativo** (`antigravity-plugins-official/plugin/google-developer-knowledge` v1.0.2).
    - *Função:* Consulta de documentação técnica oficial, grounding de APIs (Google Cloud, Gemini, Firebase, Android e Web.dev) e skill `retrieving-developer-knowledge`.
-2. **Chrome DevTools:**
+3. **Chrome DevTools:**
    - *Status:* ✅ **Chrome DevTools MCP instalado, ativo e validado** (`chrome-devtools-mcp` v1.12.0 em `mcp_config.json`).
    - *Função:* Inspeção visual de DOM, CSS cascade, acessibilidade (WCAG), métricas Core Web Vitals (LCP) e auditorias de performance no Google Chrome.
-3. **GitHub MCP:**
+4. **GitHub MCP:**
    - *Status:* ✅ **GitHub MCP conectado e validado** (endpoint oficial `https://api.githubcopilot.com/mcp/` autenticado como `LPTI-Tech` para o repositório `LPTI-Tech/gestor-mei`).
    - *Função:* Automação de branches, pull requests, revisões e commits diretamente pelo assistente.
-4. **Browser (Browserbase):**
-   - *Status:* Plugin Parceiro de Marketplace (`antigravity-plugins-partners/plugin/browse`).
-   - *Função:* Navegação web real e testes automatizados de fluxos.
 
 ---
 

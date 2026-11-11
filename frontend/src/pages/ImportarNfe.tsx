@@ -60,6 +60,16 @@ import {
   NfeImportarResultadoResponse,
 } from '../types';
 import { formatCurrency } from '../services/exportUtils';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  sentinelTokens,
+} from '../design-system';
 
 export const ImportarNfe: React.FC = () => {
   const [tabValue, setTabValue] = useState<number>(0);
@@ -383,19 +393,19 @@ export const ImportarNfe: React.FC = () => {
       {/* Cabeçalho da Página */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-          <CloudUpload sx={{ fontSize: 32, color: 'primary.main' }} />
+          <CloudUpload sx={{ fontSize: 28, color: sentinelTokens.colors.master.accent }} />
           <Typography variant="h5" fontWeight={800}>
             Entrada de Estoque via XML NF-e
           </Typography>
-          <Chip label="Sprint 6" color="primary" size="small" sx={{ fontWeight: 800 }} />
+          <SentinelBadge sentinelVariant="info" size="small" label="XML SEFAZ V4.00" />
         </Box>
         <Typography variant="body2" color="text.secondary">
           Importe notas fiscais de compra (SEFAZ v4.00) de seus fornecedores para abastecer seu estoque e atualizar custos automaticamente.
         </Typography>
       </Box>
 
-      {/* Tabs Principais */}
-      <Paper sx={{ mb: 3, borderRadius: 2 }}>
+      {/* Tabs Principais Sentinel */}
+      <SentinelCard dense sx={{ mb: 3, p: 0.5 }}>
         <Tabs
           value={tabValue}
           onChange={(_, val) => setTabValue(val)}
@@ -403,12 +413,13 @@ export const ImportarNfe: React.FC = () => {
           textColor="primary"
           variant="scrollable"
           scrollButtons="auto"
+          sx={{ minHeight: 40 }}
         >
-          <Tab icon={<CloudUpload />} iconPosition="start" label="Importar XML da NF-e" sx={{ fontWeight: 700, textTransform: 'none' }} />
-          <Tab icon={<History />} iconPosition="start" label="Histórico de Importações" sx={{ fontWeight: 700, textTransform: 'none' }} />
-          <Tab icon={<LinkIcon />} iconPosition="start" label="Vínculos Fornecedor (De-Para)" sx={{ fontWeight: 700, textTransform: 'none' }} />
+          <Tab icon={<CloudUpload sx={{ fontSize: 18 }} />} iconPosition="start" label="Importar XML da NF-e" sx={{ fontWeight: 700, textTransform: 'none', minHeight: 40, py: 1 }} />
+          <Tab icon={<History sx={{ fontSize: 18 }} />} iconPosition="start" label="Histórico de Importações" sx={{ fontWeight: 700, textTransform: 'none', minHeight: 40, py: 1 }} />
+          <Tab icon={<LinkIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Vínculos Fornecedor (De-Para)" sx={{ fontWeight: 700, textTransform: 'none', minHeight: 40, py: 1 }} />
         </Tabs>
-      </Paper>
+      </SentinelCard>
 
       {/* =============================================================== */}
       {/* ABA 0: IMPORTAR XML DE NF-E */}
@@ -417,17 +428,17 @@ export const ImportarNfe: React.FC = () => {
         <Box>
           {/* Zona de Drag & Drop e Upload */}
           {!preview && (
-            <Paper
+            <SentinelCard
+              dense
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               sx={{
                 p: 5,
                 textAlign: 'center',
-                borderRadius: 3,
                 border: '2px dashed',
-                borderColor: isDragging ? 'primary.main' : 'divider',
-                bgcolor: isDragging ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
+                borderColor: isDragging ? sentinelTokens.colors.master.accent : 'divider',
+                bgcolor: isDragging ? 'rgba(25, 118, 210, 0.05)' : 'action.hover',
                 transition: 'all 0.2s ease-in-out',
                 cursor: 'pointer',
               }}
@@ -440,17 +451,17 @@ export const ImportarNfe: React.FC = () => {
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
-              <CloudUpload sx={{ fontSize: 64, color: isDragging ? 'primary.main' : 'text.secondary', mb: 1.5 }} />
-              <Typography variant="h6" fontWeight={700}>
+              <CloudUpload sx={{ fontSize: 56, color: isDragging ? sentinelTokens.colors.master.accent : 'text.secondary', mb: 1.5 }} />
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.05rem' }}>
                 Arraste e solte o arquivo XML da NF-e aqui
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2, fontSize: '0.8125rem' }}>
                 Ou clique para selecionar o arquivo XML (Modelo 55 - SEFAZ) do seu computador
               </Typography>
               <Button
                 variant="contained"
                 startIcon={<CloudUpload />}
-                sx={{ fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 3 }}
+                sx={{ fontWeight: 700, borderRadius: 1.5, textTransform: 'none', px: 3, height: 36, fontSize: '0.8125rem' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   fileInputRef.current?.click();
@@ -458,7 +469,7 @@ export const ImportarNfe: React.FC = () => {
               >
                 Selecionar Arquivo .XML
               </Button>
-            </Paper>
+            </SentinelCard>
           )}
 
           {loading && (
@@ -496,16 +507,16 @@ export const ImportarNfe: React.FC = () => {
               )}
 
               {/* Card Resumo do Cabeçalho e Fornecedor */}
-              <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3, borderLeft: '6px solid #1976D2' }}>
+              <SentinelCard dense sx={{ p: 2.5, mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Business color="primary" />
+                      <Business sx={{ color: sentinelTokens.colors.master.accent }} />
                       <Typography variant="h6" fontWeight={800}>
                         {preview.fornecedor.nome}
                       </Typography>
                       {preview.fornecedor.uf && (
-                        <Chip label={preview.fornecedor.uf} size="small" color="primary" sx={{ fontWeight: 700 }} />
+                        <SentinelBadge sentinelVariant="info" size="small" label={preview.fornecedor.uf} />
                       )}
                     </Box>
                     <Typography variant="body2" color="text.secondary">
@@ -514,10 +525,18 @@ export const ImportarNfe: React.FC = () => {
                   </Box>
 
                   <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ letterSpacing: '0.05em' }}>
                       VALOR TOTAL DA NOTA
                     </Typography>
-                    <Typography variant="h4" fontWeight={900} color="success.main">
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 900,
+                        color: sentinelTokens.colors.owner.accent,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontFamily: 'monospace',
+                      }}
+                    >
                       {formatCurrency(preview.valor_total)}
                     </Typography>
                   </Box>
@@ -565,10 +584,10 @@ export const ImportarNfe: React.FC = () => {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider', flexWrap: 'wrap', gap: 1 }}>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <Chip label={`${preview.total_itens} item(ns) na nota`} size="small" sx={{ fontWeight: 700 }} />
-                    <Chip label={`${itensPreview.filter((i) => i.status_vinculo === 'VINCULADO').length} vinculado(s)`} color="success" size="small" sx={{ fontWeight: 700 }} />
+                    <SentinelBadge sentinelVariant="default" size="small" label={`${preview.total_itens} ITENS NA NOTA`} />
+                    <SentinelBadge sentinelVariant="active" size="small" label={`${itensPreview.filter((i) => i.status_vinculo === 'VINCULADO').length} VINCULADOS`} />
                     {itensPreview.filter((i) => i.status_vinculo !== 'VINCULADO').length > 0 && (
-                      <Chip label={`${itensPreview.filter((i) => i.status_vinculo !== 'VINCULADO').length} pendente(s)`} color="warning" size="small" sx={{ fontWeight: 700 }} />
+                      <SentinelBadge sentinelVariant="warning" size="small" label={`${itensPreview.filter((i) => i.status_vinculo !== 'VINCULADO').length} PENDENTES`} />
                     )}
                   </Box>
 
@@ -580,69 +599,69 @@ export const ImportarNfe: React.FC = () => {
                       setPreview(null);
                       setItensPreview([]);
                     }}
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                    sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
                   >
                     Carregar Outro XML
                   </Button>
                 </Box>
-              </Paper>
+              </SentinelCard>
 
-              {/* Tabela de Conferência e De-Para de Produtos */}
-              <Paper sx={{ p: 2.5, mb: 3, borderRadius: 3 }}>
+              {/* Tabela de Conferência e De-Para de Produtos Sentinel */}
+              <SentinelCard dense sx={{ p: 2.5, mb: 3 }}>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="h6" fontWeight={700}>
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.9375rem' }}>
                     Conferência dos Produtos & Vínculos de Estoque
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     Vincule o produto faturado pelo fornecedor com seu cadastro local e confira o fator de conversão de embalagem para unidades.
                   </Typography>
                 </Box>
 
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700, width: 40 }}>#</TableCell>
-                        <TableCell sx={{ fontWeight: 700, minWidth: 220 }}>Item na Nota Fiscal (Fornecedor)</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 700, width: 110 }}>Qtd / Un</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, width: 110 }}>Valor Un.</TableCell>
-                        <TableCell sx={{ fontWeight: 700, minWidth: 260 }}>Produto no Gestor MEI</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 700, width: 110 }}>Fator Conversão</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 700, width: 120 }}>Entrada Estoque</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, width: 110 }}>Novo Custo</TableCell>
-                      </TableRow>
-                    </TableHead>
+                <SentinelTableContainer>
+                  <SentinelTable size="small">
+                    <SentinelTableHead>
+                      <SentinelTableRow>
+                        <SentinelTableCell tabular={false} sx={{ width: 40 }}>#</SentinelTableCell>
+                        <SentinelTableCell tabular={false} sx={{ minWidth: 220 }}>Item na Nota Fiscal (Fornecedor)</SentinelTableCell>
+                        <SentinelTableCell align="center" tabular={false} sx={{ width: 110 }}>Qtd / Un</SentinelTableCell>
+                        <SentinelTableCell align="right" tabular={true} sx={{ width: 110 }}>Valor Un.</SentinelTableCell>
+                        <SentinelTableCell tabular={false} sx={{ minWidth: 260 }}>Produto no Gestor MEI</SentinelTableCell>
+                        <SentinelTableCell align="center" tabular={false} sx={{ width: 110 }}>Fator Conversão</SentinelTableCell>
+                        <SentinelTableCell align="center" tabular={false} sx={{ width: 120 }}>Entrada Estoque</SentinelTableCell>
+                        <SentinelTableCell align="right" tabular={true} sx={{ width: 110 }}>Novo Custo</SentinelTableCell>
+                      </SentinelTableRow>
+                    </SentinelTableHead>
                     <TableBody>
                       {itensPreview.map((item, index) => (
-                        <TableRow key={item.numero_item} hover>
-                          <TableCell sx={{ fontWeight: 600 }}>{item.numero_item}</TableCell>
+                        <SentinelTableRow key={item.numero_item}>
+                          <SentinelTableCell tabular={false} sx={{ fontWeight: 600 }}>{item.numero_item}</SentinelTableCell>
                           
                           {/* Item no Fornecedor */}
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={700}>
+                          <SentinelTableCell tabular={false}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
                               {item.descricao_fornecedor}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Cód: <code>{item.codigo_fornecedor}</code> {item.ean ? `• EAN: ${item.ean}` : ''}
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+                              Cód: <code style={{ fontFamily: 'monospace' }}>{item.codigo_fornecedor}</code> {item.ean ? `• EAN: ${item.ean}` : ''}
                             </Typography>
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Quantidade Comercial e Unidade */}
-                          <TableCell align="center">
-                            <Typography variant="body2" fontWeight={700}>
+                          <SentinelTableCell align="center" tabular={false}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                               {item.quantidade_comercial} {item.unidade_comercial}
                             </Typography>
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Valor Unitário na Nota */}
-                          <TableCell align="right">
-                            <Typography variant="body2" fontWeight={600}>
+                          <SentinelTableCell align="right" tabular={true}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                               {formatCurrency(item.valor_unitario)}
                             </Typography>
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Seleção do Produto no Gestor MEI */}
-                          <TableCell>
+                          <SentinelTableCell tabular={false}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <TextField
@@ -652,7 +671,7 @@ export const ImportarNfe: React.FC = () => {
                                   value={item.produto_id_vinculado || ''}
                                   onChange={(e) => handleProdutoChange(index, Number(e.target.value))}
                                   SelectProps={{ displayEmpty: true }}
-                                  sx={{ fontSize: '0.85rem' }}
+                                  sx={{ fontSize: '0.8125rem' }}
                                 >
                                   <MenuItem value="" disabled>
                                     <em>-- Selecionar Produto do Catálogo --</em>
@@ -670,7 +689,7 @@ export const ImportarNfe: React.FC = () => {
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => handleAbrirCriacaoRapida(item)}
-                                    sx={{ minWidth: 40, px: 1, py: 0.8 }}
+                                    sx={{ minWidth: 36, px: 1, py: 0.8, height: 36 }}
                                   >
                                     <Add fontSize="small" />
                                   </Button>
@@ -678,23 +697,22 @@ export const ImportarNfe: React.FC = () => {
                               </Box>
 
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip
-                                  size="small"
-                                  label={
+                                <SentinelBadge
+                                  sentinelVariant={
                                     item.status_vinculo === 'VINCULADO'
-                                      ? 'Vinculado'
-                                      : item.status_vinculo === 'SUGESTAO'
-                                      ? 'Sugestão'
-                                      : 'Pendente'
-                                  }
-                                  color={
-                                    item.status_vinculo === 'VINCULADO'
-                                      ? 'success'
+                                      ? 'active'
                                       : item.status_vinculo === 'SUGESTAO'
                                       ? 'info'
                                       : 'error'
                                   }
-                                  sx={{ fontWeight: 800, height: 20, fontSize: '0.65rem' }}
+                                  size="small"
+                                  label={
+                                    item.status_vinculo === 'VINCULADO'
+                                      ? 'VINCULADO'
+                                      : item.status_vinculo === 'SUGESTAO'
+                                      ? 'SUGESTÃO'
+                                      : 'PENDENTE'
+                                  }
                                 />
                                 <FormControlLabel
                                   control={
@@ -704,14 +722,14 @@ export const ImportarNfe: React.FC = () => {
                                       onChange={(e) => handleFlagChange(index, 'atualizar_vinculo', e.target.checked)}
                                     />
                                   }
-                                  label={<Typography variant="caption">Lembrar vínculo</Typography>}
+                                  label={<Typography variant="caption" sx={{ fontSize: '0.72rem' }}>Lembrar vínculo</Typography>}
                                 />
                               </Box>
                             </Box>
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Fator de Conversão */}
-                          <TableCell align="center">
+                          <SentinelTableCell align="center" tabular={false}>
                             <Tooltip title="Ex: Se comprou 1 caixa com 12 unidades, digite 12">
                               <TextField
                                 type="number"
@@ -719,24 +737,23 @@ export const ImportarNfe: React.FC = () => {
                                 value={item.fator_conversao}
                                 onChange={(e) => handleFatorChange(index, parseFloat(e.target.value))}
                                 inputProps={{ min: 0.001, step: 1, style: { textAlign: 'center', fontWeight: 700 } }}
-                                sx={{ width: 85 }}
+                                sx={{ width: 80 }}
                               />
                             </Tooltip>
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Entrada em Estoque */}
-                          <TableCell align="center">
-                            <Chip
+                          <SentinelTableCell align="center" tabular={false}>
+                            <SentinelBadge
+                              sentinelVariant="active"
                               size="small"
-                              label={`+${item.quantidade_estoque_entrada} un`}
-                              color="primary"
-                              sx={{ fontWeight: 800 }}
+                              label={`+${item.quantidade_estoque_entrada} UN`}
                             />
-                          </TableCell>
+                          </SentinelTableCell>
 
                           {/* Novo Custo Unitário */}
-                          <TableCell align="right">
-                            <Typography variant="body2" fontWeight={800} color="primary.main">
+                          <SentinelTableCell align="right" tabular={true}>
+                            <Typography variant="body2" sx={{ fontWeight: 800, color: sentinelTokens.colors.master.accent, fontFamily: 'monospace' }}>
                               {formatCurrency(item.custo_unitario_calculado)}
                             </Typography>
                             <FormControlLabel
@@ -749,12 +766,12 @@ export const ImportarNfe: React.FC = () => {
                               }
                               label={<Typography variant="caption" sx={{ fontSize: '0.65rem' }}>Atualizar</Typography>}
                             />
-                          </TableCell>
-                        </TableRow>
+                          </SentinelTableCell>
+                        </SentinelTableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </TableContainer>
+                  </SentinelTable>
+                </SentinelTableContainer>
 
                 {/* Rodapé com Botão Principal de Importação */}
                 <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -772,7 +789,7 @@ export const ImportarNfe: React.FC = () => {
                         setPreview(null);
                         setItensPreview([]);
                       }}
-                      sx={{ fontWeight: 600, textTransform: 'none' }}
+                      sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 1.5 }}
                     >
                       Cancelar
                     </Button>
@@ -783,13 +800,13 @@ export const ImportarNfe: React.FC = () => {
                       disabled={loading || preview.ja_importada || itensPreview.some((i) => !i.produto_id_vinculado)}
                       onClick={handleConfirmarImportacao}
                       startIcon={<CheckCircle />}
-                      sx={{ fontWeight: 800, textTransform: 'none', px: 3, borderRadius: 2 }}
+                      sx={{ fontWeight: 800, textTransform: 'none', px: 3, borderRadius: 1.5 }}
                     >
                       Confirmar e Importar Estoque
                     </Button>
                   </Box>
                 </Box>
-              </Paper>
+              </SentinelCard>
             </Box>
           )}
         </Box>
@@ -799,13 +816,13 @@ export const ImportarNfe: React.FC = () => {
       {/* ABA 1: HISTÓRICO DE IMPORTAÇÕES */}
       {/* =============================================================== */}
       {tabValue === 1 && (
-        <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+        <SentinelCard dense sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.9375rem' }}>
                 Histórico de Notas Fiscais Importadas
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 Rastreabilidade de todas as notas fiscais de compra que alimentaram o estoque da sua empresa.
               </Typography>
             </Box>
@@ -814,7 +831,7 @@ export const ImportarNfe: React.FC = () => {
               size="small"
               onClick={carregarHistorico}
               disabled={loadingHistorico}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
             >
               Atualizar Histórico
             </Button>
@@ -823,7 +840,7 @@ export const ImportarNfe: React.FC = () => {
           {loadingHistorico ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
               <CircularProgress size={36} />
-              <Typography variant="body2" sx={{ mt: 1 }}>Carregando histórico...</Typography>
+              <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>Carregando histórico...</Typography>
             </Box>
           ) : historico.length === 0 ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
@@ -836,80 +853,82 @@ export const ImportarNfe: React.FC = () => {
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700 }}>Data Importação</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Nota / Série</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Fornecedor</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Itens</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>Valor Total</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Chave de Acesso</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Ação</TableCell>
-                  </TableRow>
-                </TableHead>
+            <SentinelTableContainer>
+              <SentinelTable size="small">
+                <SentinelTableHead>
+                  <SentinelTableRow>
+                    <SentinelTableCell tabular={false}>Data Importação</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Nota / Série</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Fornecedor</SentinelTableCell>
+                    <SentinelTableCell align="center" tabular={false}>Itens</SentinelTableCell>
+                    <SentinelTableCell align="right" tabular={true}>Valor Total</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Chave de Acesso</SentinelTableCell>
+                    <SentinelTableCell align="center" tabular={false}>Ação</SentinelTableCell>
+                  </SentinelTableRow>
+                </SentinelTableHead>
                 <TableBody>
                   {historico.map((nota) => (
-                    <TableRow key={nota.id} hover>
-                      <TableCell sx={{ fontWeight: 600 }}>
+                    <SentinelTableRow key={nota.id}>
+                      <SentinelTableCell tabular={false} sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
                         {new Date(nota.data_importacao).toLocaleString('pt-BR')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>
+                      </SentinelTableCell>
+                      <SentinelTableCell tabular={false} sx={{ fontWeight: 700, fontSize: '0.8125rem' }}>
                         NF-e {nota.numero_nota} (Série {nota.serie})
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{nota.fornecedor_nome}</Typography>
-                        <Typography variant="caption" color="text.secondary">CNPJ: {nota.fornecedor_cnpj}</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip label={`${nota.total_itens} item(ns)`} size="small" sx={{ fontWeight: 700 }} />
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 800, color: 'success.main' }}>
-                        {formatCurrency(nota.valor_total)}
-                      </TableCell>
-                      <TableCell>
+                      </SentinelTableCell>
+                      <SentinelTableCell tabular={false}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>{nota.fornecedor_nome}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>CNPJ: {nota.fornecedor_cnpj}</Typography>
+                      </SentinelTableCell>
+                      <SentinelTableCell align="center" tabular={false}>
+                        <SentinelBadge sentinelVariant="default" size="small" label={`${nota.total_itens} ITENS`} />
+                      </SentinelTableCell>
+                      <SentinelTableCell align="right" tabular={true}>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: sentinelTokens.colors.owner.accent, fontFamily: 'monospace' }}>
+                          {formatCurrency(nota.valor_total)}
+                        </Typography>
+                      </SentinelTableCell>
+                      <SentinelTableCell tabular={false}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
                             {nota.chave_acesso.substring(0, 15)}...
                           </Typography>
                           <Tooltip title="Copiar Chave Completa">
-                            <IconButton size="small" onClick={() => handleCopiarChave(nota.chave_acesso)}>
-                              <ContentCopy fontSize="small" />
+                            <IconButton size="small" onClick={() => handleCopiarChave(nota.chave_acesso)} sx={{ p: 0.2 }}>
+                              <ContentCopy sx={{ fontSize: 14 }} />
                             </IconButton>
                           </Tooltip>
                         </Box>
-                      </TableCell>
-                      <TableCell align="center">
+                      </SentinelTableCell>
+                      <SentinelTableCell align="center" tabular={false}>
                         <Button
                           size="small"
                           variant="outlined"
                           onClick={() => handleVerDetalhesNota(nota.id)}
-                          sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem' }}
+                          sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.75rem', borderRadius: 1.5, height: 28 }}
                         >
                           Ver Itens
                         </Button>
-                      </TableCell>
-                    </TableRow>
+                      </SentinelTableCell>
+                    </SentinelTableRow>
                   ))}
                 </TableBody>
-              </Table>
-            </TableContainer>
+              </SentinelTable>
+            </SentinelTableContainer>
           )}
-        </Paper>
+        </SentinelCard>
       )}
 
       {/* =============================================================== */}
       {/* ABA 2: VÍNCULOS FORNECEDOR (DE-PARA) */}
       {/* =============================================================== */}
       {tabValue === 2 && (
-        <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+        <SentinelCard dense sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.9375rem' }}>
                 Regras de Vínculos De-Para Memorizadas
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 O sistema memoriza o código do fornecedor para associar automaticamente nas próximas compras com o fator de conversão.
               </Typography>
             </Box>
@@ -918,7 +937,7 @@ export const ImportarNfe: React.FC = () => {
               size="small"
               onClick={carregarVinculos}
               disabled={loadingVinculos}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
             >
               Atualizar Vínculos
             </Button>
@@ -927,7 +946,7 @@ export const ImportarNfe: React.FC = () => {
           {loadingVinculos ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
               <CircularProgress size={36} />
-              <Typography variant="body2" sx={{ mt: 1 }}>Carregando regras de vínculo...</Typography>
+              <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>Carregando regras de vínculo...</Typography>
             </Box>
           ) : vinculos.length === 0 ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
@@ -940,49 +959,49 @@ export const ImportarNfe: React.FC = () => {
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700 }}>Fornecedor (CNPJ)</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Código Fornecedor</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Descrição Fornecedor</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Produto no Gestor MEI</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Fator Conversão</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Ações</TableCell>
-                  </TableRow>
-                </TableHead>
+            <SentinelTableContainer>
+              <SentinelTable size="small">
+                <SentinelTableHead>
+                  <SentinelTableRow>
+                    <SentinelTableCell tabular={false}>Fornecedor (CNPJ)</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Código Fornecedor</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Descrição Fornecedor</SentinelTableCell>
+                    <SentinelTableCell tabular={false}>Produto no Gestor MEI</SentinelTableCell>
+                    <SentinelTableCell align="center" tabular={false}>Fator Conversão</SentinelTableCell>
+                    <SentinelTableCell align="center" tabular={false}>Ações</SentinelTableCell>
+                  </SentinelTableRow>
+                </SentinelTableHead>
                 <TableBody>
                   {vinculos.map((v) => (
-                    <TableRow key={v.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{v.fornecedor_nome || 'Fornecedor'}</Typography>
-                        <Typography variant="caption" color="text.secondary">CNPJ: {v.fornecedor_cnpj}</Typography>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                    <SentinelTableRow key={v.id}>
+                      <SentinelTableCell tabular={false}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>{v.fornecedor_nome || 'Fornecedor'}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>CNPJ: {v.fornecedor_cnpj}</Typography>
+                      </SentinelTableCell>
+                      <SentinelTableCell tabular={false} sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.8125rem' }}>
                         {v.codigo_fornecedor}
-                      </TableCell>
-                      <TableCell>{v.descricao_fornecedor || '-'}</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      </SentinelTableCell>
+                      <SentinelTableCell tabular={false} sx={{ fontSize: '0.8125rem' }}>{v.descricao_fornecedor || '-'}</SentinelTableCell>
+                      <SentinelTableCell tabular={false} sx={{ fontWeight: 700, color: sentinelTokens.colors.master.accent, fontSize: '0.8125rem' }}>
                         {v.produto_nome || `Produto #${v.produto_id}`}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip label={`Fator: ${v.fator_conversao}`} size="small" color="primary" sx={{ fontWeight: 700 }} />
-                      </TableCell>
-                      <TableCell align="center">
+                      </SentinelTableCell>
+                      <SentinelTableCell align="center" tabular={false}>
+                        <SentinelBadge sentinelVariant="info" size="small" label={`FATOR: ${v.fator_conversao}`} />
+                      </SentinelTableCell>
+                      <SentinelTableCell align="center" tabular={false}>
                         <Tooltip title="Excluir Vínculo">
-                          <IconButton size="small" color="error" onClick={() => handleExcluirVinculo(v.id)}>
-                            <Delete fontSize="small" />
+                          <IconButton size="small" color="error" onClick={() => handleExcluirVinculo(v.id)} sx={{ p: 0.5 }}>
+                            <Delete sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
-                      </TableCell>
-                    </TableRow>
+                      </SentinelTableCell>
+                    </SentinelTableRow>
                   ))}
                 </TableBody>
-              </Table>
-            </TableContainer>
+              </SentinelTable>
+            </SentinelTableContainer>
           )}
-        </Paper>
+        </SentinelCard>
       )}
 
       {/* =============================================================== */}
