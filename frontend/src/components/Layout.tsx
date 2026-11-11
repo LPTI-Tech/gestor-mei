@@ -70,6 +70,7 @@ import { useAppTheme } from '../contexts/ThemeContext';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
 import { resolveImageUrl } from '../services/api';
+import { SentinelBadge } from '../design-system';
 
 const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 74;
@@ -744,10 +745,11 @@ export const Layout: React.FC = () => {
           top: isSupportMode ? '42px' : 0,
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           ml: { md: `${currentDrawerWidth}px` },
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderBottom: 1,
-          borderColor: 'divider',
+          bgcolor: isMaster ? '#040D1A' : 'background.paper',
+          color: isMaster ? '#FFFFFF' : 'text.primary',
+          borderBottom: isMaster ? '2px solid #1976D2' : 1,
+          borderColor: isMaster ? undefined : 'divider',
+          boxShadow: isMaster ? '0 4px 20px rgba(4, 13, 26, 0.5)' : 'none',
           transition: theme.transitions.create(['width', 'margin-left', 'top'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,
@@ -755,7 +757,7 @@ export const Layout: React.FC = () => {
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 60 }, px: { xs: 1.5, sm: 2.5 } }}>
-          {/* Lado Esquerdo: Menu Mobile + Breadcrumbs Contextuais */}
+          {/* Lado Esquerdo: Menu Mobile + Breadcrumbs Contextuais + Sentinel Badge */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
             <IconButton
               color="inherit"
@@ -776,7 +778,7 @@ export const Layout: React.FC = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  color: 'text.secondary',
+                  color: isMaster ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary',
                   fontWeight: 600,
                   fontSize: '0.78rem',
                   letterSpacing: '0.02em',
@@ -787,7 +789,7 @@ export const Layout: React.FC = () => {
               <Typography
                 variant="subtitle2"
                 sx={{
-                  color: 'text.primary',
+                  color: isMaster ? '#FFFFFF' : 'text.primary',
                   fontWeight: 700,
                   fontSize: '0.85rem',
                 }}
@@ -796,8 +798,24 @@ export const Layout: React.FC = () => {
               </Typography>
             </Breadcrumbs>
 
+            {isMaster ? (
+              <SentinelBadge
+                sentinelVariant="master"
+                size="small"
+                withDot
+                pulse
+                label="MASTER PLATAFORMA"
+              />
+            ) : (
+              <SentinelBadge
+                sentinelVariant="owner"
+                size="small"
+                label={empresa?.nome_fantasia ? 'EMPRESA MEI' : 'ERP OFICIAL'}
+              />
+            )}
+
             {/* Mobile Title */}
-            <Typography variant="subtitle1" fontWeight={700} sx={{ display: { xs: 'block', sm: 'none' } }} noWrap>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ display: { xs: 'block', sm: 'none' }, color: isMaster ? '#FFFFFF' : 'inherit' }} noWrap>
               {breadcrumb.title}
             </Typography>
           </Box>
@@ -1097,10 +1115,11 @@ export const Layout: React.FC = () => {
                 sx={{
                   width: 34,
                   height: 34,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.82rem',
+                  bgcolor: isMaster ? '#1976D2' : (isAdmin ? 'secondary.main' : 'primary.main'),
+                  color: '#FFFFFF',
                   fontWeight: 700,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                  fontSize: '0.85rem',
+                  border: isMaster ? '1.5px solid rgba(255, 255, 255, 0.4)' : undefined,
                 }}
               >
                 {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}

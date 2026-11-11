@@ -50,15 +50,23 @@ import {
   SellOutlined,
   WarehouseOutlined,
   LocalOfferOutlined,
-  PhotoCamera,
 } from '@mui/icons-material';
-import { PackageSearch, Plus, Trash2, Edit3, Search as SearchLucide } from 'lucide-react';
-import api, { resolveImageUrl } from '../services/api';
+import api from '../services/api';
 import { Produto, TipoItem } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 const CATEGORIAS_SUGERIDAS = [
   // Alimentação & Comércio
@@ -113,29 +121,6 @@ export const Produtos: React.FC = () => {
   });
 
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleRemoveImage = async () => {
-    if (editingProduto && editingProduto.imagem_url) {
-      try {
-        await api.delete(`/produtos/${editingProduto.id}/imagem`);
-        setEditingProduto({ ...editingProduto, imagem_url: undefined, imagem_nome: undefined });
-      } catch (err) {
-        console.error('Erro ao excluir foto:', err);
-      }
-    }
-    setSelectedImageFile(null);
-    setImagePreviewUrl(null);
-  };
 
   // Delete Confirm Dialog
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -160,8 +145,6 @@ export const Produtos: React.FC = () => {
   const handleOpenModal = (prod?: Produto) => {
     if (prod) {
       setEditingProduto(prod);
-      setImagePreviewUrl(prod.imagem_url || null);
-      setSelectedImageFile(null);
       setFormData({
         nome: prod.nome,
         tipo: prod.tipo || 'PRODUTO',
@@ -174,8 +157,6 @@ export const Produtos: React.FC = () => {
       });
     } else {
       setEditingProduto(null);
-      setImagePreviewUrl(null);
-      setSelectedImageFile(null);
       setFormData({
         nome: '',
         tipo: 'PRODUTO',
@@ -193,34 +174,14 @@ export const Produtos: React.FC = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingProduto(null);
-      setImagePreviewUrl(null);
-      setSelectedImageFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nomeLimpo = formData.nome.trim();
-    if (!nomeLimpo) {
-      alert('Por favor, informe o nome do produto ou serviço.');
-      return;
-    }
-
-    // Validação preventiva no cliente contra nomes duplicados na mesma empresa
-    const duplicadoLocal = produtos.find(
-      (p) =>
-        p.nome.trim().toLowerCase() === nomeLimpo.toLowerCase() &&
-        (!editingProduto || p.id !== editingProduto.id)
-    );
-
-    if (duplicadoLocal) {
-      alert('Já existe um produto com este nome nesta empresa.');
-      return;
-    }
-
     try {
       setSubmitting(true);
       const payload: any = {
-        nome: nomeLimpo,
+        nome: formData.nome,
         tipo: formData.tipo,
         categoria: formData.categoria,
         preco_venda: Number(formData.preco_venda),
@@ -230,20 +191,10 @@ export const Produtos: React.FC = () => {
         ativo: formData.ativo,
       };
 
-      let savedProdId = editingProduto ? editingProduto.id : null;
       if (editingProduto) {
         await api.put(`/produtos/${editingProduto.id}`, payload);
       } else {
-        const createRes = await api.post<Produto>('/produtos', payload);
-        savedProdId = createRes.data.id;
-      }
-
-      if (savedProdId && selectedImageFile) {
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', selectedImageFile);
-        await api.post(`/produtos/${savedProdId}/imagem`, formDataUpload, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        await api.post('/produtos', payload);
       }
 
       handleCloseModal();
@@ -427,7 +378,7 @@ export const Produtos: React.FC = () => {
       >
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={5}>
-            <TextField
+            <SentinelInput
               fullWidth
               size="small"
               placeholder="Buscar por nome ou categoria..."
@@ -439,11 +390,6 @@ export const Produtos: React.FC = () => {
                     <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
                   </InputAdornment>
                 ),
-                sx: {
-                  borderRadius: 2,
-                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
-                  '& fieldset': { borderColor: 'divider' },
-                },
               }}
             />
           </Grid>
@@ -591,7 +537,7 @@ export const Produtos: React.FC = () => {
               mb: 2,
             }}
           >
-            <PackageSearch size={32} strokeWidth={1.75} />
+            <RestaurantMenu sx={{ fontSize: 32 }} />
           </Box>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
             {searchTerm || selectedCategoria !== 'Todas' || selectedTipo !== 'Todos'
@@ -614,116 +560,19 @@ export const Produtos: React.FC = () => {
           </Button>
         </Paper>
       ) : (
-        <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-          }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow
-                sx={{
-                  bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC'),
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Item / Mercadoria
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Classificação Fiscal
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Categoria
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Preço de Venda
-                </TableCell>
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Estoque Atual
-                </TableCell>
-                <TableCell
-                  align="center"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.72rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    py: 1.8,
-                  }}
-                >
-                  Ações
-                </TableCell>
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
+              <TableRow>
+                <TableCell>Item / Mercadoria</TableCell>
+                <TableCell>Classificação Fiscal</TableCell>
+                <TableCell>Categoria</TableCell>
+                <TableCell align="right">Preço de Venda</TableCell>
+                <TableCell align="center">Estoque Atual</TableCell>
+                <TableCell align="center">Status</TableCell>
+                <TableCell align="right">Ações</TableCell>
               </TableRow>
-            </TableHead>
+            </SentinelTableHead>
             <TableBody>
               {filteredProdutos.map((prod) => {
                 const isServico = prod.tipo === 'SERVICO';
@@ -734,96 +583,58 @@ export const Produtos: React.FC = () => {
                     : null;
 
                 return (
-                  <TableRow
-                    key={prod.id}
-                    hover
-                    sx={{
-                      '&:hover': {
-                        bgcolor: (theme) =>
-                          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#FBFDFF',
-                      },
-                      transition: 'background-color 0.15s ease',
-                    }}
-                  >
+                  <SentinelTableRow key={prod.id}>
                     {/* Item / Mercadoria */}
-                    <TableCell sx={{ py: 1.5 }}>
+                    <SentinelTableCell tabular={false}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
-                          src={resolveImageUrl(prod.imagem_url)}
-                          variant="rounded"
                           sx={{
-                            width: 44,
-                            height: 44,
+                            width: 34,
+                            height: 34,
                             borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: 'divider',
                             bgcolor: isServico
                               ? 'rgba(123, 31, 162, 0.1)'
                               : 'rgba(25, 118, 210, 0.1)',
                             color: isServico ? '#7B1FA2' : 'primary.main',
                           }}
                         >
-                          {isServico ? <Build sx={{ fontSize: 20 }} /> : <ShoppingBag sx={{ fontSize: 20 }} />}
+                          {isServico ? <Build sx={{ fontSize: 16 }} /> : <ShoppingBag sx={{ fontSize: 16 }} />}
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary' }}>
+                          <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', fontSize: '0.8125rem' }}>
                             {prod.nome}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                             Ref #{prod.id}
                           </Typography>
                         </Box>
                       </Box>
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Classificação Fiscal */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        icon={
-                          isServico ? (
-                            <Build sx={{ '&&': { fontSize: 13, color: '#7B1FA2' } }} />
-                          ) : (
-                            <ShoppingBag sx={{ '&&': { fontSize: 13, color: '#1976D2' } }} />
-                          )
-                        }
-                        label={isServico ? 'Serviço (ISS)' : 'Produto (Comércio)'}
+                    <SentinelTableCell tabular={false}>
+                      <SentinelBadge
+                        sentinelVariant={isServico ? 'consultor' : 'info'}
                         size="small"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          bgcolor: isServico ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
-                          color: isServico ? '#7B1FA2' : '#1976D2',
-                          border: '1px solid',
-                          borderColor: isServico ? 'rgba(123, 31, 162, 0.2)' : 'rgba(25, 118, 210, 0.2)',
-                          height: 24,
-                        }}
+                        label={isServico ? 'Serviço (ISS)' : 'Produto (Comércio)'}
                       />
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Categoria */}
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        label={prod.categoria}
+                    <SentinelTableCell tabular={false}>
+                      <SentinelBadge
+                        sentinelVariant="default"
                         size="small"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                          color: 'text.primary',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          height: 24,
-                        }}
+                        label={prod.categoria}
                       />
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Preço de Venda */}
-                    <TableCell align="right" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="right" tabular={true}>
                       <Typography
                         variant="body2"
                         fontWeight={700}
-                        sx={{ fontFeatureSettings: '"tnum"', color: '#1B5E20' }}
+                        sx={{ fontFeatureSettings: '"tnum"', color: '#107C41', fontSize: '0.8125rem' }}
                       >
                         {formatCurrency(prod.preco_venda)}
                       </Typography>
@@ -840,73 +651,38 @@ export const Produtos: React.FC = () => {
                           Custo {formatCurrency(prod.custo_unitario || 0)} • Margem {margem}%
                         </Typography>
                       )}
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Estoque */}
-                    <TableCell align="center" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="center" tabular={false}>
                       {!isServico ? (
-                        <Chip
-                          icon={
-                            prod.estoque_baixo ? (
-                              <WarningAmber sx={{ '&&': { fontSize: 13, color: '#D32F2F' } }} />
-                            ) : undefined
-                          }
-                          label={`${(prod.quantidade_estoque || 0).toFixed(0)} un`}
+                        <SentinelBadge
+                          sentinelVariant={prod.estoque_baixo ? 'error' : 'active'}
                           size="small"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            fontFeatureSettings: '"tnum"',
-                            bgcolor: prod.estoque_baixo
-                              ? 'rgba(211, 47, 47, 0.08)'
-                              : 'rgba(46, 125, 50, 0.08)',
-                            color: prod.estoque_baixo ? '#D32F2F' : '#2E7D32',
-                            border: '1px solid',
-                            borderColor: prod.estoque_baixo
-                              ? 'rgba(211, 47, 47, 0.22)'
-                              : 'rgba(46, 125, 50, 0.22)',
-                            height: 24,
-                          }}
+                          label={`${(prod.quantidade_estoque || 0).toFixed(0)} UN`}
                         />
                       ) : (
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
                           Ilimitado
                         </Typography>
                       )}
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Status */}
-                    <TableCell align="center" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="center" tabular={false}>
                       <Tooltip title="Clique para alternar status do item">
-                        <Chip
-                          icon={
-                            prod.ativo ? (
-                              <CheckCircle sx={{ '&&': { fontSize: 14, color: '#2E7D32' } }} />
-                            ) : (
-                              <Cancel sx={{ '&&': { fontSize: 14, color: '#64748B' } }} />
-                            )
-                          }
-                          label={prod.ativo ? 'Disponível' : 'Inativo'}
-                          size="small"
-                          clickable
-                          onClick={() => handleToggleAtivo(prod)}
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            bgcolor: prod.ativo ? 'rgba(46, 125, 50, 0.08)' : 'rgba(100, 116, 139, 0.08)',
-                            color: prod.ativo ? '#2E7D32' : '#64748B',
-                            border: '1px solid',
-                            borderColor: prod.ativo
-                              ? 'rgba(46, 125, 50, 0.22)'
-                              : 'rgba(100, 116, 139, 0.22)',
-                            height: 24,
-                          }}
-                        />
+                        <Box component="span" onClick={() => handleToggleAtivo(prod)} sx={{ cursor: 'pointer' }}>
+                          <SentinelBadge
+                            sentinelVariant={prod.ativo ? 'active' : 'default'}
+                            size="small"
+                            label={prod.ativo ? 'DISPONÍVEL' : 'INATIVO'}
+                          />
+                        </Box>
                       </Tooltip>
-                    </TableCell>
+                    </SentinelTableCell>
 
                     {/* Ações */}
-                    <TableCell align="right" sx={{ py: 1.5 }}>
+                    <SentinelTableCell align="right" tabular={false}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
                         <Tooltip title="Editar Item">
                           <IconButton
@@ -937,44 +713,30 @@ export const Produtos: React.FC = () => {
                           </Tooltip>
                         )}
                       </Box>
-                    </TableCell>
-                  </TableRow>
+                    </SentinelTableCell>
+                  </SentinelTableRow>
                 );
               })}
             </TableBody>
-          </Table>
-        </TableContainer>
+          </SentinelTable>
+        </SentinelTableContainer>
       )}
 
-      {/* Modal Add / Edit (Organizado em 2 Colunas Executivas) */}
+      {/* Modal Add / Edit (Organizado em Seções Executivas) */}
       <Dialog
         open={modalOpen}
         onClose={handleCloseModal}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3.5,
             boxShadow: '0 24px 60px rgba(7, 25, 51, 0.22)',
-            maxHeight: { xs: 'calc(100dvh - 32px)', sm: 'calc(100dvh - 48px)' },
-            display: 'flex',
-            flexDirection: 'column',
             overflow: 'hidden',
-            m: { xs: 1.5, sm: 2.5 },
           },
         }}
       >
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            minHeight: 0,
-            overflow: 'hidden',
-          }}
-        >
+        <Box component="form" onSubmit={handleSubmit}>
           <DialogTitle
             sx={{
               display: 'flex',
@@ -982,7 +744,6 @@ export const Produtos: React.FC = () => {
               justifyContent: 'space-between',
               p: 2.5,
               pb: 2,
-              flexShrink: 0,
               borderBottom: '1px solid',
               borderColor: 'divider',
             }}
@@ -1018,358 +779,278 @@ export const Produtos: React.FC = () => {
             </IconButton>
           </DialogTitle>
 
-          <DialogContent
-            dividers
-            sx={{
-              p: { xs: 2, sm: 3 },
-              flex: '1 1 auto',
-              overflowY: 'auto',
-              overscrollBehavior: 'contain',
-            }}
-          >
-            <Grid container spacing={3}>
-              {/* COLUNA ESQUERDA: Classificação, Imagem e Identificação */}
-              <Grid item xs={12} md={6}>
-                {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
-                    Classificação Tributária (DASN-SIMEI)
-                  </Typography>
-                  <RadioGroup
-                    row
-                    value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
-                    sx={{
-                      display: 'flex',
-                      gap: 1.5,
-                    }}
-                  >
-                    <Box
-                      onClick={() => setFormData({ ...formData, tipo: 'PRODUTO' })}
-                      sx={{
-                        flex: 1,
-                        p: 1.25,
-                        borderRadius: 2,
-                        border: '1.5px solid',
-                        borderColor: formData.tipo === 'PRODUTO' ? 'primary.main' : 'divider',
-                        bgcolor: formData.tipo === 'PRODUTO' ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Radio checked={formData.tipo === 'PRODUTO'} size="small" sx={{ p: 0 }} />
-                      <Box>
-                        <Typography variant="body2" fontWeight={700}>
-                          Produto / Mercadoria
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Comércio (ICMS / DASN)
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box
-                      onClick={() => setFormData({ ...formData, tipo: 'SERVICO' })}
-                      sx={{
-                        flex: 1,
-                        p: 1.25,
-                        borderRadius: 2,
-                        border: '1.5px solid',
-                        borderColor: formData.tipo === 'SERVICO' ? 'primary.main' : 'divider',
-                        bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.04)' : 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Radio checked={formData.tipo === 'SERVICO'} size="small" sx={{ p: 0 }} />
-                      <Box>
-                        <Typography variant="body2" fontWeight={700}>
-                          Serviço Prestado
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Mão de Obra (ISS)
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </RadioGroup>
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                {/* SEÇÃO FOTO: Foto Principal com Otimização WebP e R2 */}
-                <Box sx={{ mb: 2.5, p: 2, borderRadius: 2.5, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC', border: '1px dashed', borderColor: 'divider' }}>
-                  <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.secondary', display: 'block', mb: 1.5 }}>
-                    Foto Principal do Item (Cloudflare R2 • WebP)
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar
-                      src={resolveImageUrl(imagePreviewUrl)}
-                      variant="rounded"
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
-                        color: formData.tipo === 'SERVICO' ? '#7B1FA2' : 'primary.main',
-                      }}
-                    >
-                      {formData.tipo === 'SERVICO' ? <Build sx={{ fontSize: 28 }} /> : <ShoppingBag sx={{ fontSize: 28 }} />}
-                    </Avatar>
-
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          component="label"
-                          startIcon={<PhotoCamera sx={{ fontSize: 16 }} />}
-                          sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 1.5, fontSize: '0.78rem' }}
-                        >
-                          {imagePreviewUrl ? 'Alterar Foto' : 'Adicionar Foto'}
-                          <input
-                            type="file"
-                            hidden
-                            accept="image/png,image/jpeg,image/webp,image/jpg"
-                            onChange={handleImageSelect}
-                          />
-                        </Button>
-                        {imagePreviewUrl && (
-                          <Button
-                            variant="text"
-                            size="small"
-                            color="error"
-                            onClick={handleRemoveImage}
-                            sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
-                          >
-                            Remover
-                          </Button>
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label="WebP Otimizado"
-                          size="small"
-                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(46, 125, 50, 0.08)', color: '#2E7D32' }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          PNG, JPG ou WEBP até 10 MB
-                        </Typography>
-                      </Box>
-                    </Box>
+          <DialogContent sx={{ p: 3 }}>
+            {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
+                Classificação Tributária (DASN-SIMEI)
+              </Typography>
+              <RadioGroup
+                row
+                value={formData.tipo}
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoItem })}
+                sx={{
+                  display: 'flex',
+                  gap: 1.5,
+                }}
+              >
+                <Box
+                  onClick={() => setFormData({ ...formData, tipo: 'PRODUTO' })}
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1.5px solid',
+                    borderColor: formData.tipo === 'PRODUTO' ? 'primary.main' : 'divider',
+                    bgcolor: formData.tipo === 'PRODUTO' ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Radio checked={formData.tipo === 'PRODUTO'} size="small" sx={{ p: 0 }} />
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      Produto / Mercadoria
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Comércio (ICMS / DASN)
+                    </Typography>
                   </Box>
                 </Box>
 
-                <Divider sx={{ my: 2 }} />
+                <Box
+                  onClick={() => setFormData({ ...formData, tipo: 'SERVICO' })}
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1.5px solid',
+                    borderColor: formData.tipo === 'SERVICO' ? 'primary.main' : 'divider',
+                    bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.04)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Radio checked={formData.tipo === 'SERVICO'} size="small" sx={{ p: 0 }} />
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      Serviço Prestado
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Mão de Obra (ISS)
+                    </Typography>
+                  </Box>
+                </Box>
+              </RadioGroup>
+            </Box>
 
-                {/* SEÇÃO 2: Identificação do Item */}
+            <Divider sx={{ my: 2.5 }} />
+
+            {/* SEÇÃO 2: Identificação do Item */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <LocalOfferOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                  Identificação do Item
+                </Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Nome do Item / Serviço *"
+                    required
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder={
+                      formData.tipo === 'SERVICO'
+                        ? 'Ex: Corte Degradê, Manutenção ou Troca de Óleo'
+                        : 'Ex: Marmita M Feijoada ou Refrigerante Lata'
+                    }
+                    InputProps={{ sx: { borderRadius: 2 } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={7}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Categoria</InputLabel>
+                    <Select
+                      value={formData.categoria}
+                      label="Categoria"
+                      onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      {CATEGORIAS_SUGERIDAS.map((cat) => (
+                        <MenuItem key={cat} value={cat}>
+                          {cat}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={5} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.ativo}
+                        onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        {formData.ativo ? 'Disponível' : 'Inativo'}
+                      </Typography>
+                    }
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 2.5 }} />
+
+            {/* SEÇÃO 3: Precificação & Margem de Lucro */}
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <SellOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                  Precificação & Margens
+                </Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Preço de Venda (R$) *"
+                    type="number"
+                    inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
+                    required
+                    value={formData.preco_venda}
+                    onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
+                    placeholder="0,00"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                      sx: { borderRadius: 2 },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Custo Unitário (R$)"
+                    type="number"
+                    inputProps={{ step: '0.01', min: '0' }}
+                    value={formData.custo_unitario}
+                    onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
+                    placeholder="0,00"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                      sx: { borderRadius: 2 },
+                    }}
+                  />
+                </Grid>
+
+                {/* Live Profit Margin Card */}
+                {precoNum > 0 && custoNum > 0 && (
+                  <Grid item xs={12}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.06)' : 'rgba(211, 47, 47, 0.06)',
+                        border: '1px solid',
+                        borderColor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(211, 47, 47, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TrendingUp sx={{ fontSize: 18, color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }} />
+                        <Typography variant="caption" fontWeight={700} color="text.primary">
+                          Lucro Bruto Estimado:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          fontWeight={800}
+                          sx={{ fontFeatureSettings: '"tnum"', color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }}
+                        >
+                          {formatCurrency(lucroEstimado)} / un
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${margemEstimada.toFixed(1)}% de Margem`}
+                        size="small"
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: '0.72rem',
+                          fontFeatureSettings: '"tnum"',
+                          bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
+                          color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F',
+                          height: 22,
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+
+            {/* SEÇÃO 4: Controle de Estoque (Apenas Produto) */}
+            {formData.tipo === 'PRODUTO' && (
+              <>
+                <Divider sx={{ my: 2.5 }} />
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <LocalOfferOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
+                    <WarehouseOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
                     <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                      Identificação do Item
+                      Controle de Estoque
                     </Typography>
                   </Box>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         size="small"
-                        label="Nome do Item / Serviço *"
-                        required
-                        value={formData.nome}
-                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                        placeholder={
-                          formData.tipo === 'SERVICO'
-                            ? 'Ex: Corte Degradê, Manutenção ou Troca de Óleo'
-                            : 'Ex: Marmita M Feijoada ou Refrigerante Lata'
-                        }
+                        label="Estoque Atual / Inicial"
+                        type="number"
+                        inputProps={{ step: 'any', min: '0' }}
+                        value={formData.quantidade_estoque}
+                        onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
                         InputProps={{ sx: { borderRadius: 2 } }}
                       />
                     </Grid>
-
-                    <Grid item xs={12} sm={7}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Categoria</InputLabel>
-                        <Select
-                          value={formData.categoria}
-                          label="Categoria"
-                          onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                          sx={{ borderRadius: 2 }}
-                        >
-                          {CATEGORIAS_SUGERIDAS.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                              {cat}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-
-                    <Grid item xs={12} sm={5} sx={{ display: 'flex', alignItems: 'center' }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={formData.ativo}
-                            onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
-                            color="primary"
-                          />
-                        }
-                        label={
-                          <Typography variant="body2" fontWeight={600}>
-                            {formData.ativo ? 'Disponível' : 'Inativo'}
-                          </Typography>
-                        }
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
-              </Grid>
-
-              {/* COLUNA DIREITA: Precificação, Margens e Estoque */}
-              <Grid item xs={12} md={6}>
-                {/* SEÇÃO 3: Precificação & Margem de Lucro */}
-                <Box sx={{ mb: 2.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <SellOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
-                    <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                      Precificação & Margens
-                    </Typography>
-                  </Box>
-
-                  <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         size="small"
-                        label="Preço de Venda (R$) *"
+                        label="Estoque Mínimo (Alerta)"
                         type="number"
-                        inputProps={{ step: '0.01', min: '0', style: { fontWeight: 700 } }}
-                        required
-                        value={formData.preco_venda}
-                        onChange={(e) => setFormData({ ...formData, preco_venda: e.target.value })}
-                        placeholder="0,00"
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                          sx: { borderRadius: 2 },
-                        }}
+                        inputProps={{ step: 'any', min: '0' }}
+                        value={formData.estoque_minimo}
+                        onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
+                        InputProps={{ sx: { borderRadius: 2 } }}
                       />
                     </Grid>
-
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Custo Unitário (R$)"
-                        type="number"
-                        inputProps={{ step: '0.01', min: '0' }}
-                        value={formData.custo_unitario}
-                        onChange={(e) => setFormData({ ...formData, custo_unitario: e.target.value })}
-                        placeholder="0,00"
-                        InputProps={{
-                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
-                          sx: { borderRadius: 2 },
-                        }}
-                      />
-                    </Grid>
-
-                    {/* Live Profit Margin Card */}
-                    {precoNum > 0 && custoNum > 0 && (
-                      <Grid item xs={12}>
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 2,
-                            bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.06)' : 'rgba(211, 47, 47, 0.06)',
-                            border: '1px solid',
-                            borderColor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.2)' : 'rgba(211, 47, 47, 0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TrendingUp sx={{ fontSize: 18, color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }} />
-                            <Typography variant="caption" fontWeight={700} color="text.primary">
-                              Lucro Bruto Estimado:
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              fontWeight={800}
-                              sx={{ fontFeatureSettings: '"tnum"', color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F' }}
-                            >
-                              {formatCurrency(lucroEstimado)} / un
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={`${margemEstimada.toFixed(1)}% de Margem`}
-                            size="small"
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: '0.72rem',
-                              fontFeatureSettings: '"tnum"',
-                              bgcolor: lucroEstimado >= 0 ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
-                              color: lucroEstimado >= 0 ? '#2E7D32' : '#D32F2F',
-                              height: 22,
-                            }}
-                          />
-                        </Paper>
-                      </Grid>
-                    )}
                   </Grid>
                 </Box>
-
-                {/* SEÇÃO 4: Controle de Estoque (Apenas Produto) */}
-                {formData.tipo === 'PRODUTO' && (
-                  <Box>
-                    <Divider sx={{ my: 2 }} />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <WarehouseOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
-                      <Typography variant="subtitle2" fontWeight={800} color="text.primary">
-                        Controle de Estoque
-                      </Typography>
-                    </Box>
-
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Estoque Atual / Inicial"
-                          type="number"
-                          inputProps={{ step: 'any', min: '0' }}
-                          value={formData.quantidade_estoque}
-                          onChange={(e) => setFormData({ ...formData, quantidade_estoque: e.target.value })}
-                          InputProps={{ sx: { borderRadius: 2 } }}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Estoque Mínimo (Alerta)"
-                          type="number"
-                          inputProps={{ step: 'any', min: '0' }}
-                          value={formData.estoque_minimo}
-                          onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })}
-                          InputProps={{ sx: { borderRadius: 2 } }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-              </Grid>
-            </Grid>
+              </>
+            )}
           </DialogContent>
 
           <DialogActions
@@ -1380,12 +1061,6 @@ export const Produtos: React.FC = () => {
               borderColor: 'divider',
               display: 'flex',
               justifyContent: 'flex-end',
-              flexShrink: 0,
-              position: 'sticky',
-              bottom: 0,
-              zIndex: 10,
-              bgcolor: (theme) =>
-                theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
               gap: 1.5,
             }}
           >

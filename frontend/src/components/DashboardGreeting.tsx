@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logoIcon from '../assets/branding/gestor-mei-icon.png';
+import { SentinelBadge } from '../design-system';
 import { DashboardMetrics, Produto, User, Empresa } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 
@@ -336,17 +337,11 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
           >
             GESTOR MEI
           </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 500,
-              fontSize: '0.74rem',
-              display: { xs: 'none', sm: 'inline' },
-            }}
-          >
-            • ERP Inteligente para MEIs e Pequenos Negócios
-          </Typography>
+          {user?.role === 'MASTER' ? (
+            <SentinelBadge sentinelVariant="master" size="small" withDot pulse label="PLATAFORMA MASTER" />
+          ) : (
+            <SentinelBadge sentinelVariant="owner" size="small" label="AMBIENTE EMPRESARIAL" />
+          )}
           <Typography
             variant="caption"
             sx={{
@@ -361,7 +356,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
           </Typography>
         </Box>
 
-        {/* Saudação com emoji e nome do usuário com destaque visual moderno */}
+        {/* Saudação com emoji e nome do usuário com destaque visual Sentinel */}
         <Typography
           variant="h5"
           fontWeight={800}
@@ -382,15 +377,9 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
           <Box
             component="span"
             sx={{
-              background: (t) =>
-                t.palette.mode === 'dark'
-                  ? 'linear-gradient(135deg, #64B5F6 0%, #BA68C8 100%)'
-                  : 'linear-gradient(135deg, #1565C0 0%, #7B1FA2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: user?.role === 'MASTER' ? '#1976D2' : 'primary.main',
               fontWeight: 900,
               display: 'inline-block',
-              textShadow: '0 2px 10px rgba(25, 118, 210, 0.15)',
             }}
           >
             {userName}
@@ -404,8 +393,9 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
           color="text.secondary"
           sx={{ mt: 0.5, mb: 1.5, fontWeight: 500 }}
         >
-          {empresa?.nome_fantasia ? `${empresa.nome_fantasia} — ` : ''}
-          Acompanhe seu desempenho e movimentações em tempo real.
+          {user?.role === 'MASTER'
+            ? 'Centro de Governança Multiempresa, Auditoria e Supervisão Geral da Rede MEI.'
+            : (empresa?.nome_fantasia ? `${empresa.nome_fantasia} — ` : '') + 'Acompanhe seu desempenho e movimentações em tempo real.'}
         </Typography>
 
         {/* Card/Pill do insight inteligente com ícone e prioridade */}

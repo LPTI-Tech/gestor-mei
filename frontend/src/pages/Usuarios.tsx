@@ -47,22 +47,28 @@ import {
   Search,
   Schedule,
   PersonAdd,
-  Business,
-  SwapHoriz,
 } from '@mui/icons-material';
 import api from '../services/api';
-import { User, UserRole, EmpresaMasterListItem } from '../types';
+import { User, UserRole } from '../types';
 import { formatDateTime } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  SentinelInput,
+} from '../design-system';
 
 export const Usuarios: React.FC = () => {
   const { user: currentUser, isMaster } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
-  const [empresas, setEmpresas] = useState<EmpresaMasterListItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
-  const [empresaFiltro, setEmpresaFiltro] = useState<number | 'TODAS'>('TODAS');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Modal Criar / Editar Usuário
@@ -72,7 +78,6 @@ export const Usuarios: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('OPERATOR');
-  const [formEmpresaId, setFormEmpresaId] = useState<number | ''>('');
   const [formAtivo, setFormAtivo] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -94,13 +99,6 @@ export const Usuarios: React.FC = () => {
   const [roleSubmitting, setRoleSubmitting] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
-  // Modal Transferir Propriedade (Exclusivo MASTER)
-  const [transferModalOpen, setTransferModalOpen] = useState<boolean>(false);
-  const [transferEmpresaId, setTransferEmpresaId] = useState<number | ''>('');
-  const [transferNovoOwnerId, setTransferNovoOwnerId] = useState<number | ''>('');
-  const [transferSubmitting, setTransferSubmitting] = useState(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-
   // Diálogo Excluir
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteNome, setDeleteNome] = useState<string | null>(null);
@@ -118,25 +116,9 @@ export const Usuarios: React.FC = () => {
     }
   };
 
-  const fetchEmpresas = async () => {
-    if (!isMaster) return;
-    try {
-      const res = await api.get<EmpresaMasterListItem[]>('/empresa/todas');
-      setEmpresas(res.data);
-      if (res.data.length > 0 && formEmpresaId === '') {
-        setFormEmpresaId(res.data[0].id);
-      }
-    } catch (err) {
-      console.error('Erro ao listar empresas para MASTER:', err);
-    }
-  };
-
   useEffect(() => {
     fetchUsers();
-    if (isMaster) {
-      fetchEmpresas();
-    }
-  }, [isMaster]);
+  }, []);
 
   // Handlers Modal Criar / Editar
   const handleOpenCreateModal = () => {
@@ -145,7 +127,6 @@ export const Usuarios: React.FC = () => {
     setFormEmail('');
     setFormPassword('');
     setFormRole('OPERATOR');
-    setFormEmpresaId(empresas.length > 0 ? empresas[0].id : (currentUser?.empresa_id || ''));
     setFormAtivo(true);
     setShowPassword(false);
     setFormError(null);
@@ -158,7 +139,6 @@ export const Usuarios: React.FC = () => {
     setFormEmail(u.email);
     setFormPassword('');
     setFormRole(u.role);
-    setFormEmpresaId(u.empresa_id || '');
     setFormAtivo(u.ativo);
     setShowPassword(false);
     setFormError(null);
@@ -182,33 +162,17 @@ export const Usuarios: React.FC = () => {
         await api.put(`/users/${editingUserId}`, payload);
         setFeedback({ type: 'success', text: `Dados de '${formNome}' atualizados com sucesso!` });
       } else {
-        const payload: any = {
+        await api.post('/users', {
           nome: formNome,
           email: formEmail,
           password: formPassword,
           role: formRole,
           ativo: formAtivo,
-        };
-        if (isMaster) {
-          if (formRole === 'MASTER') {
-            payload.empresa_id = null;
-          } else {
-            const chosenEmpresa = formEmpresaId || (empresas.length > 0 ? empresas[0].id : null);
-            if (chosenEmpresa) {
-              payload.empresa_id = Number(chosenEmpresa);
-            } else {
-              setFormError('Selecione a Empresa de Destino para este usuário.');
-              setSubmitting(false);
-              return;
-            }
-          }
-        }
-        await api.post('/users', payload);
+        });
         setFeedback({ type: 'success', text: `Usuário '${formNome}' cadastrado com sucesso!` });
       }
       setModalOpen(false);
       fetchUsers();
-      if (isMaster) fetchEmpresas();
     } catch (err: any) {
       const msg = err.response?.data?.detail || 'Erro ao salvar informações do usuário.';
       setFormError(msg);
@@ -233,12 +197,11 @@ export const Usuarios: React.FC = () => {
     setResetError(null);
 
     if (novaSenha.length < 4) {
-      setResetError('A nova senha deve possuir no mínimo 4 caracteres.');
+      setResetError('A nova senha deve possuir pelo menos 4 caracteres.');
       return;
     }
-
     if (novaSenha !== confirmarSenha) {
-      setResetError('A confirmação de senha não coincide com a nova senha digitada.');
+      setResetError('A confirmação da senha não coincide com a nova senha.');
       return;
     }
 
@@ -278,45 +241,11 @@ export const Usuarios: React.FC = () => {
       setRoleModalOpen(false);
       setFeedback({ type: 'success', text: `Perfil de '${roleTargetUser.nome}' alterado com sucesso!` });
       fetchUsers();
-      if (isMaster) fetchEmpresas();
     } catch (err: any) {
       const msg = err.response?.data?.detail || 'Erro ao alterar perfil.';
       setRoleError(msg);
     } finally {
       setRoleSubmitting(false);
-    }
-  };
-
-  // Handlers Transferir Propriedade MASTER
-  const handleOpenTransferModal = () => {
-    setTransferEmpresaId(empresas.length > 0 ? empresas[0].id : '');
-    setTransferNovoOwnerId('');
-    setTransferError(null);
-    setTransferModalOpen(true);
-  };
-
-  const handleExecuteTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!transferEmpresaId || !transferNovoOwnerId) {
-      setTransferError('Selecione a empresa e o novo titular.');
-      return;
-    }
-    setTransferError(null);
-
-    try {
-      setTransferSubmitting(true);
-      const res = await api.post(`/empresa/${transferEmpresaId}/transferir-propriedade`, {
-        novo_owner_user_id: Number(transferNovoOwnerId),
-      });
-      setTransferModalOpen(false);
-      setFeedback({ type: 'success', text: res.data.message || 'Propriedade transferida com sucesso!' });
-      fetchUsers();
-      fetchEmpresas();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Erro ao transferir propriedade.';
-      setTransferError(msg);
-    } finally {
-      setTransferSubmitting(false);
     }
   };
 
@@ -351,13 +280,6 @@ export const Usuarios: React.FC = () => {
   // Helpers de visualização por Perfil
   const getRoleConfig = (role: UserRole) => {
     switch (role) {
-      case 'MASTER':
-        return {
-          label: 'Administrador Global (MASTER)',
-          color: 'error' as const,
-          bgColor: '#b71c1c',
-          icon: <AdminPanelSettings fontSize="small" />,
-        };
       case 'OWNER':
       case 'ADMIN':
         return {
@@ -387,23 +309,15 @@ export const Usuarios: React.FC = () => {
 
   // Métricas
   const totalUsuarios = users.length;
-  const totalOwners = users.filter((u) => u.role === 'OWNER' || u.role === 'ADMIN').length;
+  const ownerUser = users.find((u) => u.role === 'OWNER' || u.role === 'ADMIN');
   const totalOperadores = users.filter((u) => u.role === 'OPERATOR' || u.role === 'OPERADOR').length;
   const totalConsultores = users.filter((u) => u.role === 'CONSULTOR').length;
-  const totalMasters = users.filter((u) => u.role === 'MASTER').length;
 
   // Filtragem da tabela
   const usersFiltrados = users.filter((u) => {
-    if (empresaFiltro !== 'TODAS' && u.empresa_id !== empresaFiltro) {
-      return false;
-    }
     if (!busca) return true;
     const termo = busca.toLowerCase();
-    return (
-      u.nome.toLowerCase().includes(termo) ||
-      u.email.toLowerCase().includes(termo) ||
-      (u.empresa_nome && u.empresa_nome.toLowerCase().includes(termo))
-    );
+    return u.nome.toLowerCase().includes(termo) || u.email.toLowerCase().includes(termo);
   });
 
   return (
@@ -420,39 +334,32 @@ export const Usuarios: React.FC = () => {
         }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={800} display="flex" alignItems="center" gap={1}>
-            <People color="primary" /> Gestão de Usuários & RBAC
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Typography variant="h5" fontWeight={800} display="flex" alignItems="center" gap={1} sx={{ letterSpacing: '-0.02em' }}>
+              <People color="primary" /> Gestão de Usuários & RBAC
+            </Typography>
+            <SentinelBadge
+              sentinelVariant={isMaster ? 'master' : 'owner'}
+              size="small"
+              withDot={isMaster}
+              pulse={isMaster}
+              label={isMaster ? 'CENTRO DE COMANDO' : 'MULTIEMPRESA'}
+            />
+          </Box>
           <Typography variant="body2" color="text.secondary">
-            {isMaster
-              ? 'Painel MASTER LPTI Tech: Administração global de empresas clientes, titulares (OWNER) e equipe.'
-              : 'Controle os acessos internos da sua empresa com perfis de Proprietário (OWNER), Consultor e Operadores.'}
+            Controle os acessos internos da sua empresa com perfis de Proprietário (OWNER), Consultor e Operadores.
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          {isMaster && (
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<SwapHoriz />}
-              onClick={handleOpenTransferModal}
-              sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
-            >
-              Transferir Titularidade
-            </Button>
-          )}
-
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={handleOpenCreateModal}
-            sx={{ fontWeight: 700, height: 44, borderRadius: 2 }}
-          >
-            Novo Usuário
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          onClick={handleOpenCreateModal}
+          sx={{ fontWeight: 700, height: 40, borderRadius: 2, px: 2.5, textTransform: 'none', fontSize: '0.875rem' }}
+        >
+          Novo Usuário
+        </Button>
       </Box>
 
       {/* Alerta de Feedback */}
@@ -466,109 +373,156 @@ export const Usuarios: React.FC = () => {
         </Alert>
       )}
 
-      {/* Cards de Resumo Executivo */}
+      {/* Cards de Resumo Executivo (Sentinel Design System) */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: 48, height: 48 }}>
-                <People />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  USUÁRIOS ATIVOS
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  EQUIPE TOTAL
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalUsuarios}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(25, 118, 210, 0.12)', color: 'primary.main', width: 40, height: 40 }}>
+                <People fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#ede7f6', color: '#7b1fa2', width: 48, height: 48 }}>
-                <AdminPanelSettings />
-              </Avatar>
-              <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  PROPRIETÁRIOS (OWNER)
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ overflow: 'hidden', minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  PROPRIETÁRIO (OWNER)
                 </Typography>
-                <Typography variant="h5" fontWeight={800} color="#7b1fa2">
-                  {totalOwners}
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                    fontSize: '1.05rem',
+                  }}
+                  noWrap
+                  title={ownerUser?.nome || 'Não definido'}
+                >
+                  {ownerUser ? ownerUser.nome.split(' ')[0] : 'Nenhum'}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(123, 31, 162, 0.12)', color: '#7b1fa2', width: 40, height: 40 }}>
+                <AdminPanelSettings fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#eceff1', color: '#455a64', width: 48, height: 48 }}>
-                <Person />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  OPERADORES
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  OPERADORES CAIXA
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalOperadores}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(69, 90, 100, 0.12)', color: '#455a64', width: 40, height: 40 }}>
+                <Person fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#e1f5fe', color: '#0288d1', width: 48, height: 48 }}>
-                <BusinessCenter />
-              </Avatar>
+          <SentinelCard sentinelVariant={isMaster ? 'master' : 'default'} dense>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
                   CONSULTORES LPTI
                 </Typography>
-                <Typography variant="h5" fontWeight={800}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 800,
+                    fontFeatureSettings: '"tnum"',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
                   {totalConsultores}
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+              <Avatar sx={{ bgcolor: 'rgba(2, 136, 209, 0.12)', color: '#0288d1', width: 40, height: 40 }}>
+                <BusinessCenter fontSize="small" />
+              </Avatar>
+            </Box>
+          </SentinelCard>
         </Grid>
-
-        {isMaster && (
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid rgba(183, 28, 28, 0.2)' }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: '#ffebee', color: '#b71c1c', width: 48, height: 48 }}>
-                  <AdminPanelSettings />
-                </Avatar>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    ADMINISTRADORES MASTER
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800} color="#b71c1c">
-                    {totalMasters}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
       </Grid>
 
-      {/* Barra de Filtro / Busca */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <TextField
+      {/* Barra de Filtro / Busca com SentinelInput */}
+      <Box sx={{ mb: 2.5, display: 'flex', justifyContent: 'flex-start' }}>
+        <SentinelInput
           size="small"
-          placeholder="Buscar por nome, e-mail ou empresa..."
+          placeholder="Buscar por nome ou e-mail..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          sx={{ width: { xs: '100%', sm: 320 } }}
+          sx={{ width: { xs: '100%', sm: 360 } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -577,24 +531,6 @@ export const Usuarios: React.FC = () => {
             ),
           }}
         />
-
-        {isMaster && (
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Filtrar por Empresa</InputLabel>
-            <Select
-              value={empresaFiltro}
-              label="Filtrar por Empresa"
-              onChange={(e) => setEmpresaFiltro(e.target.value as any)}
-            >
-              <MenuItem value="TODAS">🏢 Todas as Empresas</MenuItem>
-              {empresas.map((emp) => (
-                <MenuItem key={emp.id} value={emp.id}>
-                  {emp.nome_fantasia}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
       </Box>
 
       {/* Tabela de Usuários */}
@@ -603,126 +539,122 @@ export const Usuarios: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-          <Table>
-            <TableHead sx={{ bgcolor: 'background.default' }}>
+        <SentinelTableContainer>
+          <SentinelTable>
+            <SentinelTableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Usuário</TableCell>
-                {isMaster && <TableCell sx={{ fontWeight: 700 }}>Empresa</TableCell>}
-                <TableCell sx={{ fontWeight: 700 }}>Perfil / Nível</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Último Acesso</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Criado Por</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>
+                <TableCell>Usuário</TableCell>
+                <TableCell>Perfil / RBAC</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Último Acesso</TableCell>
+                <TableCell>Criado Por</TableCell>
+                <TableCell align="right">Ações</TableCell>
               </TableRow>
-            </TableHead>
+            </SentinelTableHead>
             <TableBody>
               {usersFiltrados.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isMaster ? 7 : 6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <SentinelTableRow>
+                  <SentinelTableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                     Nenhum usuário encontrado com os filtros aplicados.
-                  </TableCell>
-                </TableRow>
+                  </SentinelTableCell>
+                </SentinelTableRow>
               ) : (
                 usersFiltrados.map((u) => {
                   const roleConfig = getRoleConfig(u.role);
                   const isOwnerUser = u.role === 'OWNER' || u.role === 'ADMIN';
                   const isSelf = u.id === currentUser?.id;
 
+                  const getSentinelRoleBadge = (role: string) => {
+                    switch (role) {
+                      case 'MASTER':
+                        return <SentinelBadge sentinelVariant="master" withDot pulse label="MASTER PLATAFORMA" />;
+                      case 'OWNER':
+                      case 'ADMIN':
+                        return <SentinelBadge sentinelVariant="owner" label="PROPRIETÁRIO (OWNER)" />;
+                      case 'CONSULTOR':
+                        return <SentinelBadge sentinelVariant="consultor" label="CONSULTOR LPTI" />;
+                      case 'OPERATOR':
+                      case 'OPERADOR':
+                      default:
+                        return <SentinelBadge sentinelVariant="operator" label="OPERADOR CAIXA" />;
+                    }
+                  };
+
                   return (
-                    <TableRow key={u.id} hover>
+                    <SentinelTableRow key={u.id}>
                       {/* Usuário (Avatar + Nome + Email) */}
-                      <TableCell>
+                      <SentinelTableCell tabular={false}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           <Avatar
                             sx={{
-                              width: 38,
-                              height: 38,
+                              width: 34,
+                              height: 34,
                               bgcolor: roleConfig.bgColor,
                               fontWeight: 700,
-                              fontSize: '0.9rem',
+                              fontSize: '0.825rem',
                             }}
                           >
                             {u.nome.charAt(0).toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" fontWeight={700}>
+                            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
                               {u.nome} {isSelf && <Typography component="span" variant="caption" color="primary">(Você)</Typography>}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                               {u.email}
                             </Typography>
                           </Box>
                         </Box>
-                      </TableCell>
+                      </SentinelTableCell>
 
-                      {/* Empresa (Exibido para MASTER) */}
-                      {isMaster && (
-                        <TableCell>
-                          <Chip
-                            icon={<Business fontSize="small" />}
-                            label={u.empresa_nome || `Empresa #${u.empresa_id || '-'}`}
+                      {/* Perfil SentinelBadge */}
+                      <SentinelTableCell tabular={false}>
+                        {getSentinelRoleBadge(u.role)}
+                      </SentinelTableCell>
+
+                      {/* Status SentinelBadge */}
+                      <SentinelTableCell tabular={false}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Switch
                             size="small"
-                            variant="outlined"
-                            sx={{ fontWeight: 600, fontSize: '0.78rem' }}
+                            checked={u.ativo}
+                            disabled={isOwnerUser || isSelf}
+                            onChange={() => handleToggleStatus(u)}
+                            color="success"
                           />
-                        </TableCell>
-                      )}
+                          <SentinelBadge
+                            sentinelVariant={u.ativo ? 'active' : 'error'}
+                            size="small"
+                            label={u.ativo ? 'ATIVO' : 'BLOQUEADO'}
+                          />
+                        </Box>
+                      </SentinelTableCell>
 
-                      {/* Perfil */}
-                      <TableCell>
-                        <Chip
-                          icon={roleConfig.icon}
-                          label={roleConfig.label}
-                          size="small"
-                          color={roleConfig.color}
-                          sx={{ fontWeight: 600, fontSize: '0.78rem' }}
-                        />
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              size="small"
-                              checked={u.ativo}
-                              disabled={isOwnerUser && !isMaster}
-                              onChange={() => handleToggleStatus(u)}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Typography variant="caption" fontWeight={600} color={u.ativo ? 'success.main' : 'text.disabled'}>
-                              {u.ativo ? 'Ativo' : 'Bloqueado'}
-                            </Typography>
-                          }
-                          sx={{ m: 0 }}
-                        />
-                      </TableCell>
-
-                      {/* Último Acesso */}
-                      <TableCell>
+                      {/* Último Acesso (Tabular) */}
+                      <SentinelTableCell tabular={true}>
                         {u.ultimo_acesso ? (
-                          <Typography variant="body2" fontSize="0.82rem">
-                            {formatDateTime(u.ultimo_acesso)}
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                            <Schedule fontSize="inherit" color="action" />
+                            <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
+                              {formatDateTime(u.ultimo_acesso)}
+                            </Typography>
+                          </Box>
                         ) : (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                             Nunca acessou
                           </Typography>
                         )}
-                      </TableCell>
+                      </SentinelTableCell>
 
                       {/* Criado Por */}
-                      <TableCell>
-                        <Typography variant="body2" fontSize="0.82rem">
+                      <SentinelTableCell tabular={false}>
+                        <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                           {u.criado_por_nome || 'Sistema (Inicial)'}
                         </Typography>
-                      </TableCell>
+                      </SentinelTableCell>
 
                       {/* Ações */}
-                      <TableCell align="right">
+                      <SentinelTableCell align="right" tabular={false}>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                           {/* Editar */}
                           <Tooltip title="Editar Dados">
@@ -748,8 +680,8 @@ export const Usuarios: React.FC = () => {
                           {/* Excluir */}
                           <Tooltip
                             title={
-                              isOwnerUser && !isMaster
-                                ? 'O titular da empresa (OWNER) só pode ser alterado ou transferido pelo MASTER.'
+                              isOwnerUser
+                                ? 'O titular da empresa (OWNER) não pode ser excluído.'
                                 : isSelf
                                 ? 'Você não pode excluir sua própria conta em uso.'
                                 : 'Excluir Usuário'
@@ -759,7 +691,7 @@ export const Usuarios: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="error"
-                                disabled={(isOwnerUser && !isMaster) || isSelf}
+                                disabled={isOwnerUser || isSelf}
                                 onClick={() => {
                                   setDeleteId(u.id);
                                   setDeleteNome(u.nome);
@@ -770,14 +702,14 @@ export const Usuarios: React.FC = () => {
                             </span>
                           </Tooltip>
                         </Box>
-                      </TableCell>
-                    </TableRow>
+                      </SentinelTableCell>
+                    </SentinelTableRow>
                   );
                 })
               )}
             </TableBody>
-          </Table>
-        </TableContainer>
+          </SentinelTable>
+        </SentinelTableContainer>
       )}
 
       {/* ==================================================================== */}
@@ -795,30 +727,7 @@ export const Usuarios: React.FC = () => {
               </Alert>
             )}
 
-            {isMaster && !editingUserId && (
-              <FormControl fullWidth margin="normal" required={formRole !== 'MASTER'}>
-                <InputLabel>Empresa de Destino</InputLabel>
-                <Select
-                  value={formRole === 'MASTER' ? '' : (formEmpresaId || (empresas.length > 0 ? empresas[0].id : ''))}
-                  disabled={formRole === 'MASTER'}
-                  label="Empresa de Destino"
-                  onChange={(e) => setFormEmpresaId(Number(e.target.value))}
-                >
-                  {empresas.map((emp) => (
-                    <MenuItem key={emp.id} value={emp.id}>
-                      {emp.nome_fantasia} (CNPJ: {emp.cnpj})
-                    </MenuItem>
-                  ))}
-                </Select>
-                {formRole === 'MASTER' && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    ℹ️ Perfil MASTER possui acesso global a todas as empresas. Não requer empresa de destino vinculada.
-                  </Typography>
-                )}
-              </FormControl>
-            )}
-
-            <TextField
+            <SentinelInput
               fullWidth
               label="Nome Completo"
               required
@@ -828,7 +737,7 @@ export const Usuarios: React.FC = () => {
               autoFocus
             />
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="E-mail de Acesso"
               type="email"
@@ -839,7 +748,7 @@ export const Usuarios: React.FC = () => {
             />
 
             {!editingUserId && (
-              <TextField
+              <SentinelInput
                 fullWidth
                 label="Senha Inicial"
                 type={showPassword ? 'text' : 'password'}
@@ -872,17 +781,8 @@ export const Usuarios: React.FC = () => {
                 {isMaster && (
                   <MenuItem value="OWNER">Proprietário (OWNER - Acesso total à empresa)</MenuItem>
                 )}
-                {isMaster && (
-                  <MenuItem value="MASTER">Administrador Global (MASTER - Plataforma LPTI Tech)</MenuItem>
-                )}
               </Select>
             </FormControl>
-
-            {formRole === 'OWNER' && (
-              <Alert severity="warning" sx={{ mt: 1.5, fontSize: '0.8rem' }}>
-                ⚠️ <strong>Titularidade de Empresa:</strong> Ao definir este usuário como <strong>Proprietário (OWNER)</strong>, qualquer titular anterior da empresa selecionada será automaticamente rebaixado para operador.
-              </Alert>
-            )}
 
             {!isMaster && (
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, px: 0.5 }}>
@@ -896,7 +796,7 @@ export const Usuarios: React.FC = () => {
                   checked={formAtivo}
                   onChange={(e) => setFormAtivo(e.target.checked)}
                   color="primary"
-                  disabled={editingUserId !== null && (formRole === 'OWNER' || formRole === 'ADMIN') && !isMaster}
+                  disabled={editingUserId !== null && (formRole === 'OWNER' || formRole === 'ADMIN')}
                 />
               }
               label={formAtivo ? 'Conta Ativa' : 'Conta Bloqueada'}
@@ -920,7 +820,7 @@ export const Usuarios: React.FC = () => {
       <Dialog open={resetModalOpen} onClose={() => setResetModalOpen(false)} maxWidth="xs" fullWidth>
         <Box component="form" onSubmit={handleSaveResetPassword}>
           <DialogTitle fontWeight={700} display="flex" alignItems="center" gap={1}>
-            <VpnKey color="warning" /> Redefinir Senha de Acesso
+            <VpnKey color="warning" /> Redefinir Senha
           </DialogTitle>
           <DialogContent>
             {resetError && (
@@ -930,10 +830,10 @@ export const Usuarios: React.FC = () => {
             )}
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Defina a nova senha para o usuário <strong>{targetUser?.nome}</strong> ({targetUser?.email}):
+              Defina uma nova senha para <strong>{targetUser?.nome}</strong> ({targetUser?.email}).
             </Typography>
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="Nova Senha"
               type={showResetPassword ? 'text' : 'password'}
@@ -941,8 +841,8 @@ export const Usuarios: React.FC = () => {
               margin="normal"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
-              autoFocus
               helperText="Mínimo de 4 caracteres"
+              autoFocus
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -954,7 +854,7 @@ export const Usuarios: React.FC = () => {
               }}
             />
 
-            <TextField
+            <SentinelInput
               fullWidth
               label="Confirmar Nova Senha"
               type={showResetPassword ? 'text' : 'password'}
@@ -969,7 +869,7 @@ export const Usuarios: React.FC = () => {
               Cancelar
             </Button>
             <Button type="submit" variant="contained" color="warning" disabled={resetSubmitting}>
-              {resetSubmitting ? <CircularProgress size={22} /> : 'Salvar Nova Senha'}
+              {resetSubmitting ? <CircularProgress size={22} /> : 'Atualizar Senha'}
             </Button>
           </DialogActions>
         </Box>
@@ -1006,17 +906,14 @@ export const Usuarios: React.FC = () => {
                 {isMaster && (
                   <MenuItem value="OWNER">Proprietário (OWNER)</MenuItem>
                 )}
-                {isMaster && (
-                  <MenuItem value="MASTER">Administrador Global (MASTER)</MenuItem>
-                )}
               </Select>
             </FormControl>
 
-            {novoRole === 'OWNER' && (
-              <Alert severity="warning" sx={{ mt: 2, fontSize: '0.8rem' }}>
-                ⚠️ <strong>Transferência de Titularidade:</strong> Ao promover <strong>{roleTargetUser?.nome}</strong> para OWNER, ele se tornará o proprietário titular oficial da empresa.
-              </Alert>
-            )}
+            <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem' }}>
+              • <strong>Operador:</strong> Registra vendas, gerencia produtos e comanda caixa.<br />
+              • <strong>Consultor:</strong> Visualiza indicadores financeiros, DAS e diagnósticos.<br />
+              • <strong>Proprietário:</strong> Gestão administrativa completa da empresa.
+            </Alert>
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setRoleModalOpen(false)} color="inherit" disabled={roleSubmitting}>
@@ -1024,75 +921,6 @@ export const Usuarios: React.FC = () => {
             </Button>
             <Button type="submit" variant="contained" color="info" disabled={roleSubmitting}>
               {roleSubmitting ? <CircularProgress size={22} /> : 'Confirmar Perfil'}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
-
-      {/* ==================================================================== */}
-      {/* 4. Modal Transferir Propriedade MASTER (ENTREGA 2) */}
-      {/* ==================================================================== */}
-      <Dialog open={transferModalOpen} onClose={() => setTransferModalOpen(false)} maxWidth="xs" fullWidth>
-        <Box component="form" onSubmit={handleExecuteTransfer}>
-          <DialogTitle fontWeight={700} display="flex" alignItems="center" gap={1}>
-            <SwapHoriz color="secondary" /> Transferir Titularidade (OWNER)
-          </DialogTitle>
-          <DialogContent>
-            {transferError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {transferError}
-              </Alert>
-            )}
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Como administrador global MASTER, selecione a empresa cliente e o novo usuário que assumirá o perfil titular (OWNER).
-            </Typography>
-
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel>Empresa Cliente</InputLabel>
-              <Select
-                value={transferEmpresaId}
-                label="Empresa Cliente"
-                onChange={(e) => {
-                  setTransferEmpresaId(Number(e.target.value));
-                  setTransferNovoOwnerId('');
-                }}
-              >
-                {empresas.map((emp) => (
-                  <MenuItem key={emp.id} value={emp.id}>
-                    {emp.nome_fantasia} (Atual: {emp.owner ? emp.owner.nome : 'Sem titular'})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal" required disabled={!transferEmpresaId}>
-              <InputLabel>Novo Titular (OWNER)</InputLabel>
-              <Select
-                value={transferNovoOwnerId}
-                label="Novo Titular (OWNER)"
-                onChange={(e) => setTransferNovoOwnerId(Number(e.target.value))}
-              >
-                {users
-                  .filter((u) => u.empresa_id === transferEmpresaId)
-                  .map((u) => (
-                    <MenuItem key={u.id} value={u.id}>
-                      {u.nome} ({u.email}) - {u.role}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-
-            <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem' }}>
-              ℹ️ O usuário selecionado será promovido a <strong>OWNER</strong> e o titular anterior será rebaixado para <strong>OPERATOR</strong>.
-            </Alert>
-          </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setTransferModalOpen(false)} color="inherit" disabled={transferSubmitting}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="contained" color="secondary" disabled={transferSubmitting || !transferNovoOwnerId}>
-              {transferSubmitting ? <CircularProgress size={22} /> : 'Transferir Propriedade'}
             </Button>
           </DialogActions>
         </Box>

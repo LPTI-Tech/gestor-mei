@@ -40,6 +40,16 @@ import api from '../services/api';
 import { downloadComprovanteAutenticado } from '../services/comprovanteService';
 import { CompraDetalhe } from '../types';
 import { formatCurrency, formatDate } from '../services/exportUtils';
+import {
+  SentinelCard,
+  SentinelTableContainer,
+  SentinelTable,
+  SentinelTableHead,
+  SentinelTableRow,
+  SentinelTableCell,
+  SentinelBadge,
+  sentinelTokens,
+} from '../design-system';
 
 export const DetalheCompra: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -144,8 +154,8 @@ export const DetalheCompra: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Cabeçalho da Compra */}
-      <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+      {/* Cabeçalho da Compra Sentinel */}
+      <SentinelCard dense sx={{ p: 2.5, mb: 3 }}>
         <Box
           sx={{
             display: 'flex',
@@ -161,13 +171,12 @@ export const DetalheCompra: React.FC = () => {
               <Typography variant="h5" fontWeight={800}>
                 {compra.origem === 'MANUAL' ? 'Documento / Recibo' : 'Nota Fiscal'} nº {compra.numero_nota}
               </Typography>
-              <Chip
-                label={compra.origem === 'MANUAL' ? 'Compra Manual' : 'NF-e (XML)'}
+              <SentinelBadge
+                sentinelVariant={compra.origem === 'MANUAL' ? 'warning' : 'info'}
                 size="small"
-                color={compra.origem === 'MANUAL' ? 'secondary' : 'primary'}
-                sx={{ fontWeight: 700 }}
+                label={compra.origem === 'MANUAL' ? 'COMPRA MANUAL' : 'NF-E (XML)'}
               />
-              <Chip label="Entrada no Estoque Efetivada" size="small" color="success" />
+              <SentinelBadge sentinelVariant="active" size="small" label="ENTRADA EFETIVADA" />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Fornecedor: <strong>{compra.fornecedor_nome}</strong> (CNPJ: {compra.fornecedor_cnpj})
@@ -178,7 +187,15 @@ export const DetalheCompra: React.FC = () => {
             <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight={700}>
               Valor Total Faturado
             </Typography>
-            <Typography variant="h4" fontWeight={800} color="success.main">
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                color: sentinelTokens.colors.owner.accent,
+                fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'monospace',
+              }}
+            >
               {formatCurrency(compra.valor_total)}
             </Typography>
           </Box>
@@ -292,7 +309,9 @@ export const DetalheCompra: React.FC = () => {
             mt: 2.5,
             p: 1.5,
             borderRadius: 2,
-            bgcolor: (th) => (th.palette.mode === 'dark' ? 'grey.900' : 'grey.100'),
+            bgcolor: 'action.hover',
+            border: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -316,118 +335,108 @@ export const DetalheCompra: React.FC = () => {
               size="small"
               startIcon={copiedKey ? <CheckCircle color="success" /> : <ContentCopy />}
               onClick={handleCopyChave}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
             >
               {copiedKey ? 'Copiado' : 'Copiar'}
             </Button>
           </Tooltip>
         </Box>
-      </Paper>
+      </SentinelCard>
 
-      {/* ITENS DA NOTA FISCAL */}
-      <Paper elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ p: 2.5, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight={700}>
+      {/* ITENS DA NOTA FISCAL SENTINEL */}
+      <SentinelCard dense sx={{ p: 2.5 }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.9375rem' }}>
             Itens Comprados & Movimentação de Estoque
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary">
             Relação detalhada dos produtos faturados nesta compra com conversão de unidades e custos
           </Typography>
         </Box>
 
-        <TableContainer>
-          <Table>
-            <TableHead sx={{ bgcolor: (th) => th.palette.action.hover }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Item / Fornecedor</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Produto Vinculado (Estoque)</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">Qtd Nota</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">Fator Conv.</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">Entrada Estoque</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="right">Valor Unit. Nota</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="right">Custo Estoque</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="right">Total</TableCell>
-              </TableRow>
-            </TableHead>
+        <SentinelTableContainer>
+          <SentinelTable size="small">
+            <SentinelTableHead>
+              <SentinelTableRow>
+                <SentinelTableCell tabular={false}>Item / Fornecedor</SentinelTableCell>
+                <SentinelTableCell tabular={false}>Produto Vinculado (Estoque)</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false}>Qtd Nota</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false}>Fator Conv.</SentinelTableCell>
+                <SentinelTableCell align="center" tabular={false}>Entrada Estoque</SentinelTableCell>
+                <SentinelTableCell align="right" tabular={true}>Valor Unit. Nota</SentinelTableCell>
+                <SentinelTableCell align="right" tabular={true}>Custo Estoque</SentinelTableCell>
+                <SentinelTableCell align="right" tabular={true}>Total</SentinelTableCell>
+              </SentinelTableRow>
+            </SentinelTableHead>
             <TableBody>
               {compra.itens.map((it) => (
-                <TableRow key={it.id} hover>
+                <SentinelTableRow key={it.id}>
                   {/* Item Fornecedor */}
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={700}>
+                  <SentinelTableCell tabular={false}>
+                    <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
                       {it.descricao_fornecedor || 'Item sem descrição'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Cód: {it.codigo_fornecedor} {it.unidade_comercial && `• Unid: ${it.unidade_comercial}`}
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+                      Cód: <code style={{ fontFamily: 'monospace' }}>{it.codigo_fornecedor}</code> {it.unidade_comercial && `• Unid: ${it.unidade_comercial}`}
                     </Typography>
-                  </TableCell>
+                  </SentinelTableCell>
 
                   {/* Produto Vinculado */}
-                  <TableCell>
+                  <SentinelTableCell tabular={false}>
                     {it.produto_nome ? (
-                      <Chip
-                        label={it.produto_nome}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        sx={{ fontWeight: 600 }}
-                      />
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: sentinelTokens.colors.master.accent }}>
+                        {it.produto_nome}
+                      </Typography>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
                         ID #{it.produto_id}
                       </Typography>
                     )}
-                  </TableCell>
+                  </SentinelTableCell>
 
                   {/* Qtd Comercial */}
-                  <TableCell align="center">
-                    <Typography variant="body2" fontWeight={600}>
+                  <SentinelTableCell align="center" tabular={false}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                       {it.quantidade_comercial} {it.unidade_comercial || 'UN'}
                     </Typography>
-                  </TableCell>
+                  </SentinelTableCell>
 
                   {/* Fator Conversão */}
-                  <TableCell align="center">
-                    <Chip
-                      label={`x ${it.fator_conversao}`}
-                      size="small"
-                      sx={{ fontWeight: 600, bgcolor: 'action.selected' }}
-                    />
-                  </TableCell>
+                  <SentinelTableCell align="center" tabular={false}>
+                    <SentinelBadge sentinelVariant="default" size="small" label={`x ${it.fator_conversao}`} />
+                  </SentinelTableCell>
 
                   {/* Entrada Estoque */}
-                  <TableCell align="center">
-                    <Typography variant="body2" fontWeight={700} color="primary.main">
-                      +{it.quantidade_entrada} un
-                    </Typography>
-                  </TableCell>
+                  <SentinelTableCell align="center" tabular={false}>
+                    <SentinelBadge sentinelVariant="active" size="small" label={`+${it.quantidade_entrada} UN`} />
+                  </SentinelTableCell>
 
                   {/* Valor Unitário Nota */}
-                  <TableCell align="right">
-                    <Typography variant="body2">
+                  <SentinelTableCell align="right" tabular={true}>
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                       {formatCurrency(it.valor_unitario_nota)}
                     </Typography>
-                  </TableCell>
+                  </SentinelTableCell>
 
                   {/* Custo Estoque */}
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight={700} color="success.main">
+                  <SentinelTableCell align="right" tabular={true}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: sentinelTokens.colors.owner.accent, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                       {formatCurrency(it.custo_unitario_calculado)}
                     </Typography>
-                  </TableCell>
+                  </SentinelTableCell>
 
                   {/* Valor Total */}
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight={800}>
+                  <SentinelTableCell align="right" tabular={true}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                       {formatCurrency(it.valor_total)}
                     </Typography>
-                  </TableCell>
-                </TableRow>
+                  </SentinelTableCell>
+                </SentinelTableRow>
               ))}
             </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+          </SentinelTable>
+        </SentinelTableContainer>
+      </SentinelCard>
     </Box>
   );
 };
