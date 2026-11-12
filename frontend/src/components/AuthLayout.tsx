@@ -238,7 +238,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           my: 'auto',
         }}
       >
-        {/* PARTE 1 - ITEM 3: A LOGO CENTRALIZADA COM DIMENSÃO OTIMIZADA */}
+        {/* LOGO TOTALMENTE LIVRE — SEM CAIXA */}
         <Box
           sx={{
             width: '100%',
@@ -246,35 +246,23 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            mb: 0.8,
+            mb: 1.5,
             textAlign: 'center',
           }}
         >
-          {/* Logo livre — sem caixa escura */}
           <Box
+            component="img"
+            src={logoOficial}
+            alt="Logo Oficial Gestor MEI"
             sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mx: 'auto',
-              px: 1.5,
-              py: 0.4,
-              mb: 0.4,
+              width: { xs: 130, sm: 135, md: 140 },
+              height: 'auto',
+              display: 'block',
+              margin: '0 auto',
+              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4))',
+              mb: 0.6,
             }}
-          >
-            <Box
-              component="img"
-              src={logoOficial}
-              alt="Logo Oficial Gestor MEI"
-              sx={{
-                width: { xs: 130, sm: 135, md: 140 },
-                height: 'auto',
-                display: 'block',
-                margin: '0 auto',
-                filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35))',
-              }}
-            />
-          </Box>
+          />
 
           <Typography
             sx={{
@@ -290,7 +278,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </Typography>
         </Box>
 
-        {/* CARD CENTRAL DE LOGIN — LOGIN 2.3: fundo claro sobre fundo escuro */}
+        {/* CARD CENTRAL DE LOGIN — LOGIN 2.3: Superfície Porcelana #F7F6F5 */}
         <Card
           elevation={0}
           sx={{
@@ -303,52 +291,14 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             overflow: 'hidden',
           }}
         >
-          {/* Faixa Superior de Proteção — LOGIN 2.3: cores adaptadas ao card claro */}
-          <Box
-            sx={{
-              py: 0.4,
-              px: 2,
-              bgcolor: 'rgba(2, 132, 199, 0.08)',
-              borderBottom: '1px solid #E2E8F0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#0284c7',
-                fontWeight: 700,
-                fontSize: '0.7rem',
-                letterSpacing: '0.01em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              {badgeText}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#64748b',
-                fontWeight: 600,
-                fontSize: '0.66rem',
-              }}
-            >
-              {securitySubtext}
-            </Typography>
-          </Box>
-
-          <CardContent sx={{ p: { xs: 1.5, sm: 1.8 }, '&:last-child': { pb: { xs: 1.5, sm: 1.8 } } }}>
+          <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
             {/* Título & Subtítulo Interno */}
-            <Box sx={{ mb: 1, textAlign: 'left' }}>
+            <Box sx={{ mb: 1.5, textAlign: 'left' }}>
               <Typography
                 variant="subtitle1"
                 sx={{
                   fontWeight: 800,
-                  fontSize: '1.05rem',
+                  fontSize: '1.1rem',
                   letterSpacing: '-0.02em',
                   color: '#0F172A',
                   lineHeight: 1.2,
@@ -360,7 +310,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 variant="caption"
                 sx={{
                   color: '#64748b',
-                  fontSize: '0.74rem',
+                  fontSize: '0.78rem',
                 }}
               >
                 {subtitle}
@@ -370,55 +320,6 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             {children}
           </CardContent>
         </Card>
-
-        {/* Benefícios em Pílulas Sutis (Chips Inferiores Compactos) */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1,
-            mt: 0.8,
-            flexWrap: 'wrap',
-          }}
-        >
-          {['Vendas & PDV', 'Estoque & Compras', 'Gestão Fiscal MEI'].map((item) => (
-            <Box
-              key={item}
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.4,
-                px: 0.8,
-                py: 0.2,
-                borderRadius: 1,
-                bgcolor: 'rgba(10, 37, 64, 0.45)',
-                backdropFilter: 'blur(6px)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-              }}
-            >
-              <Box
-                sx={{
-                  width: 11,
-                  height: 11,
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(16, 185, 129, 0.2)',
-                  color: '#10b981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.52rem',
-                  fontWeight: 900,
-                }}
-              >
-                ✓
-              </Box>
-              <Typography sx={{ color: '#cbd5e1', fontSize: '0.66rem', fontWeight: 600 }}>
-                {item}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
       </Box>
 
       {/* ==================================================================== */}

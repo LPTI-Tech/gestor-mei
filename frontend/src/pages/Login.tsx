@@ -60,16 +60,13 @@ const MicrosoftIcon = () => (
   </svg>
 );
 
-// Identifica se o ambiente é de desenvolvimento local ou homologação
+// Identifica se o ambiente é de desenvolvimento local (oculto em qualquer domínio de produção/staging)
 const isDevOrHomolog = (): boolean => {
   if (typeof window === 'undefined') return false;
   const hostname = window.location.hostname;
   return (
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
-    hostname.includes('beta') ||
-    hostname.includes('staging') ||
-    hostname.includes('homolog') ||
     Boolean(import.meta.env.DEV)
   );
 };
@@ -352,12 +349,12 @@ export const Login: React.FC = () => {
           disabled={loading || socialLoading !== null}
           onClick={handleGoogleClick}
           sx={{
-            height: 34,
-            borderRadius: 2,
+            height: 38,
+            borderRadius: '6px',
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: '0.8rem',
-            borderColor: '#E2E8F0',
+            fontSize: '0.82rem',
+            borderColor: '#CBD5E1',
             bgcolor: '#FFFFFF',
             color: '#374151',
             boxShadow: 'none',
@@ -382,12 +379,12 @@ export const Login: React.FC = () => {
           disabled={loading || socialLoading !== null}
           onClick={handleMicrosoftClick}
           sx={{
-            height: 34,
-            borderRadius: 2,
+            height: 38,
+            borderRadius: '6px',
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: '0.8rem',
-            borderColor: '#E2E8F0',
+            fontSize: '0.82rem',
+            borderColor: '#CBD5E1',
             bgcolor: '#FFFFFF',
             color: '#374151',
             boxShadow: 'none',
@@ -545,11 +542,11 @@ export const Login: React.FC = () => {
           disabled={loading || socialLoading !== null}
           endIcon={!loading ? <ArrowForward sx={{ fontSize: 16 }} /> : undefined}
           sx={{
-            mt: 0.8,
-            height: 36,
+            mt: 1.2,
+            height: 42,
             fontWeight: 700,
-            fontSize: '0.88rem',
-            borderRadius: 2,
+            fontSize: '0.9rem',
+            borderRadius: '6px',
             textTransform: 'none',
             background: '#0284c7',
             boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
@@ -571,12 +568,12 @@ export const Login: React.FC = () => {
           )}
         </Button>
 
-        {/* ALTERAÇÃO 4: Atalhos Demo (Exibidos APENAS em localhost ou homologação) */}
+        {/* ALTERAÇÃO 4: Atalhos Demo (Exibidos APENAS em localhost ou desenvolvimento local) */}
         {isDevOrHomolog() && (
           <Box
             sx={{
-              mt: 0.8,
-              pt: 0.6,
+              mt: 1,
+              pt: 0.8,
               borderTop: '1px dashed #CBD5E1',
             }}
           >
@@ -604,12 +601,12 @@ export const Login: React.FC = () => {
                 onClick={() => fillDemo('admin')}
                 startIcon={<Security sx={{ fontSize: 14 }} />}
                 sx={{
-                  py: 0.2,
-                  height: 26,
-                  borderRadius: 1.5,
+                  py: 0.4,
+                  height: 30,
+                  borderRadius: '6px',
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontSize: '0.72rem',
                   borderColor: '#CBD5E1',
                   color: '#374151',
                   bgcolor: '#F8FAFC',
@@ -630,12 +627,12 @@ export const Login: React.FC = () => {
                 onClick={() => fillDemo('operador')}
                 startIcon={<FlashOn sx={{ fontSize: 14 }} />}
                 sx={{
-                  py: 0.2,
-                  height: 26,
-                  borderRadius: 1.5,
+                  py: 0.4,
+                  height: 30,
+                  borderRadius: '6px',
                   textTransform: 'none',
                   fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontSize: '0.72rem',
                   borderColor: '#CBD5E1',
                   color: '#374151',
                   bgcolor: '#F8FAFC',
