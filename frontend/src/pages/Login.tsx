@@ -19,8 +19,6 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  Security,
-  FlashOn,
   ArrowForward,
   MailOutline,
   LockOutlined,
@@ -241,17 +239,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const fillDemo = (role: 'admin' | 'operador') => {
-    if (role === 'admin') {
-      setLoginEmail('admin@gestormei.com.br');
-      setLoginPassword('admin123');
-    } else {
-      setLoginEmail('operador@gestormei.com.br');
-      setLoginPassword('operador123');
-    }
-    setErrorMessage(null);
-  };
-
   // LOGIN 2.3: Inputs com fundo branco, border-radius 6px, altura 42px
   const sentinelInputSx = {
     '& .MuiOutlinedInput-root': {
@@ -307,8 +294,6 @@ export const Login: React.FC = () => {
     <AuthLayout
       title="Bem-vindo de volta"
       subtitle="Entre para continuar"
-      badgeText="🔒 Seus dados protegidos"
-      securitySubtext="🔒 Controle seguro de acesso"
     >
       {errorMessage && (
         <Alert
@@ -567,86 +552,6 @@ export const Login: React.FC = () => {
             'Entrar'
           )}
         </Button>
-
-        {/* ALTERAÇÃO 4: Atalhos Demo (Exibidos APENAS em localhost ou desenvolvimento local) */}
-        {isDevOrHomolog() && (
-          <Box
-            sx={{
-              mt: 1,
-              pt: 0.8,
-              borderTop: '1px dashed #CBD5E1',
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                textAlign: 'center',
-                mb: 0.4,
-                color: '#94a3b8',
-                fontWeight: 600,
-                fontSize: '0.64rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-              }}
-            >
-              Ambiente de Testes • Acesso Rápido
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8 }}>
-              <Button
-                type="button"
-                variant="outlined"
-                size="small"
-                disabled={loading || socialLoading !== null}
-                onClick={() => fillDemo('admin')}
-                startIcon={<Security sx={{ fontSize: 14 }} />}
-                sx={{
-                  py: 0.4,
-                  height: 30,
-                  borderRadius: '6px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.72rem',
-                  borderColor: '#CBD5E1',
-                  color: '#374151',
-                  bgcolor: '#F8FAFC',
-                  '&:hover': {
-                    borderColor: '#94a3b8',
-                    bgcolor: '#F1F5F9',
-                  },
-                }}
-              >
-                Dono (OWNER)
-              </Button>
-
-              <Button
-                type="button"
-                variant="outlined"
-                size="small"
-                disabled={loading || socialLoading !== null}
-                onClick={() => fillDemo('operador')}
-                startIcon={<FlashOn sx={{ fontSize: 14 }} />}
-                sx={{
-                  py: 0.4,
-                  height: 30,
-                  borderRadius: '6px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.72rem',
-                  borderColor: '#CBD5E1',
-                  color: '#374151',
-                  bgcolor: '#F8FAFC',
-                  '&:hover': {
-                    borderColor: '#94a3b8',
-                    bgcolor: '#F1F5F9',
-                  },
-                }}
-              >
-                Operador (Caixa)
-              </Button>
-            </Box>
-          </Box>
-        )}
       </Box>
 
       {/* ==================================================================== */}

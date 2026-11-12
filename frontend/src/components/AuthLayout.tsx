@@ -12,9 +12,6 @@ import {
 import {
   ArrowBack,
   CheckCircle,
-  Shield,
-  VpnKey,
-  VerifiedUser,
 } from '@mui/icons-material';
 import { ApiStatusIndicator } from './ApiStatusIndicator';
 import logoOficial from '../assets/branding/gestor-mei-logo-tight.png';
@@ -32,8 +29,6 @@ export interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
   title,
   subtitle,
-  badgeText = '🔒 Seus dados protegidos',
-  securitySubtext = '🔒 Controle seguro de acesso',
   backTo,
   backText = 'Voltar para o Login',
   children,
