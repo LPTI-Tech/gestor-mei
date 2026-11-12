@@ -79,6 +79,8 @@ interface NavItemDef {
   label: string;
   path: string;
   icon: React.ReactNode;
+  iconBg?: string;
+  iconColor?: string;
   adminOnly?: boolean;
   consultorOnly?: boolean;
   adminOrConsultorOnly?: boolean;
@@ -253,50 +255,50 @@ export const Layout: React.FC = () => {
 
   const roleConfig = getRoleConfig();
 
-  // Estrutura hierárquica dividida nos 4 blocos semânticos com ícones Lucide React (strokeWidth 1.75)
+  // Estrutura hierárquica dividida nos 4 blocos semânticos com ícones expressivos e badges coloridos
   const navSections: NavSection[] = [
     {
       id: 'operacao',
       title: 'Operação',
       items: [
-        { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} strokeWidth={1.75} /> },
-        { label: 'Caixa do Dia', path: '/caixa', icon: <Wallet size={18} strokeWidth={1.75} /> },
-        { label: 'PDV / Vendas', path: '/vendas', icon: <Receipt size={18} strokeWidth={1.75} />, badge: 'F2' },
-        { label: 'Pedidos Delivery', path: '/pedidos-entrega', icon: <Bike size={18} strokeWidth={1.75} /> },
+        { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={16} strokeWidth={2.2} />, iconBg: '#DBEAFE', iconColor: '#2563EB' },
+        { label: 'Caixa do Dia', path: '/caixa', icon: <Wallet size={16} strokeWidth={2.2} />, iconBg: '#D1FAE5', iconColor: '#059669' },
+        { label: 'PDV / Vendas', path: '/vendas', icon: <Receipt size={16} strokeWidth={2.2} />, iconBg: '#E0E7FF', iconColor: '#4F46E5', badge: 'F2' },
+        { label: 'Pedidos Delivery', path: '/pedidos-entrega', icon: <Bike size={16} strokeWidth={2.2} />, iconBg: '#FEF3C7', iconColor: '#D97706' },
       ],
     },
     {
       id: 'gestao',
       title: 'Gestão Comercial',
       items: [
-        { label: 'Clientes', path: '/clientes', icon: <Users size={18} strokeWidth={1.75} /> },
-        { label: 'Produtos & Serviços', path: '/produtos', icon: <PackageSearch size={18} strokeWidth={1.75} /> },
-        { label: 'Controle de Estoque', path: '/estoque', icon: <Warehouse size={18} strokeWidth={1.75} /> },
-        { label: 'Compras', path: '/compras', icon: <Truck size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Despesas', path: '/despesas', icon: <ReceiptText size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Regiões & Taxas', path: '/regioes-entrega', icon: <MapPin size={18} strokeWidth={1.75} /> },
-        { label: 'Motoboys', path: '/motoboys', icon: <NavigationIcon size={18} strokeWidth={1.75} />, moduleKey: 'modulo_motoboy' },
-        { label: 'Controle iFood', path: '/ifood', icon: <Utensils size={18} strokeWidth={1.75} />, moduleKey: 'modulo_ifood' },
+        { label: 'Clientes', path: '/clientes', icon: <Users size={16} strokeWidth={2.2} />, iconBg: '#E0F2FE', iconColor: '#0284C7' },
+        { label: 'Produtos & Serviços', path: '/produtos', icon: <PackageSearch size={16} strokeWidth={2.2} />, iconBg: '#EDE9FE', iconColor: '#7C3AED' },
+        { label: 'Controle de Estoque', path: '/estoque', icon: <Warehouse size={16} strokeWidth={2.2} />, iconBg: '#CCFBF1', iconColor: '#0D9488' },
+        { label: 'Compras', path: '/compras', icon: <Truck size={16} strokeWidth={2.2} />, iconBg: '#CFFAFE', iconColor: '#0891B2', adminOrConsultorOnly: true },
+        { label: 'Despesas', path: '/despesas', icon: <ReceiptText size={16} strokeWidth={2.2} />, iconBg: '#FFE4E6', iconColor: '#E11D48', adminOrConsultorOnly: true },
+        { label: 'Regiões & Taxas', path: '/regioes-entrega', icon: <MapPin size={16} strokeWidth={2.2} />, iconBg: '#FFEDD5', iconColor: '#EA580C' },
+        { label: 'Motoboys', path: '/motoboys', icon: <NavigationIcon size={16} strokeWidth={2.2} />, iconBg: '#FEF3C7', iconColor: '#B45309', moduleKey: 'modulo_motoboy' },
+        { label: 'Controle iFood', path: '/ifood', icon: <Utensils size={16} strokeWidth={2.2} />, iconBg: '#FEE2E2', iconColor: '#DC2626', moduleKey: 'modulo_ifood' },
       ],
     },
     {
       id: 'fiscal',
       title: 'Fiscal & Inteligência',
       items: [
-        { label: 'Saúde do Negócio', path: '/saude-negocio', icon: <Activity size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Controle DAS', path: '/das', icon: <Landmark size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Declaração MEI (DASN)', path: '/relatorio-mei', icon: <FileCheck size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Entrada XML NF-e', path: '/nfe', icon: <FileUp size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
-        { label: 'Relatório Entregas', path: '/relatorio-entregas', icon: <BarChart3 size={18} strokeWidth={1.75} />, adminOrConsultorOnly: true },
+        { label: 'Saúde do Negócio', path: '/saude-negocio', icon: <Activity size={16} strokeWidth={2.2} />, iconBg: '#F3E8FF', iconColor: '#9333EA', adminOrConsultorOnly: true },
+        { label: 'Controle DAS', path: '/das', icon: <Landmark size={16} strokeWidth={2.2} />, iconBg: '#D1FAE5', iconColor: '#047857', adminOrConsultorOnly: true },
+        { label: 'Declaração MEI (DASN)', path: '/relatorio-mei', icon: <FileCheck size={16} strokeWidth={2.2} />, iconBg: '#CCFBF1', iconColor: '#0F766E', adminOrConsultorOnly: true },
+        { label: 'Entrada XML NF-e', path: '/nfe', icon: <FileUp size={16} strokeWidth={2.2} />, iconBg: '#DBEAFE', iconColor: '#2563EB', adminOrConsultorOnly: true },
+        { label: 'Relatório Entregas', path: '/relatorio-entregas', icon: <BarChart3 size={16} strokeWidth={2.2} />, iconBg: '#FEF3C7', iconColor: '#B45309', adminOrConsultorOnly: true },
       ],
     },
     {
       id: 'sistema',
       title: 'Sistema',
       items: [
-        { label: 'Painel do Consultor', path: '/consultor', icon: <ShieldCheck size={18} strokeWidth={1.75} />, consultorOnly: true },
-        { label: 'Usuários / Equipe', path: '/usuarios', icon: <UsersRound size={18} strokeWidth={1.75} />, adminOnly: true },
-        { label: 'Configurações', path: '/configuracoes', icon: <SlidersHorizontal size={18} strokeWidth={1.75} />, adminOnly: true },
+        { label: 'Painel do Consultor', path: '/consultor', icon: <ShieldCheck size={16} strokeWidth={2.2} />, iconBg: '#E0E7FF', iconColor: '#4338CA', consultorOnly: true },
+        { label: 'Usuários / Equipe', path: '/usuarios', icon: <UsersRound size={16} strokeWidth={2.2} />, iconBg: '#DBEAFE', iconColor: '#2563EB', adminOnly: true },
+        { label: 'Configurações', path: '/configuracoes', icon: <SlidersHorizontal size={16} strokeWidth={2.2} />, iconBg: '#E2E8F0', iconColor: '#334155', adminOnly: true },
       ],
     },
   ];
@@ -351,7 +353,7 @@ export const Layout: React.FC = () => {
     const isEffectivelyCollapsed = !isDrawerMobile && collapsed;
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.paper' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: mode === 'dark' ? '#0F172A' : '#F1F5F9', borderRight: '1px solid', borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }}>
         {/* Header da Sidebar */}
         <Box
           sx={{
@@ -360,7 +362,7 @@ export const Layout: React.FC = () => {
             alignItems: 'center',
             justifyContent: isEffectivelyCollapsed ? 'center' : 'space-between',
             borderBottom: '1px solid',
-            borderColor: 'divider',
+            borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(226, 232, 240, 0.8)',
             minHeight: 64,
           }}
         >
@@ -421,14 +423,21 @@ export const Layout: React.FC = () => {
                 size="small"
                 onClick={toggleSidebarCollapse}
                 sx={{
-                  color: 'text.secondary',
-                  bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)',
+                  color: '#475569',
+                  bgcolor: '#FFFFFF',
                   border: '1px solid',
-                  borderColor: 'divider',
-                  '&:hover': { bgcolor: 'action.hover' },
+                  borderColor: '#E2E8F0',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '6px',
+                  '&:hover': {
+                    bgcolor: '#F8FAFC',
+                    borderColor: '#CBD5E1',
+                  },
                 }}
               >
-                {collapsed ? <ChevronRight size={18} strokeWidth={1.75} /> : <ChevronLeft size={18} strokeWidth={1.75} />}
+                {collapsed ? <ChevronRight size={16} strokeWidth={2} /> : <ChevronLeft size={16} strokeWidth={2} />}
               </IconButton>
             </Tooltip>
           )}
@@ -439,8 +448,9 @@ export const Layout: React.FC = () => {
           sx={{
             flexGrow: 1,
             overflowY: 'auto',
-            py: 1.5,
-            px: isEffectivelyCollapsed ? 0.75 : 1,
+            pt: 1.5,
+            pb: 6,
+            px: isEffectivelyCollapsed ? 0.75 : 1.25,
             '&::-webkit-scrollbar': {
               width: '4px',
             },
@@ -467,14 +477,14 @@ export const Layout: React.FC = () => {
                     variant="caption"
                     sx={{
                       px: 1.5,
-                      py: 0.5,
+                      mt: 2,
+                      mb: 0.5,
                       display: 'block',
-                      fontSize: '0.66rem',
+                      fontSize: '11px',
                       fontWeight: 700,
-                      letterSpacing: '0.08em',
-                      color: 'text.secondary',
+                      letterSpacing: '0.05em',
+                      color: '#94A3B8',
                       textTransform: 'uppercase',
-                      opacity: 0.85,
                     }}
                   >
                     {section.title}
@@ -493,34 +503,57 @@ export const Layout: React.FC = () => {
                         }}
                         selected={isSelected}
                         sx={{
-                          borderRadius: '6px',
-                          py: 0.9,
-                          px: isEffectivelyCollapsed ? 1 : 1.5,
+                          borderRadius: '10px',
+                          py: 0.75,
+                          px: isEffectivelyCollapsed ? 1 : 1.25,
                           minHeight: isDrawerMobile ? 48 : 38,
                           justifyContent: isEffectivelyCollapsed ? 'center' : 'flex-start',
                           mb: 0.4,
                           transition: 'all 140ms ease-in-out',
                           bgcolor: isSelected
-                            ? 'rgba(25, 118, 210, 0.08)'
+                            ? '#FFFFFF'
                             : 'transparent',
-                          color: isSelected ? '#1976D2' : 'text.primary',
-                          borderLeft: isSelected && !isEffectivelyCollapsed ? '3px solid #1976D2' : '3px solid transparent',
+                          color: isSelected ? '#0F172A' : '#475569',
+                          border: '1px solid',
+                          borderColor: isSelected ? 'rgba(226, 232, 240, 0.9)' : 'transparent',
+                          boxShadow: isSelected
+                            ? '0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08)'
+                            : 'none',
                           fontWeight: isSelected ? 600 : 500,
                           '&:hover': {
                             bgcolor: isSelected
-                              ? 'rgba(25, 118, 210, 0.12)'
-                              : 'action.hover',
+                              ? '#FFFFFF'
+                              : 'rgba(255, 255, 255, 0.65)',
+                            color: '#0F172A',
                           },
                         }}
                       >
                         <ListItemIcon
                           sx={{
-                            minWidth: isEffectivelyCollapsed ? 0 : 34,
+                            minWidth: isEffectivelyCollapsed ? 0 : 36,
                             justifyContent: 'center',
-                            color: isSelected ? 'primary.main' : 'text.secondary',
+                            color: 'inherit',
                           }}
                         >
-                          {item.icon}
+                          <Box
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              bgcolor: item.iconBg || '#E2E8F0',
+                              color: item.iconColor || '#475569',
+                              transition: 'transform 150ms ease-in-out',
+                              '&:hover': {
+                                transform: 'scale(1.05)',
+                              },
+                            }}
+                          >
+                            {item.icon}
+                          </Box>
                         </ListItemIcon>
 
                         {!isEffectivelyCollapsed && (
@@ -530,6 +563,7 @@ export const Layout: React.FC = () => {
                               primaryTypographyProps={{
                                 fontSize: '0.84rem',
                                 fontWeight: isSelected ? 600 : 500,
+                                color: isSelected ? '#0F172A' : '#475569',
                                 noWrap: true,
                               }}
                             />
@@ -542,8 +576,9 @@ export const Layout: React.FC = () => {
                                   fontSize: '0.62rem',
                                   fontWeight: 700,
                                   px: 0.5,
-                                  bgcolor: isSelected ? 'primary.main' : 'action.selected',
-                                  color: isSelected ? 'primary.contrastText' : 'text.secondary',
+                                  bgcolor: '#E2E8F0',
+                                  color: '#475569',
+                                  borderRadius: '4px',
                                 }}
                               />
                             )}
@@ -575,8 +610,8 @@ export const Layout: React.FC = () => {
           sx={{
             p: isEffectivelyCollapsed ? 1 : 1.5,
             borderTop: '1px solid',
-            borderColor: 'divider',
-            bgcolor: mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(248, 250, 252, 0.8)',
+            borderColor: 'rgba(203, 213, 225, 0.8)',
+            bgcolor: mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(226, 232, 240, 0.75)',
           }}
         >
           {isEffectivelyCollapsed ? (
@@ -644,7 +679,7 @@ export const Layout: React.FC = () => {
           )}
 
           {!isEffectivelyCollapsed && (
-            <Box sx={{ mt: 1, pt: 0.8, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+            <Box sx={{ mt: 1, pt: 0.8, borderTop: '1px solid', borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(203, 213, 225, 0.6)', textAlign: 'center' }}>
               <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', opacity: 0.75 }}>
                 Gestor MEI • <strong>LPTI Tech</strong>
               </Typography>
@@ -1230,6 +1265,9 @@ export const Layout: React.FC = () => {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: 280,
+              bgcolor: mode === 'dark' ? '#0F172A' : '#F1F5F9',
+              borderRight: '1px solid',
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
               boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
             },
           }}
@@ -1245,8 +1283,9 @@ export const Layout: React.FC = () => {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: currentDrawerWidth,
-              borderRight: 1,
-              borderColor: 'divider',
+              bgcolor: mode === 'dark' ? '#0F172A' : '#F1F5F9',
+              borderRight: '1px solid',
+              borderColor: mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
               overflowX: 'hidden',
               top: isSupportMode ? '36px' : 0,
               height: isSupportMode ? 'calc(100% - 36px)' : '100%',
