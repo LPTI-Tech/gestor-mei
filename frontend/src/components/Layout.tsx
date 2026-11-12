@@ -435,7 +435,27 @@ export const Layout: React.FC = () => {
         </Box>
 
         {/* Lista de Navegação por Categorias */}
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1.5, px: isEffectivelyCollapsed ? 0.75 : 1 }}>
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: 'auto',
+            py: 1.5,
+            px: isEffectivelyCollapsed ? 0.75 : 1,
+            '&::-webkit-scrollbar': {
+              width: '4px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(148,163,184,0.40)',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: 'rgba(148,163,184,0.65)',
+            },
+          }}
+        >
           {navSections.map((section) => {
             const visibleItems = filterSectionItems(section.items);
             if (visibleItems.length === 0) return null;
@@ -473,7 +493,7 @@ export const Layout: React.FC = () => {
                         }}
                         selected={isSelected}
                         sx={{
-                          borderRadius: 2,
+                          borderRadius: '6px',
                           py: 0.9,
                           px: isEffectivelyCollapsed ? 1 : 1.5,
                           minHeight: isDrawerMobile ? 48 : 38,
@@ -481,18 +501,14 @@ export const Layout: React.FC = () => {
                           mb: 0.4,
                           transition: 'all 140ms ease-in-out',
                           bgcolor: isSelected
-                            ? mode === 'dark'
-                              ? 'rgba(2, 132, 199, 0.16)'
-                              : 'rgba(2, 132, 199, 0.08)'
+                            ? 'rgba(25, 118, 210, 0.08)'
                             : 'transparent',
-                          color: isSelected ? 'primary.main' : 'text.primary',
-                          borderLeft: isSelected && !isEffectivelyCollapsed ? '3px solid' : '3px solid transparent',
-                          borderColor: isSelected ? 'primary.main' : 'transparent',
+                          color: isSelected ? '#1976D2' : 'text.primary',
+                          borderLeft: isSelected && !isEffectivelyCollapsed ? '3px solid #1976D2' : '3px solid transparent',
+                          fontWeight: isSelected ? 600 : 500,
                           '&:hover': {
                             bgcolor: isSelected
-                              ? mode === 'dark'
-                               ? 'rgba(2, 132, 199, 0.22)'
-                                : 'rgba(2, 132, 199, 0.12)'
+                              ? 'rgba(25, 118, 210, 0.12)'
                               : 'action.hover',
                           },
                         }}
@@ -649,7 +665,7 @@ export const Layout: React.FC = () => {
             top: 0,
             left: 0,
             right: 0,
-            height: 42,
+            height: 36,
             zIndex: 1400,
             display: 'flex',
             alignItems: 'center',
@@ -742,7 +758,7 @@ export const Layout: React.FC = () => {
         position="fixed"
         elevation={0}
         sx={{
-          top: isSupportMode ? '42px' : 0,
+          top: isSupportMode ? '36px' : 0,
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
           ml: { md: `${currentDrawerWidth}px` },
           bgcolor: isMaster ? '#040D1A' : 'background.paper',
@@ -778,7 +794,7 @@ export const Layout: React.FC = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  color: isMaster ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary',
+                  color: isMaster ? '#94A3B8' : 'text.secondary',
                   fontWeight: 600,
                   fontSize: '0.78rem',
                   letterSpacing: '0.02em',
@@ -947,13 +963,14 @@ export const Layout: React.FC = () => {
               onClick={() => navigate('/vendas')}
               sx={{
                 display: { xs: 'none', md: 'inline-flex' },
-                borderRadius: 2,
+                height: 36,
+                borderRadius: '6px',
                 textTransform: 'none',
                 fontWeight: 600,
                 fontSize: '0.78rem',
                 px: 1.5,
-                py: 0.6,
                 boxShadow: 'none',
+                whiteSpace: 'nowrap',
                 '&:hover': { boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)' },
               }}
             >
@@ -965,20 +982,25 @@ export const Layout: React.FC = () => {
               <Button
                 variant="outlined"
                 size="small"
-                color="inherit"
                 startIcon={<ReceiptText size={16} strokeWidth={1.75} />}
                 onClick={() => navigate('/despesas')}
                 sx={{
                   display: { xs: 'none', lg: 'inline-flex' },
-                  borderRadius: 2,
+                  height: 36,
+                  borderRadius: '6px',
+                  whiteSpace: 'nowrap',
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '0.78rem',
-                  px: 1.4,
-                  py: 0.6,
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                  '&:hover': { borderColor: 'text.secondary', bgcolor: 'action.hover' },
+                  px: 1.5,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  color: '#FFFFFF',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    background: 'rgba(255,255,255,0.15)',
+                    borderColor: 'rgba(255,255,255,0.4)',
+                  },
                 }}
               >
                 + Despesa
@@ -1226,8 +1248,8 @@ export const Layout: React.FC = () => {
               borderRight: 1,
               borderColor: 'divider',
               overflowX: 'hidden',
-              top: isSupportMode ? '42px' : 0,
-              height: isSupportMode ? 'calc(100% - 42px)' : '100%',
+              top: isSupportMode ? '36px' : 0,
+              height: isSupportMode ? 'calc(100% - 36px)' : '100%',
               transition: theme.transitions.create(['width', 'top', 'height'], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.shorter,
@@ -1247,9 +1269,9 @@ export const Layout: React.FC = () => {
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
           width: { md: `calc(100% - ${currentDrawerWidth}px)` },
-          mt: isSupportMode ? { xs: '98px', sm: '102px' } : { xs: '56px', sm: '60px' },
+          mt: isSupportMode ? { xs: '92px', sm: '96px' } : { xs: '56px', sm: '60px' },
           mb: { xs: '65px', md: 0 },
-          minHeight: isSupportMode ? 'calc(100vh - 102px)' : 'calc(100vh - 60px)',
+          minHeight: isSupportMode ? 'calc(100vh - 96px)' : 'calc(100vh - 60px)',
           transition: theme.transitions.create(['width', 'margin-left', 'margin-top'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,

@@ -21,6 +21,7 @@ import {
   Tooltip,
   TextField,
   InputAdornment,
+  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -309,14 +310,15 @@ export const MasterDashboard: React.FC = () => {
   });
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 3 }}>
       {/* Banner Principal Master Sentinel */}
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 2.5, md: 3.5 },
-          mb: 3.5,
-          borderRadius: 3,
+          py: 1.5,
+          px: 2.5,
+          mb: 1.5,
+          borderRadius: '8px',
           background: isDark
             ? 'linear-gradient(135deg, #071933 0%, #0d2847 100%)'
             : 'linear-gradient(135deg, #0a2540 0%, #08213b 100%)',
@@ -325,68 +327,69 @@ export const MasterDashboard: React.FC = () => {
           overflow: 'hidden',
           border: '1px solid',
           borderColor: isDark ? 'rgba(56, 189, 248, 0.2)' : 'rgba(14, 165, 233, 0.3)',
-          boxShadow: '0 12px 32px rgba(10, 37, 64, 0.2)',
+          boxShadow: '0 4px 20px rgba(10, 37, 64, 0.15)',
         }}
       >
         <Box
           sx={{
             display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
+            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', md: 'center' },
-            gap: 2.5,
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 1.5,
             position: 'relative',
             zIndex: 1,
           }}
         >
+          {/* ESQUERDA: Título e Subtítulo */}
           <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1 }}>
-              <Chip
-                icon={<Shield size={14} color="#38bdf8" />}
-                label="LPTI Tech • Administrador Global"
-                size="small"
-                sx={{
-                  bgcolor: 'rgba(56, 189, 248, 0.15)',
-                  color: '#38bdf8',
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                }}
-              />
-              <Chip
-                label="Visão Global Multi-tenant"
-                size="small"
-                sx={{
-                  bgcolor: 'rgba(16, 185, 129, 0.15)',
-                  color: '#34d399',
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                  border: '1px solid rgba(52, 211, 153, 0.3)',
-                }}
-              />
-            </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', mb: 0.8 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                fontSize: { xs: '1.15rem', md: '1.25rem' },
+                letterSpacing: '-0.01em',
+                lineHeight: 1.25,
+                mb: 0.25,
+              }}
+            >
               Dashboard Global MASTER
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.85, maxWidth: 640 }}>
-              Visão macro consolidada de toda a plataforma Gestor MEI: métricas de empresas cadastradas,
-              titulares (OWNER), operadores, consultores e status de operação em tempo real.
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'rgba(255, 255, 255, 0.75)',
+                fontSize: '0.8125rem',
+                lineHeight: 1.3,
+                maxWidth: 620,
+              }}
+            >
+              Visão macro consolidada da plataforma: empresas, titulares, operadores e status operacional em tempo real.
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          {/* DIREITA: Atualizar e Gestão de Usuários */}
+          <Box sx={{ display: 'flex', gap: 1.2, flexShrink: 0, alignItems: 'center' }}>
             <Button
               variant="outlined"
               size="small"
               onClick={carregarDados}
-              startIcon={<RefreshCw size={15} />}
+              startIcon={<RefreshCw size={14} />}
               sx={{
+                height: 34,
                 color: '#ffffff',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                borderRadius: 2,
+                borderColor: 'rgba(255, 255, 255, 0.25)',
+                bgcolor: 'rgba(255, 255, 255, 0.06)',
+                borderRadius: '6px',
                 fontWeight: 600,
+                fontSize: '0.8125rem',
                 textTransform: 'none',
-                '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255, 255, 255, 0.08)' },
+                whiteSpace: 'nowrap',
+                px: 1.5,
+                '&:hover': {
+                  borderColor: 'rgba(255, 255, 255, 0.45)',
+                  bgcolor: 'rgba(255, 255, 255, 0.12)',
+                },
               }}
             >
               Atualizar
@@ -395,15 +398,22 @@ export const MasterDashboard: React.FC = () => {
               variant="contained"
               size="small"
               onClick={() => navigate('/usuarios')}
-              startIcon={<PlusCircle size={15} />}
+              startIcon={<PlusCircle size={14} />}
               sx={{
+                height: 34,
                 bgcolor: '#10b981',
                 color: '#ffffff',
-                borderRadius: 2,
-                fontWeight: 700,
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '0.8125rem',
                 textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
-                '&:hover': { bgcolor: '#059669' },
+                whiteSpace: 'nowrap',
+                px: 1.75,
+                boxShadow: 'none',
+                '&:hover': {
+                  bgcolor: '#059669',
+                  boxShadow: 'none',
+                },
               }}
             >
               Gestão de Usuários
@@ -417,29 +427,29 @@ export const MasterDashboard: React.FC = () => {
         <Alert
           severity={feedback.type}
           onClose={() => setFeedback(null)}
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{ mb: 2, borderRadius: '6px' }}
         >
           {feedback.text}
         </Alert>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '6px' }}>
           {error}
         </Alert>
       )}
 
       {/* Painel de Métricas Globais (6 Indicadores Oficiais) */}
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         {/* 1. Total de Empresas */}
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
               bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
@@ -447,18 +457,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Total Empresas
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
-                <Building2 size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main', display: 'flex' }}>
+                <Building2 size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="text.primary">
-              {loading ? <CircularProgress size={24} /> : metricas?.total_empresas ?? 0}
+            <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.total_empresas ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Negócios registrados
             </Typography>
           </Card>
@@ -469,8 +479,8 @@ export const MasterDashboard: React.FC = () => {
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
               borderColor: alpha(theme.palette.success.main, 0.3),
               bgcolor: alpha(theme.palette.success.main, 0.04),
@@ -480,18 +490,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="success.main" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="success.main" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Empresas Ativas
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.success.main, 0.15), color: 'success.main' }}>
-                <CheckCircle2 size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.success.main, 0.15), color: 'success.main', display: 'flex' }}>
+                <CheckCircle2 size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="success.main">
-              {loading ? <CircularProgress size={24} /> : metricas?.empresas_ativas ?? 0}
+            <Typography variant="h4" fontWeight={700} color="success.main" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.empresas_ativas ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Operando normalmente
             </Typography>
           </Card>
@@ -502,8 +512,8 @@ export const MasterDashboard: React.FC = () => {
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
               borderColor: alpha(theme.palette.error.main, 0.3),
               bgcolor: alpha(theme.palette.error.main, 0.04),
@@ -513,18 +523,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="error.main" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="error.main" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Bloqueadas
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.error.main, 0.15), color: 'error.main' }}>
-                <ShieldAlert size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.error.main, 0.15), color: 'error.main', display: 'flex' }}>
+                <ShieldAlert size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="error.main">
-              {loading ? <CircularProgress size={24} /> : metricas?.empresas_bloqueadas ?? 0}
+            <Typography variant="h4" fontWeight={700} color="error.main" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.empresas_bloqueadas ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Suspensas pela gestão
             </Typography>
           </Card>
@@ -535,10 +545,10 @@ export const MasterDashboard: React.FC = () => {
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
               bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
@@ -546,18 +556,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="secondary.main" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="secondary.main" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Proprietários
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.secondary.main, 0.1), color: 'secondary.main' }}>
-                <UserCheck size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.secondary.main, 0.1), color: 'secondary.main', display: 'flex' }}>
+                <UserCheck size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="text.primary">
-              {loading ? <CircularProgress size={24} /> : metricas?.total_owners ?? 0}
+            <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.total_owners ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Titulares de negócio
             </Typography>
           </Card>
@@ -568,10 +578,10 @@ export const MasterDashboard: React.FC = () => {
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
               bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
@@ -579,18 +589,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Operadores
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.info.main, 0.1), color: 'info.main' }}>
-                <Users size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.info.main, 0.1), color: 'info.main', display: 'flex' }}>
+                <Users size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="text.primary">
-              {loading ? <CircularProgress size={24} /> : metricas?.total_operadores ?? 0}
+            <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.total_operadores ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Caixas e atendimento
             </Typography>
           </Card>
@@ -601,10 +611,10 @@ export const MasterDashboard: React.FC = () => {
           <Card
             elevation={0}
             sx={{
-              p: 2,
-              borderRadius: 2.5,
+              p: 1.5,
+              borderRadius: '8px',
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
               bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
@@ -612,18 +622,18 @@ export const MasterDashboard: React.FC = () => {
               justifyContent: 'space-between',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase" sx={{ fontSize: '0.7rem' }}>
                 Consultores
               </Typography>
-              <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.1), color: 'warning.main' }}>
-                <Briefcase size={18} strokeWidth={2} />
+              <Box sx={{ p: 0.6, borderRadius: '6px', bgcolor: alpha(theme.palette.warning.main, 0.1), color: 'warning.main', display: 'flex' }}>
+                <Briefcase size={16} strokeWidth={2} />
               </Box>
             </Box>
-            <Typography variant="h4" fontWeight={800} color="text.primary">
-              {loading ? <CircularProgress size={24} /> : metricas?.total_consultores ?? 0}
+            <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ fontSize: '1.6rem', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? <CircularProgress size={20} /> : metricas?.total_consultores ?? 0}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.3, fontSize: '0.72rem' }}>
               Consultores externos
             </Typography>
           </Card>
@@ -634,96 +644,175 @@ export const MasterDashboard: React.FC = () => {
       <Card
         elevation={0}
         sx={{
-          borderRadius: 3,
+          borderRadius: '8px',
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
           bgcolor: 'background.paper',
           overflow: 'hidden',
         }}
       >
+        {/* Cabeçalho Compacto da Seção */}
         <Box
           sx={{
-            p: 2.5,
+            px: 2,
+            pt: 1.5,
+            pb: 1,
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
-            alignItems: { xs: 'stretch', sm: 'center' },
-            gap: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            alignItems: 'center',
           }}
         >
           <Box>
-            <Typography variant="subtitle1" fontWeight={700}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.9rem' }}>
               Empresas Cadastradas na Plataforma ({empresasFiltradas.length})
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Gerencie a titularidade, status de operação e acesse qualquer empresa como auditor global.
             </Typography>
           </Box>
+        </Box>
 
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<PlusCircle size={16} />}
-              onClick={() => {
-                setCreateError(null);
-                setCreateEmpresaModalOpen(true);
-              }}
-              sx={{
-                fontWeight: 700,
-                textTransform: 'none',
-                borderRadius: 2,
-                px: 2,
-                py: 0.8,
-                bgcolor: '#10b981',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                '&:hover': { bgcolor: '#059669' },
-              }}
-            >
-              Nova Empresa & OWNER
-            </Button>
+        {/* SENTINEL TOOLBAR UNIFICADA */}
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+            borderTop: '1px solid',
+            borderBottom: '1px solid',
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
+            bgcolor: isDark ? 'rgba(255,255,255,0.015)' : '#F8FAFC',
+          }}
+        >
+          {/* ESQUERDA: Campo de busca */}
+          <TextField
+            size="small"
+            placeholder="Buscar por nome, CNPJ ou titular..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            sx={{
+              flexGrow: 1,
+              maxWidth: { xs: '100%', sm: 340 },
+              '& .MuiOutlinedInput-root': {
+                height: 36,
+                borderRadius: '6px',
+                fontSize: '0.8125rem',
+                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={15} color="#94A3B8" />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {/* CENTRO: Divisor técnico */}
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{
+              mx: 1,
+              display: { xs: 'none', md: 'block' },
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+            }}
+          />
+
+          {/* DIREITA: Filtros + Botão Nova Empresa & OWNER */}
+          <Box sx={{ display: 'flex', gap: 1.2, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
             {/* Filtros de Status */}
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               <Chip
                 label="Todas"
                 size="small"
                 onClick={() => setStatusFiltro('TODAS')}
-                color={statusFiltro === 'TODAS' ? 'primary' : 'default'}
-                variant={statusFiltro === 'TODAS' ? 'filled' : 'outlined'}
+                sx={{
+                  height: 32,
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  bgcolor: statusFiltro === 'TODAS' ? '#1976D2' : isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                  color: statusFiltro === 'TODAS' ? '#FFFFFF' : 'text.primary',
+                  border: '1px solid',
+                  borderColor: statusFiltro === 'TODAS' ? '#1976D2' : isDark ? 'rgba(255,255,255,0.1)' : '#CBD5E1',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: statusFiltro === 'TODAS' ? '#1565C0' : isDark ? 'rgba(255,255,255,0.12)' : '#F1F5F9',
+                  },
+                }}
               />
               <Chip
                 label="Ativas"
                 size="small"
                 onClick={() => setStatusFiltro('ATIVAS')}
-                color={statusFiltro === 'ATIVAS' ? 'success' : 'default'}
-                variant={statusFiltro === 'ATIVAS' ? 'filled' : 'outlined'}
+                sx={{
+                  height: 32,
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  bgcolor: statusFiltro === 'ATIVAS' ? '#10B981' : isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                  color: statusFiltro === 'ATIVAS' ? '#FFFFFF' : 'text.primary',
+                  border: '1px solid',
+                  borderColor: statusFiltro === 'ATIVAS' ? '#10B981' : isDark ? 'rgba(255,255,255,0.1)' : '#CBD5E1',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: statusFiltro === 'ATIVAS' ? '#059669' : isDark ? 'rgba(255,255,255,0.12)' : '#F1F5F9',
+                  },
+                }}
               />
               <Chip
                 label="Bloqueadas"
                 size="small"
                 onClick={() => setStatusFiltro('BLOQUEADAS')}
-                color={statusFiltro === 'BLOQUEADAS' ? 'error' : 'default'}
-                variant={statusFiltro === 'BLOQUEADAS' ? 'filled' : 'outlined'}
+                sx={{
+                  height: 32,
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.78rem',
+                  bgcolor: statusFiltro === 'BLOQUEADAS' ? '#EF4444' : isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                  color: statusFiltro === 'BLOQUEADAS' ? '#FFFFFF' : 'text.primary',
+                  border: '1px solid',
+                  borderColor: statusFiltro === 'BLOQUEADAS' ? '#EF4444' : isDark ? 'rgba(255,255,255,0.1)' : '#CBD5E1',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: statusFiltro === 'BLOQUEADAS' ? '#DC2626' : isDark ? 'rgba(255,255,255,0.12)' : '#F1F5F9',
+                  },
+                }}
               />
             </Box>
 
-            {/* Campo de Busca */}
-            <TextField
+            <Button
+              variant="contained"
               size="small"
-              placeholder="Buscar por nome, CNPJ ou titular..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              sx={{ minWidth: 260 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={16} />
-                  </InputAdornment>
-                ),
+              startIcon={<PlusCircle size={15} />}
+              onClick={() => {
+                setCreateError(null);
+                setCreateEmpresaModalOpen(true);
               }}
-            />
+              sx={{
+                height: 36,
+                fontWeight: 600,
+                fontSize: '0.8125rem',
+                textTransform: 'none',
+                borderRadius: '6px',
+                px: 1.75,
+                bgcolor: '#10b981',
+                color: '#ffffff',
+                boxShadow: 'none',
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  bgcolor: '#059669',
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              Nova Empresa & OWNER
+            </Button>
           </Box>
         </Box>
 
@@ -784,7 +873,7 @@ export const MasterDashboard: React.FC = () => {
                           label={emp.segmento || 'GERAL'}
                           size="small"
                           variant="outlined"
-                          sx={{ fontSize: '0.72rem', fontWeight: 600 }}
+                          sx={{ fontSize: '0.72rem', fontWeight: 600, borderRadius: '6px' }}
                         />
                       </TableCell>
 
@@ -811,7 +900,7 @@ export const MasterDashboard: React.FC = () => {
                         <Chip
                           label={emp.total_usuarios}
                           size="small"
-                          sx={{ fontWeight: 700, minWidth: 32 }}
+                          sx={{ fontWeight: 700, minWidth: 32, borderRadius: '6px' }}
                         />
                       </TableCell>
 
@@ -822,7 +911,7 @@ export const MasterDashboard: React.FC = () => {
                             label="Ativa"
                             size="small"
                             color="success"
-                            sx={{ fontWeight: 700, fontSize: '0.72rem' }}
+                            sx={{ fontWeight: 700, fontSize: '0.72rem', borderRadius: '6px' }}
                           />
                         ) : (
                           <Tooltip title={emp.motivo_bloqueio ? `Motivo: ${emp.motivo_bloqueio}` : 'Suspenso pela administração'}>
@@ -830,7 +919,7 @@ export const MasterDashboard: React.FC = () => {
                               label="Bloqueada"
                               size="small"
                               color="error"
-                              sx={{ fontWeight: 700, fontSize: '0.72rem' }}
+                              sx={{ fontWeight: 700, fontSize: '0.72rem', borderRadius: '6px' }}
                             />
                           </Tooltip>
                         )}
@@ -851,7 +940,7 @@ export const MasterDashboard: React.FC = () => {
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 fontSize: '0.75rem',
-                                borderRadius: 1.5,
+                                borderRadius: '6px',
                               }}
                             >
                               Acessar

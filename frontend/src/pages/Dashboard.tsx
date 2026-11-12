@@ -164,26 +164,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      {/* Banner de Modo Auditoria para Usuário MASTER em contexto de empresa */}
-      {isMaster && activeEmpresaId && (
-        <Alert
-          severity="info"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => setContextEmpresaId(null)}
-              sx={{ fontWeight: 700, textTransform: 'none' }}
-            >
-              Voltar à Visão Global MASTER
-            </Button>
-          }
-          sx={{ mb: 3, borderRadius: 2.5, border: '1px solid rgba(2, 132, 199, 0.3)' }}
-        >
-          👁️ <strong>Modo Auditoria MASTER:</strong> Você está visualizando os dados operacionais da empresa{' '}
-          <strong>{empresa?.nome_fantasia || `#${activeEmpresaId}`}</strong>.
-        </Alert>
-      )}
       {/* =============================================================== */}
       {/* 1. SAUDAÇÃO EXECUTIVA & INSIGHTS                               */}
       {/* =============================================================== */}
