@@ -250,7 +250,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             textAlign: 'center',
           }}
         >
-          {/* Caixa de Acrílico Iluminada para a Logo */}
+          {/* Logo livre — sem caixa escura */}
           <Box
             sx={{
               display: 'inline-flex',
@@ -259,25 +259,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               mx: 'auto',
               px: 1.5,
               py: 0.4,
-              borderRadius: 2.5,
-              bgcolor: 'rgba(7, 25, 51, 0.85)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(56, 189, 248, 0.28)',
-              boxShadow: `
-                0 8px 20px -4px rgba(0, 0, 0, 0.6),
-                0 0 16px -4px rgba(16, 185, 129, 0.25),
-                inset 0 1px 0 rgba(255, 255, 255, 0.15)
-              `,
               mb: 0.4,
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: `
-                  0 12px 24px -4px rgba(0, 0, 0, 0.7),
-                  0 0 20px -4px rgba(16, 185, 129, 0.35),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.2)
-                `,
-              },
             }}
           >
             <Box
@@ -308,30 +290,26 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </Typography>
         </Box>
 
-        {/* CARD CENTRAL DE LOGIN (GLASSMORPHISM MAIS EVIDENTE E CONTRASTE REFORÇADO) */}
+        {/* CARD CENTRAL DE LOGIN — LOGIN 2.3: fundo claro sobre fundo escuro */}
         <Card
           elevation={0}
           sx={{
             width: '100%',
-            borderRadius: 3,
-            border: '1px solid rgba(56, 189, 248, 0.32)',
-            background: 'linear-gradient(150deg, rgba(20, 46, 82, 0.88) 0%, rgba(12, 30, 56, 0.94) 100%)',
-            backdropFilter: 'blur(24px) saturate(160%)',
-            boxShadow: `
-              0 20px 50px -10px rgba(0, 0, 0, 0.7),
-              0 0 32px -6px rgba(14, 165, 233, 0.22),
-              inset 0 1px 1px rgba(255, 255, 255, 0.22)
-            `,
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            background: '#F7F6F5',
+            backdropFilter: 'none',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.60)',
             overflow: 'hidden',
           }}
         >
-          {/* Faixa Superior de Proteção e Blindagem RBAC */}
+          {/* Faixa Superior de Proteção — LOGIN 2.3: cores adaptadas ao card claro */}
           <Box
             sx={{
               py: 0.4,
               px: 2,
-              bgcolor: 'rgba(56, 189, 248, 0.12)',
-              borderBottom: '1px solid rgba(56, 189, 248, 0.2)',
+              bgcolor: 'rgba(2, 132, 199, 0.08)',
+              borderBottom: '1px solid #E2E8F0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -340,7 +318,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <Typography
               variant="caption"
               sx={{
-                color: '#38bdf8',
+                color: '#0284c7',
                 fontWeight: 700,
                 fontSize: '0.7rem',
                 letterSpacing: '0.01em',
@@ -354,7 +332,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <Typography
               variant="caption"
               sx={{
-                color: '#94a3b8',
+                color: '#64748b',
                 fontWeight: 600,
                 fontSize: '0.66rem',
               }}
@@ -372,7 +350,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   fontWeight: 800,
                   fontSize: '1.05rem',
                   letterSpacing: '-0.02em',
-                  color: '#ffffff',
+                  color: '#0F172A',
                   lineHeight: 1.2,
                 }}
               >
@@ -381,7 +359,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <Typography
                 variant="caption"
                 sx={{
-                  color: '#94a3b8',
+                  color: '#64748b',
                   fontSize: '0.74rem',
                 }}
               >

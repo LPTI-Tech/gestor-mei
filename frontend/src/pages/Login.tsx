@@ -255,52 +255,52 @@ export const Login: React.FC = () => {
     setErrorMessage(null);
   };
 
-  // Estilo Sentinel UX Polish 2.2: Preserva o tema escuro/glassmorphism no foco
+  // LOGIN 2.3: Inputs com fundo branco, border-radius 6px, altura 42px
   const sentinelInputSx = {
     '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
-      height: 34,
-      color: '#ffffff',
-      bgcolor: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '6px',
+      height: 42,
+      color: '#0F172A',
+      bgcolor: '#FFFFFF',
       transition: 'all 0.2s ease-in-out',
       '& fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.18)',
+        borderColor: '#CBD5E1',
         transition: 'all 0.2s ease-in-out',
       },
       '&:hover': {
-        bgcolor: 'rgba(255, 255, 255, 0.07)',
+        bgcolor: '#FAFAFA',
       },
       '&:hover fieldset': {
-        borderColor: 'rgba(56, 189, 248, 0.5)',
+        borderColor: '#94a3b8',
       },
       '&.Mui-focused': {
-        bgcolor: 'rgba(255, 255, 255, 0.08) !important',
-        color: '#ffffff !important',
-        boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25), 0 2px 10px rgba(0, 0, 0, 0.3)',
+        bgcolor: '#FFFFFF !important',
+        color: '#0F172A !important',
+        boxShadow: '0 0 0 3px rgba(2, 132, 199, 0.15)',
       },
       '&.Mui-focused fieldset': {
-        borderColor: '#10b981 !important',
+        borderColor: '#0284c7 !important',
         borderWidth: '1.5px',
       },
       '& input': {
-        color: '#ffffff !important',
+        color: '#0F172A !important',
         fontSize: '0.84rem',
         backgroundColor: 'transparent !important',
         '&:focus': {
           backgroundColor: 'transparent !important',
-          color: '#ffffff !important',
+          color: '#0F172A !important',
           outline: 'none',
         },
       },
       '& input::placeholder': {
-        color: 'rgba(148, 163, 184, 0.8)',
+        color: '#94a3b8',
         opacity: 1,
         fontSize: '0.8rem',
       },
       '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: '0 0 0 1000px rgba(15, 23, 42, 0.88) inset !important',
-        WebkitTextFillColor: '#ffffff !important',
-        caretColor: '#ffffff',
+        WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
+        WebkitTextFillColor: '#0F172A !important',
+        caretColor: '#0F172A',
         transition: 'background-color 5000s ease-in-out 0s',
       },
     },
@@ -322,8 +322,8 @@ export const Login: React.FC = () => {
             py: 0.5,
             borderRadius: 2,
             borderLeft: '4px solid #ef4444',
-            bgcolor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
-            color: isDark ? '#fca5a5' : '#991b1b',
+            bgcolor: '#fef2f2',
+            color: '#991b1b',
             fontSize: '0.82rem',
             '& .MuiAlert-icon': {
               color: '#ef4444',
@@ -357,13 +357,13 @@ export const Login: React.FC = () => {
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '0.8rem',
-            borderColor: 'rgba(255, 255, 255, 0.18)',
-            bgcolor: 'rgba(255, 255, 255, 0.05)',
-            color: '#f8fafc',
+            borderColor: '#E2E8F0',
+            bgcolor: '#FFFFFF',
+            color: '#374151',
             boxShadow: 'none',
             '&:hover': {
               borderColor: '#4285F4',
-              bgcolor: 'rgba(66, 133, 244, 0.15)',
+              bgcolor: 'rgba(66, 133, 244, 0.06)',
             },
           }}
         >
@@ -387,13 +387,13 @@ export const Login: React.FC = () => {
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '0.8rem',
-            borderColor: 'rgba(255, 255, 255, 0.18)',
-            bgcolor: 'rgba(255, 255, 255, 0.05)',
-            color: '#f8fafc',
+            borderColor: '#E2E8F0',
+            bgcolor: '#FFFFFF',
+            color: '#374151',
             boxShadow: 'none',
             '&:hover': {
               borderColor: '#05a6f0',
-              bgcolor: 'rgba(5, 166, 240, 0.15)',
+              bgcolor: 'rgba(5, 166, 240, 0.06)',
             },
           }}
         >
@@ -415,7 +415,7 @@ export const Login: React.FC = () => {
           '::before, ::after': {
             content: '""',
             flex: 1,
-            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+            borderBottom: '1px solid #E2E8F0',
           },
         }}
       >
@@ -423,7 +423,7 @@ export const Login: React.FC = () => {
           variant="caption"
           sx={{
             px: 1,
-            color: 'rgba(255, 255, 255, 0.6)',
+            color: '#94a3b8',
             fontWeight: 500,
             fontSize: '0.7rem',
           }}
@@ -445,7 +445,7 @@ export const Login: React.FC = () => {
               mb: 0.2,
               fontWeight: 600,
               fontSize: '0.74rem',
-              color: '#e2e8f0',
+              color: '#374151',
             }}
           >
             Email
@@ -464,7 +464,7 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <MailOutline sx={{ fontSize: 16, color: '#38bdf8' }} />
+                  <MailOutline sx={{ fontSize: 16, color: '#94a3b8' }} />
                 </InputAdornment>
               ),
             }}
@@ -482,7 +482,7 @@ export const Login: React.FC = () => {
               sx={{
                 fontWeight: 600,
                 fontSize: '0.74rem',
-                color: '#e2e8f0',
+                color: '#374151',
               }}
             >
               Senha
@@ -495,8 +495,8 @@ export const Login: React.FC = () => {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.72rem',
-                color: '#38bdf8',
-                '&:hover': { color: '#7dd3fc', textDecoration: 'underline' },
+                color: '#0284c7',
+                '&:hover': { color: '#0369a1', textDecoration: 'underline' },
               }}
             >
               Esqueceu a senha?
@@ -515,7 +515,7 @@ export const Login: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined sx={{ fontSize: 16, color: '#38bdf8' }} />
+                  <LockOutlined sx={{ fontSize: 16, color: '#94a3b8' }} />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -526,7 +526,7 @@ export const Login: React.FC = () => {
                     edge="end"
                     tabIndex={-1}
                     size="small"
-                    sx={{ color: '#94a3b8' }}
+                    sx={{ color: '#64748b' }}
                   >
                     {showPassword ? <VisibilityOff sx={{ fontSize: 16 }} /> : <Visibility sx={{ fontSize: 16 }} />}
                   </IconButton>
@@ -551,12 +551,12 @@ export const Login: React.FC = () => {
             fontSize: '0.88rem',
             borderRadius: 2,
             textTransform: 'none',
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #059669 100%)',
-            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4), 0 2px 6px rgba(16, 185, 129, 0.25)',
+            background: '#0284c7',
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
             transition: 'all 0.2s ease',
             '&:hover': {
-              background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #10b981 100%)',
-              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.5), 0 2px 8px rgba(16, 185, 129, 0.35)',
+              background: '#0369a1',
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.45)',
               transform: 'translateY(-1px)',
             },
           }}
@@ -577,7 +577,7 @@ export const Login: React.FC = () => {
             sx={{
               mt: 0.8,
               pt: 0.6,
-              borderTop: '1px dashed rgba(255, 255, 255, 0.15)',
+              borderTop: '1px dashed #CBD5E1',
             }}
           >
             <Typography
@@ -610,12 +610,12 @@ export const Login: React.FC = () => {
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '0.7rem',
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#f1f5f9',
-                  bgcolor: 'rgba(255, 255, 255, 0.04)',
+                  borderColor: '#CBD5E1',
+                  color: '#374151',
+                  bgcolor: '#F8FAFC',
                   '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    borderColor: '#94a3b8',
+                    bgcolor: '#F1F5F9',
                   },
                 }}
               >
@@ -636,12 +636,12 @@ export const Login: React.FC = () => {
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '0.7rem',
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  color: '#f1f5f9',
-                  bgcolor: 'rgba(255, 255, 255, 0.04)',
+                  borderColor: '#CBD5E1',
+                  color: '#374151',
+                  bgcolor: '#F8FAFC',
                   '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    borderColor: '#94a3b8',
+                    bgcolor: '#F1F5F9',
                   },
                 }}
               >
