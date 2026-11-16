@@ -261,9 +261,9 @@ export const Layout: React.FC = () => {
       id: 'operacao',
       title: 'Operação',
       items: [
-        { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={16} strokeWidth={2.2} />, iconBg: '#DBEAFE', iconColor: '#2563EB' },
+        { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={16} strokeWidth={2.2} />, iconBg: '#DBEAFE', iconColor: '#2563EB', adminOrConsultorOnly: true },
         { label: 'Caixa do Dia', path: '/caixa', icon: <Wallet size={16} strokeWidth={2.2} />, iconBg: '#D1FAE5', iconColor: '#059669' },
-        { label: 'PDV / Vendas', path: '/vendas', icon: <Receipt size={16} strokeWidth={2.2} />, iconBg: '#E0E7FF', iconColor: '#4F46E5', badge: 'F2' },
+        { label: 'PDV / Vendas', path: '/pdv', icon: <Receipt size={16} strokeWidth={2.2} />, iconBg: '#E0E7FF', iconColor: '#4F46E5', badge: 'F2' },
         { label: 'Pedidos Delivery', path: '/pedidos-entrega', icon: <Bike size={16} strokeWidth={2.2} />, iconBg: '#FEF3C7', iconColor: '#D97706' },
       ],
     },
@@ -272,11 +272,11 @@ export const Layout: React.FC = () => {
       title: 'Gestão Comercial',
       items: [
         { label: 'Clientes', path: '/clientes', icon: <Users size={16} strokeWidth={2.2} />, iconBg: '#E0F2FE', iconColor: '#0284C7' },
-        { label: 'Produtos & Serviços', path: '/produtos', icon: <PackageSearch size={16} strokeWidth={2.2} />, iconBg: '#EDE9FE', iconColor: '#7C3AED' },
-        { label: 'Controle de Estoque', path: '/estoque', icon: <Warehouse size={16} strokeWidth={2.2} />, iconBg: '#CCFBF1', iconColor: '#0D9488' },
+        { label: 'Produtos & Serviços', path: '/produtos', icon: <PackageSearch size={16} strokeWidth={2.2} />, iconBg: '#EDE9FE', iconColor: '#7C3AED', adminOrConsultorOnly: true },
+        { label: 'Controle de Estoque', path: '/estoque', icon: <Warehouse size={16} strokeWidth={2.2} />, iconBg: '#CCFBF1', iconColor: '#0D9488', adminOrConsultorOnly: true },
         { label: 'Compras', path: '/compras', icon: <Truck size={16} strokeWidth={2.2} />, iconBg: '#CFFAFE', iconColor: '#0891B2', adminOrConsultorOnly: true },
         { label: 'Despesas', path: '/despesas', icon: <ReceiptText size={16} strokeWidth={2.2} />, iconBg: '#FFE4E6', iconColor: '#E11D48', adminOrConsultorOnly: true },
-        { label: 'Regiões & Taxas', path: '/regioes-entrega', icon: <MapPin size={16} strokeWidth={2.2} />, iconBg: '#FFEDD5', iconColor: '#EA580C' },
+        { label: 'Regiões & Taxas', path: '/regioes-entrega', icon: <MapPin size={16} strokeWidth={2.2} />, iconBg: '#FFEDD5', iconColor: '#EA580C', adminOrConsultorOnly: true },
         { label: 'Motoboys', path: '/motoboys', icon: <NavigationIcon size={16} strokeWidth={2.2} />, iconBg: '#FEF3C7', iconColor: '#B45309', moduleKey: 'modulo_motoboy' },
         { label: 'Controle iFood', path: '/ifood', icon: <Utensils size={16} strokeWidth={2.2} />, iconBg: '#FEE2E2', iconColor: '#DC2626', moduleKey: 'modulo_ifood' },
       ],
@@ -312,6 +312,21 @@ export const Layout: React.FC = () => {
         if (item.consultorOnly) return false;
         return true;
       }
+      // Perfil OPERADOR possui acesso estritamente restrito aos módulos de operação diária
+      if (isOperator) {
+        const rotasPermitidasOperador = [
+          '/caixa',
+          '/vendas',
+          '/pdv',
+          '/pedidos-entrega',
+          '/clientes',
+          '/motoboys',
+          '/ifood',
+        ];
+        if (!rotasPermitidasOperador.includes(item.path)) {
+          return false;
+        }
+      }
       if (item.consultorOnly && !isConsultor) return false;
       if (item.adminOnly && !isAdmin) return false;
       if (item.adminOrConsultorOnly && !isAdmin && !isConsultor) return false;
@@ -324,7 +339,7 @@ export const Layout: React.FC = () => {
   // Breadcrumbs contextuais calculados automaticamente
   const getBreadcrumbs = (pathname: string) => {
     if (pathname === '/') return { section: 'Operação', title: 'Dashboard' };
-    if (pathname.startsWith('/vendas')) return { section: 'Operação', title: 'PDV / Vendas Rápido' };
+    if (pathname.startsWith('/vendas') || pathname.startsWith('/pdv')) return { section: 'Operação', title: 'PDV / Vendas Rápido' };
     if (pathname.startsWith('/caixa')) return { section: 'Operação', title: 'Caixa do Dia' };
     if (pathname.startsWith('/pedidos-entrega')) return { section: 'Operação', title: 'Pedidos Delivery' };
     if (pathname.startsWith('/clientes')) return { section: 'Gestão Comercial', title: 'Clientes' };
@@ -375,7 +390,7 @@ export const Layout: React.FC = () => {
               overflow: 'hidden',
               textDecoration: 'none',
             }}
-            onClick={() => navigate('/')}
+            onClick={() => navigate(isOperator ? '/pdv' : '/')}
           >
             <Box
               component="img"
@@ -493,7 +508,10 @@ export const Layout: React.FC = () => {
 
                 <List disablePadding>
                   {visibleItems.map((item) => {
-                    const isSelected = location.pathname === item.path;
+                    const isSelected =
+                      location.pathname === item.path ||
+                      ((item.path === '/pdv' || item.path === '/vendas') &&
+                        (location.pathname === '/pdv' || location.pathname === '/vendas'));
 
                     const buttonContent = (
                       <ListItemButton

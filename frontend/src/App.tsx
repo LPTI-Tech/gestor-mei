@@ -41,7 +41,7 @@ const ProtectedRoute: React.FC<{
   adminOnly = false,
   adminOrConsultorOnly = false,
 }) => {
-  const { isAuthenticated, isAdmin, isConsultor, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isConsultor, isOperator, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -56,14 +56,39 @@ const ProtectedRoute: React.FC<{
   }
 
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
   }
 
   if (adminOrConsultorOnly && !isAdmin && !isConsultor) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
   }
 
   return <>{children}</>;
+};
+
+// Guardião da raiz (Dashboard): se for perfil OPERADOR, redireciona para o PDV
+const DashboardGuard: React.FC = () => {
+  const { isOperator, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isOperator) {
+    return <Navigate to="/pdv" replace />;
+  }
+
+  return <Dashboard />;
+};
+
+// Redirecionamento de rotas desconhecidas
+const FallbackRoute: React.FC = () => {
+  const { isOperator } = useAuth();
+  return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
 };
 
 export const App: React.FC = () => {
@@ -84,14 +109,15 @@ export const App: React.FC = () => {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              <Route index element={<DashboardGuard />} />
               <Route path="vendas" element={<Vendas />} />
+              <Route path="pdv" element={<Vendas />} />
               <Route path="pedidos-entrega" element={<PedidosEntrega />} />
-              <Route path="regioes-entrega" element={<RegioesEntrega />} />
-              <Route path="relatorio-entregas" element={<RelatorioEntregas />} />
+              <Route path="regioes-entrega" element={<ProtectedRoute adminOrConsultorOnly><RegioesEntrega /></ProtectedRoute>} />
+              <Route path="relatorio-entregas" element={<ProtectedRoute adminOrConsultorOnly><RelatorioEntregas /></ProtectedRoute>} />
               <Route path="clientes" element={<Clientes />} />
-              <Route path="produtos" element={<Produtos />} />
-              <Route path="estoque" element={<Estoque />} />
+              <Route path="produtos" element={<ProtectedRoute adminOrConsultorOnly><Produtos /></ProtectedRoute>} />
+              <Route path="estoque" element={<ProtectedRoute adminOrConsultorOnly><Estoque /></ProtectedRoute>} />
               <Route path="caixa" element={<Caixa />} />
               {/* Rotas de Gestão Executiva / Consultoria (Bloqueadas para OPERATOR) */}
               <Route path="despesas" element={<ProtectedRoute adminOrConsultorOnly><Despesas /></ProtectedRoute>} />
@@ -127,7 +153,7 @@ export const App: React.FC = () => {
               />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<FallbackRoute />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
