@@ -267,7 +267,10 @@ def get_dashboard_metrics(
         Produto.ativo == True
     ).all()
     total_itens_est = len(prods_est)
-    itens_baixo_est = sum(1 for p in prods_est if (p.quantidade_estoque or 0.0) <= (p.estoque_minimo or 0.0))
+    itens_baixo_est = sum(
+        1 for p in prods_est
+        if (p.estoque_minimo or 0.0) > 0 and (p.quantidade_estoque or 0.0) <= (p.estoque_minimo or 0.0)
+    )
     valor_est_custo = sum(float(p.quantidade_estoque or 0.0) * float(p.custo_unitario or 0.0) for p in prods_est)
 
     # 9. Indicadores do Controle DAS Mensal (Sprint 5)
@@ -280,7 +283,7 @@ def get_dashboard_metrics(
 
     das_mes_atual = next((d for d in guias_ano if d.mes == today.month), None)
     das_status_mes = das_mes_atual.status if das_mes_atual else "Pendente"
-    das_valor_mes = round(float(das_mes_atual.valor), 2) if das_mes_atual else 75.60
+    das_valor_mes = round(float(das_mes_atual.valor), 2) if das_mes_atual else 82.05
     das_venc_mes_str = das_mes_atual.vencimento.strftime("%d/%m/%Y") if das_mes_atual else f"20/{today.month:02d}/{today.year}"
     das_dias_rest = (das_mes_atual.vencimento - today).days if das_mes_atual else None
 

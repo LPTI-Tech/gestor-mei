@@ -113,7 +113,7 @@ export const Dashboard: React.FC = () => {
     const cnpj = empresa?.cnpj || 'Não informado';
     const razao = empresa?.nome_empresarial || empresa?.nome_fantasia || 'MEI';
     const mesAtual = metrics?.das_vencimento_mes_atual ? `Vencimento: ${metrics.das_vencimento_mes_atual}` : 'Vencimento: Dia 20';
-    const valor = formatCurrency(metrics?.das_valor_mes_atual || 75.60);
+    const valor = formatCurrency(metrics?.das_valor_mes_atual || 82.05);
     const status = metrics?.das_status_mes_atual || 'Pendente';
 
     const text = `DADOS PARA PAGAMENTO DO DAS MEI\n` +
@@ -159,7 +159,11 @@ export const Dashboard: React.FC = () => {
   }
 
   const produtosCriticos = produtos.filter(
-    (p) => (p.quantidade_estoque ?? 0) <= (p.estoque_minimo ?? 0)
+    (p) =>
+      p.tipo === 'PRODUTO' &&
+      p.ativo === true &&
+      (p.estoque_minimo ?? 0) > 0 &&
+      (p.quantidade_estoque ?? 0) <= (p.estoque_minimo ?? 0)
   );
 
   return (
@@ -198,375 +202,405 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* =============================================================== */}
-      {/* 3. ALERTAS EXECUTIVOS DO CONTROLE DAS                          */}
+      {/* 3. ALERTAS EXECUTIVOS DO TOPO (GRADE COMPACTA)                 */}
       {/* =============================================================== */}
-      {/* Alerta: DAS em atraso */}
-      {isGestor && Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
-        <ProtectiveCard
-          variant="accent"
-          accentColor="error"
-          padding={2.5}
-          sx={{ mb: 2.5 }}
+      {Boolean(
+        (isGestor && metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) ||
+        (metrics.das_status_mes_atual === 'Pendente' &&
+          metrics.das_dias_restantes !== undefined &&
+          metrics.das_dias_restantes !== null &&
+          metrics.das_dias_restantes >= 0 &&
+          metrics.das_dias_restantes <= 7) ||
+        (metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados) ||
+        (metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0)
+      ) && (
+        <Box
+          className="grid grid-cols-1 md:grid-cols-3 gap-3"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gap: 1.5,
+            mb: 3,
+          }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', md: 'center' },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(239, 68, 68, 0.12)',
-                  color: '#DC2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <TriangleAlert size={22} strokeWidth={1.75} />
-              </Box>
+          {/* Alerta: DAS em atraso */}
+          {isGestor && Boolean(metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) && (
+            <ProtectiveCard
+              variant="accent"
+              accentColor="error"
+              padding={1.75}
+              sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
+            >
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.95rem' }}>
-                    DAS em Atraso
-                  </Typography>
-                  <Chip
-                    label={`${metrics.das_qtd_atrasados} guia${metrics.das_qtd_atrasados > 1 ? 's' : ''}`}
-                    size="small"
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1 }}>
+                  <Box
                     sx={{
-                      height: 22,
-                      fontWeight: 800,
-                      fontSize: '0.7rem',
-                      borderRadius: '6px',
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
                       bgcolor: 'rgba(239, 68, 68, 0.12)',
                       color: '#DC2626',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
-                  />
+                  >
+                    <TriangleAlert size={18} strokeWidth={1.75} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.85rem' }}>
+                        DAS em Atraso
+                      </Typography>
+                      <Chip
+                        label={`${metrics.das_qtd_atrasados} guia${metrics.das_qtd_atrasados > 1 ? 's' : ''}`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontWeight: 800,
+                          fontSize: '0.65rem',
+                          borderRadius: '5px',
+                          bgcolor: 'rgba(239, 68, 68, 0.12)',
+                          color: '#DC2626',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Box>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, lineHeight: 1.45 }}>
-                  Regularize suas guias em aberto para evitar multas de mora e preservar benefícios previdenciários do MEI.
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, lineHeight: 1.4 }}>
+                  Regularize suas guias em aberto para evitar multas de mora e preservar benefícios do MEI.
                 </Typography>
               </Box>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => navigate('/das')}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  bgcolor: '#DC2626',
-                  '&:hover': { bgcolor: '#B91C1C' },
-                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
-                }}
-              >
-                Regularizar DAS
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleOpenPgmei}
-                startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
-                sx={{
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
-                }}
-              >
-                Abrir PGMEI
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCopyDasData}
-                startIcon={<Copy size={16} strokeWidth={1.75} />}
-                sx={{
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
-                }}
-              >
-                Copiar Dados
-              </Button>
-            </Box>
-          </Box>
-        </ProtectiveCard>
-      )}
-
-      {/* Alerta: DAS Vence em breve (até 7 dias) */}
-      {metrics.das_status_mes_atual === 'Pendente' &&
-        metrics.das_dias_restantes !== undefined &&
-        metrics.das_dias_restantes !== null &&
-        metrics.das_dias_restantes >= 0 &&
-        metrics.das_dias_restantes <= 7 && (
-        <ProtectiveCard
-          variant="accent"
-          accentColor="warning"
-          padding={2.5}
-          sx={{ mb: 2.5 }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', md: 'center' },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(245, 158, 11, 0.12)',
-                  color: '#D97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <CalendarDays size={22} strokeWidth={1.75} />
+              <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mt: 'auto' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/das')}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    bgcolor: '#DC2626',
+                    '&:hover': { bgcolor: '#B91C1C' },
+                    py: 0.4,
+                    px: 1.2,
+                  }}
+                >
+                  Regularizar DAS
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleOpenPgmei}
+                  startIcon={<ExternalLink size={14} strokeWidth={1.75} />}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
+                  }}
+                >
+                  PGMEI
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleCopyDasData}
+                  startIcon={<Copy size={14} strokeWidth={1.75} />}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
+                  }}
+                >
+                  Copiar
+                </Button>
               </Box>
+            </ProtectiveCard>
+          )}
+
+          {/* Alerta: DAS Vence em breve (até 7 dias) */}
+          {metrics.das_status_mes_atual === 'Pendente' &&
+            metrics.das_dias_restantes !== undefined &&
+            metrics.das_dias_restantes !== null &&
+            metrics.das_dias_restantes >= 0 &&
+            metrics.das_dias_restantes <= 7 && (
+            <ProtectiveCard
+              variant="accent"
+              accentColor="warning"
+              padding={1.75}
+              sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
+            >
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.95rem' }}>
-                    Lembrete Fiscal: O DAS vence {metrics.das_dias_restantes === 0 ? 'HOJE!' : `em ${metrics.das_dias_restantes} dia(s)`}
-                  </Typography>
-                  <Chip
-                    label={metrics.das_dias_restantes === 0 ? 'Vence Hoje' : `${metrics.das_dias_restantes} dias`}
-                    size="small"
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1 }}>
+                  <Box
                     sx={{
-                      height: 22,
-                      fontWeight: 800,
-                      fontSize: '0.7rem',
-                      borderRadius: '6px',
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
                       bgcolor: 'rgba(245, 158, 11, 0.12)',
                       color: '#D97706',
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
-                  />
+                  >
+                    <CalendarDays size={18} strokeWidth={1.75} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.85rem' }}>
+                        Lembrete Fiscal
+                      </Typography>
+                      <Chip
+                        label={metrics.das_dias_restantes === 0 ? 'Vence Hoje' : `${metrics.das_dias_restantes} dias`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontWeight: 800,
+                          fontSize: '0.65rem',
+                          borderRadius: '5px',
+                          bgcolor: 'rgba(245, 158, 11, 0.12)',
+                          color: '#D97706',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Box>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, lineHeight: 1.45 }}>
-                  Vencimento: {metrics.das_vencimento_mes_atual || 'dia 20'} • Valor: {formatCurrency(metrics.das_valor_mes_atual || 75.60)}. Mantenha sua empresa 100% regularizada!
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, lineHeight: 1.4 }}>
+                  Vence {metrics.das_dias_restantes === 0 ? 'HOJE' : `em ${metrics.das_dias_restantes} dia(s)`} ({metrics.das_vencimento_mes_atual || 'dia 20'}) • Valor: {formatCurrency(metrics.das_valor_mes_atual || 82.05)}.
                 </Typography>
               </Box>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => navigate('/das')}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  bgcolor: '#D97706',
-                  '&:hover': { bgcolor: '#B45309' },
-                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.25)',
-                }}
-              >
-                Ver Guia
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleOpenPgmei}
-                startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
-                sx={{
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
-                }}
-              >
-                Abrir PGMEI
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleCopyDasData}
-                startIcon={<Copy size={16} strokeWidth={1.75} />}
-                sx={{
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
-                }}
-              >
-                Copiar Dados
-              </Button>
-            </Box>
-          </Box>
-        </ProtectiveCard>
-      )}
-
-      {/* Alerta: DAS Pago */}
-      {metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados && (
-        <ProtectiveCard
-          variant="accent"
-          accentColor="success"
-          padding={2.5}
-          sx={{ mb: 2.5 }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', md: 'center' },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(16, 185, 129, 0.12)',
-                  color: '#059669',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <CircleCheckBig size={22} strokeWidth={1.75} />
+              <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mt: 'auto' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/das')}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    bgcolor: '#D97706',
+                    '&:hover': { bgcolor: '#B45309' },
+                    py: 0.4,
+                    px: 1.2,
+                  }}
+                >
+                  Ver Guia
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleOpenPgmei}
+                  startIcon={<ExternalLink size={14} strokeWidth={1.75} />}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
+                  }}
+                >
+                  PGMEI
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleCopyDasData}
+                  startIcon={<Copy size={14} strokeWidth={1.75} />}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
+                  }}
+                >
+                  Copiar
+                </Button>
               </Box>
+            </ProtectiveCard>
+          )}
+
+          {/* Alerta: DAS Pago */}
+          {metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados && (
+            <ProtectiveCard
+              variant="accent"
+              accentColor="success"
+              padding={1.75}
+              sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
+            >
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.95rem' }}>
-                    Tudo Certo! DAS Quitado
-                  </Typography>
-                  <Chip
-                    label="100% Em Dia"
-                    size="small"
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1 }}>
+                  <Box
                     sx={{
-                      height: 22,
-                      fontWeight: 800,
-                      fontSize: '0.7rem',
-                      borderRadius: '6px',
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
                       bgcolor: 'rgba(16, 185, 129, 0.12)',
                       color: '#059669',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
-                  />
+                  >
+                    <CircleCheckBig size={18} strokeWidth={1.75} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.85rem' }}>
+                        DAS Quitado
+                      </Typography>
+                      <Chip
+                        label="100% Em Dia"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontWeight: 800,
+                          fontSize: '0.65rem',
+                          borderRadius: '5px',
+                          bgcolor: 'rgba(16, 185, 129, 0.12)',
+                          color: '#059669',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Box>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, lineHeight: 1.45 }}>
-                  A guia deste mês ({metrics.das_vencimento_mes_atual || 'competência atual'}) já está paga. Parabéns por manter seu negócio pontual e seguro!
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, lineHeight: 1.4 }}>
+                  A guia deste mês ({metrics.das_vencimento_mes_atual || 'competência atual'}) já está paga. Parabéns por manter seu negócio pontual!
                 </Typography>
               </Box>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => navigate('/das')}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  color: '#059669',
-                  borderColor: 'rgba(16, 185, 129, 0.3)',
-                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.08)' },
-                }}
-              >
-                Ver Histórico
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleOpenPgmei}
-                startIcon={<ExternalLink size={16} strokeWidth={1.75} />}
-                sx={{
-                  fontWeight: 600,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
-                }}
-              >
-                Portal PGMEI
-              </Button>
-            </Box>
-          </Box>
-        </ProtectiveCard>
-      )}
+              <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mt: 'auto' }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => navigate('/das')}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1.2,
+                    color: '#059669',
+                    borderColor: 'rgba(16, 185, 129, 0.3)',
+                    '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.08)' },
+                  }}
+                >
+                  Histórico
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleOpenPgmei}
+                  startIcon={<ExternalLink size={14} strokeWidth={1.75} />}
+                  sx={{
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    py: 0.4,
+                    px: 1,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(15, 23, 42, 0.15)',
+                  }}
+                >
+                  PGMEI
+                </Button>
+              </Box>
+            </ProtectiveCard>
+          )}
 
-      {/* Alerta de Estoque Crítico */}
-      {Boolean(metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0) && (
-        <ProtectiveCard
-          variant="accent"
-          accentColor="warning"
-          padding={2.2}
-          sx={{ mb: 3 }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.8 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '10px',
-                  bgcolor: 'rgba(245, 158, 11, 0.12)',
-                  color: '#D97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <AlertTriangle size={20} strokeWidth={1.75} />
-              </Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                  Alerta de Reposição: Há {metrics.itens_estoque_baixo} item(ns) com estoque crítico abaixo do mínimo!
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Evite perda de vendas repondo produtos com antecedência.
-                </Typography>
-              </Box>
-            </Box>
-            <Button
-              variant="contained"
-              size="small"
-              onClick={() => navigate('/estoque')}
-              sx={{
-                fontWeight: 700,
-                borderRadius: '10px',
-                textTransform: 'none',
-                bgcolor: '#D97706',
-                '&:hover': { bgcolor: '#B45309' },
-                flexShrink: 0,
-              }}
+          {/* Alerta de Estoque Crítico */}
+          {Boolean(metrics.itens_estoque_baixo && metrics.itens_estoque_baixo > 0) && (
+            <ProtectiveCard
+              variant="accent"
+              accentColor="warning"
+              padding={1.75}
+              sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
             >
-              Ver Estoque
-            </Button>
-          </Box>
-        </ProtectiveCard>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1 }}>
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
+                      bgcolor: 'rgba(245, 158, 11, 0.12)',
+                      color: '#D97706',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <AlertTriangle size={18} strokeWidth={1.75} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.85rem' }}>
+                        Alerta de Reposição
+                      </Typography>
+                      <Chip
+                        label={`${metrics.itens_estoque_baixo} item(ns)`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontWeight: 800,
+                          fontSize: '0.65rem',
+                          borderRadius: '5px',
+                          bgcolor: 'rgba(245, 158, 11, 0.12)',
+                          color: '#D97706',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, lineHeight: 1.4 }}>
+                  Há {metrics.itens_estoque_baixo} item(ns) com estoque crítico abaixo do mínimo. Reponha com antecedência!
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.8, flexWrap: 'wrap', mt: 'auto' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/estoque')}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    fontSize: '0.72rem',
+                    textTransform: 'none',
+                    bgcolor: '#D97706',
+                    '&:hover': { bgcolor: '#B45309' },
+                    py: 0.4,
+                    px: 1.4,
+                  }}
+                >
+                  Ver Estoque
+                </Button>
+              </Box>
+            </ProtectiveCard>
+          )}
+        </Box>
       )}
 
       {/* =============================================================== */}
@@ -661,14 +695,18 @@ export const Dashboard: React.FC = () => {
               label="Lucro Real (Mês)"
               value={metrics.lucro_operacional_mes}
               humanExplanation={
-                metrics.lucro_operacional_mes >= 0
-                  ? 'Margem positiva após cobrir custos e despesas'
-                  : 'Atenção: despesas superando faturamento do mês'
+                (metrics.venda_mes || 0) > 0
+                  ? `Margem líquida real: ${(((metrics.lucro_operacional_mes || 0) / metrics.venda_mes) * 100).toFixed(1)}%`
+                  : 'Aguardando vendas no mês'
               }
               trend={
-                metrics.lucro_operacional_mes >= 0
-                  ? { value: '+18%', label: 'margem saudável', direction: 'up' }
-                  : { value: '-4%', label: 'margem comprimida', direction: 'down' }
+                (metrics.venda_mes || 0) > 0
+                  ? {
+                      value: `${(((metrics.lucro_operacional_mes || 0) / metrics.venda_mes) * 100).toFixed(1)}%`,
+                      label: 'margem líquida real',
+                      direction: (metrics.lucro_operacional_mes || 0) >= 0 ? 'up' : 'down',
+                    }
+                  : undefined
               }
               colorScheme={metrics.lucro_operacional_mes >= 0 ? 'success' : 'error'}
               icon={<ActivityLucide size={18} strokeWidth={1.75} />}
@@ -1075,7 +1113,7 @@ export const Dashboard: React.FC = () => {
                     variant="h5"
                     sx={{ fontWeight: 900, fontFeatureSettings: '"tnum"', letterSpacing: '-0.02em' }}
                   >
-                    {formatCurrency(metrics.das_valor_mes_atual || 75.60)}
+                    {formatCurrency(metrics.das_valor_mes_atual || 82.05)}
                   </Typography>
                   <Chip
                     size="small"
@@ -1263,11 +1301,11 @@ export const Dashboard: React.FC = () => {
                       height: 36,
                       borderRadius: '10px',
                       bgcolor:
-                        saude?.score_saude && saude.score_saude >= 70
+                        saude?.score_saude && saude.score_saude >= 70 && (saude.margem_lucro_percentual ?? 0) >= 20
                           ? 'rgba(16, 185, 129, 0.12)'
                           : 'rgba(245, 158, 11, 0.12)',
                       color:
-                        saude?.score_saude && saude.score_saude >= 70 ? '#059669' : '#D97706',
+                        saude?.score_saude && saude.score_saude >= 70 && (saude.margem_lucro_percentual ?? 0) >= 20 ? '#059669' : '#D97706',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1279,45 +1317,49 @@ export const Dashboard: React.FC = () => {
                     Saúde do Negócio
                   </Typography>
                 </Box>
-                {saude && (
-                  <Chip
-                    size="small"
-                    label={
-                      saude.classificacao_saude === 'EXCELENTE'
-                        ? 'Excelente'
-                        : saude.classificacao_saude === 'SAUDAVEL'
-                        ? 'Saudável'
-                        : saude.classificacao_saude === 'ATENCAO'
-                        ? 'Atenção'
-                        : 'Crítico'
-                    }
-                    sx={{
-                      height: 22,
-                      fontWeight: 800,
-                      fontSize: '0.7rem',
-                      borderRadius: '6px',
-                      bgcolor:
-                        saude.classificacao_saude === 'EXCELENTE' || saude.classificacao_saude === 'SAUDAVEL'
+                {saude && (() => {
+                  const isApertada = (saude.margem_lucro_percentual ?? 0) < 20;
+                  const chipLabel = isApertada
+                    ? (saude.margem_lucro_percentual <= 0 ? 'Crítico' : 'Margem Apertada')
+                    : (saude.classificacao_saude === 'EXCELENTE'
+                    ? 'Excelente'
+                    : saude.classificacao_saude === 'SAUDAVEL'
+                    ? 'Saudável'
+                    : saude.classificacao_saude === 'ATENCAO'
+                    ? 'Atenção'
+                    : 'Crítico');
+                  const isGreen = !isApertada && (saude.classificacao_saude === 'EXCELENTE' || saude.classificacao_saude === 'SAUDAVEL');
+                  const isRed = (saude.margem_lucro_percentual <= 0) || (!isApertada && saude.classificacao_saude === 'CRITICO');
+
+                  return (
+                    <Chip
+                      size="small"
+                      label={chipLabel}
+                      sx={{
+                        height: 22,
+                        fontWeight: 800,
+                        fontSize: '0.7rem',
+                        borderRadius: '6px',
+                        bgcolor: isGreen
                           ? 'rgba(16, 185, 129, 0.12)'
-                          : saude.classificacao_saude === 'ATENCAO'
-                          ? 'rgba(245, 158, 11, 0.12)'
-                          : 'rgba(239, 68, 68, 0.12)',
-                      color:
-                        saude.classificacao_saude === 'EXCELENTE' || saude.classificacao_saude === 'SAUDAVEL'
+                          : isRed
+                          ? 'rgba(239, 68, 68, 0.12)'
+                          : 'rgba(245, 158, 11, 0.12)',
+                        color: isGreen
                           ? '#059669'
-                          : saude.classificacao_saude === 'ATENCAO'
-                          ? '#D97706'
-                          : '#DC2626',
-                      border: '1px solid',
-                      borderColor:
-                        saude.classificacao_saude === 'EXCELENTE' || saude.classificacao_saude === 'SAUDAVEL'
+                          : isRed
+                          ? '#DC2626'
+                          : '#D97706',
+                        border: '1px solid',
+                        borderColor: isGreen
                           ? 'rgba(16, 185, 129, 0.3)'
-                          : saude.classificacao_saude === 'ATENCAO'
-                          ? 'rgba(245, 158, 11, 0.3)'
-                          : 'rgba(239, 68, 68, 0.3)',
-                    }}
-                  />
-                )}
+                          : isRed
+                          ? 'rgba(239, 68, 68, 0.3)'
+                          : 'rgba(245, 158, 11, 0.3)',
+                      }}
+                    />
+                  );
+                })()}
               </Box>
 
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 2 }}>
@@ -1389,7 +1431,7 @@ export const Dashboard: React.FC = () => {
                             color: 'text.secondary',
                           }}
                         >
-                          Margem de Lucro
+                          Margem de Lucro (30 dias)
                         </Typography>
                         <Typography
                           variant="h5"
@@ -1424,7 +1466,7 @@ export const Dashboard: React.FC = () => {
                             color: 'text.secondary',
                           }}
                         >
-                          Resultado Líquido
+                          Resultado Líquido (30 dias)
                         </Typography>
                         <Typography
                           variant="h5"

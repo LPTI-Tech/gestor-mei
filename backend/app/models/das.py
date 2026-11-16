@@ -11,7 +11,7 @@ class DasMensal(Base):
     
     ano = Column(Integer, nullable=False, index=True)
     mes = Column(Integer, nullable=False, index=True)
-    valor = Column(Float, nullable=False, default=75.60)
+    valor = Column(Float, nullable=False, default=82.05)
     vencimento = Column(Date, nullable=False, index=True)
     status = Column(String(20), nullable=False, default="Pendente", index=True)  # "Pago", "Pendente", "Atrasado"
     data_pagamento = Column(Date, nullable=True)

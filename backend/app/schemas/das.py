@@ -33,7 +33,7 @@ class DasAlterarStatusRequest(BaseModel):
 
 class DasGerarAnoRequest(BaseModel):
     ano: int
-    valor_mensal: Optional[float] = 75.60
+    valor_mensal: Optional[float] = 82.05
 
 class DasMensalResponse(DasMensalBase):
     id: int

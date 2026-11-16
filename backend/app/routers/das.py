@@ -68,7 +68,7 @@ def sincronizar_e_garantir_ano(
     db: Session,
     empresa_id: int,
     ano: int,
-    valor_mensal: float = 75.60
+    valor_mensal: float = 82.05
 ) -> List[DasMensal]:
     hoje = date.today()
     existentes = db.query(DasMensal).filter(
@@ -279,7 +279,7 @@ def gerar_guias_ano(
     """
     empresa_id = empresa.id
     todos = sincronizar_e_garantir_ano(
-        db, empresa_id, payload.ano, payload.valor_mensal or 75.60
+        db, empresa_id, payload.ano, payload.valor_mensal or 82.05
     )
     hoje = date.today()
     return [format_das_response(d, hoje) for d in todos]

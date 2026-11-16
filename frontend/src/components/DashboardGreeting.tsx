@@ -71,51 +71,15 @@ export const getDynamicInsight = (
   produtos: Produto[] = [],
   referenceDate: Date = new Date()
 ): DynamicInsight => {
-  const day = referenceDate.getDate();
-
-  // 1. DAS em Atraso (Maior Prioridade - Alerta Crítico)
-  if (metrics.das_qtd_atrasados && metrics.das_qtd_atrasados > 0) {
-    const qtd = metrics.das_qtd_atrasados;
-    return {
-      tipo: 'DAS',
-      mensagem:
-        qtd === 1
-          ? 'Olá! Notamos uma pendência na guia do DAS. Que tal quitar hoje para manter seu CNPJ regular e sem juros?'
-          : `Olá! Notamos ${qtd} guias do DAS em atraso. Vamos regularizar para garantir seus benefícios previdenciários e manter seu negócio 100% seguro?`,
-      severity: 'error',
-      icon: <TriangleAlert size={18} strokeWidth={1.75} />,
-      actionLink: '/das',
-      actionLabel: 'Regularizar DAS',
-    };
-  }
-
-  // 2. DAS próximo do vencimento (vence em até 7 dias)
-  const dasPendente = metrics.das_status_mes_atual === 'Pendente';
-  const diasRestantes = metrics.das_dias_restantes ?? (20 - day);
-
-  if (dasPendente && diasRestantes >= 0 && diasRestantes <= 7) {
-    let textoDas = '';
-    if (diasRestantes === 0) {
-      textoDas = 'Lembrete amigável: a guia do DAS vence hoje! É rapidinho pagar pelo app bancário e deixar tudo resolvido.';
-    } else if (diasRestantes === 1) {
-      textoDas = 'Lembrete do Gestor MEI: o seu DAS vence amanhã (dia 20). Não deixe para a última hora!';
-    } else {
-      textoDas = `Fique atento: seu DAS vence em ${diasRestantes} dias (dia 20). Já programou o pagamento para manter tudo em dia?`;
-    }
-
-    return {
-      tipo: 'DAS',
-      mensagem: textoDas,
-      severity: 'warning',
-      icon: <CalendarDays size={18} strokeWidth={1.75} />,
-      actionLink: '/das',
-      actionLabel: 'Ver Guia DAS',
-    };
-  }
-
-  // 3. Produtos sem estoque
+  // 1. Produtos sem estoque (exclusivo para itens com estoque mínimo configurado > 0)
   const qtdSemEstoque = produtos.length > 0
-    ? produtos.filter((p) => p.tipo === 'PRODUTO' && (p.quantidade_estoque ?? 0) <= 0).length
+    ? produtos.filter(
+        (p) =>
+          p.tipo === 'PRODUTO' &&
+          p.ativo === true &&
+          (p.estoque_minimo ?? 0) > 0 &&
+          (p.quantidade_estoque ?? 0) <= 0
+      ).length
     : 0;
 
   if (qtdSemEstoque > 0) {
@@ -132,11 +96,13 @@ export const getDynamicInsight = (
     };
   }
 
-  // 4. Produtos com estoque baixo
+  // 2. Produtos com estoque baixo
   const qtdEstoqueBaixo = produtos.length > 0
     ? produtos.filter(
         (p) =>
           p.tipo === 'PRODUTO' &&
+          p.ativo === true &&
+          (p.estoque_minimo ?? 0) > 0 &&
           (p.quantidade_estoque ?? 0) > 0 &&
           (p.quantidade_estoque ?? 0) <= (p.estoque_minimo ?? 0)
       ).length
@@ -153,18 +119,6 @@ export const getDynamicInsight = (
       icon: <AlertTriangle size={18} strokeWidth={1.75} />,
       actionLink: '/estoque',
       actionLabel: 'Ver Estoque',
-    };
-  }
-
-  // 5. DAS Quitado no mês (Sem atrasos)
-  if (metrics.das_status_mes_atual === 'Pago' && !metrics.das_qtd_atrasados) {
-    return {
-      tipo: 'DAS',
-      mensagem: 'Tudo certo com a Receita Federal! A guia do DAS deste mês já está quitada e sua empresa segue 100% regular.',
-      severity: 'success',
-      icon: <CalendarDays size={18} strokeWidth={1.75} />,
-      actionLink: '/das',
-      actionLabel: 'Ver Comprovantes',
     };
   }
 

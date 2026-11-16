@@ -88,12 +88,12 @@ export const ControleDas: React.FC = () => {
 
   // Form states para pagamento
   const [payDate, setPayDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [payValor, setPayValor] = useState<number>(75.60);
+  const [payValor, setPayValor] = useState<number>(82.05);
   const [payObs, setPayObs] = useState<string>('');
 
   // Form states para edição/alteração de status
   const [editStatus, setEditStatus] = useState<DasStatus>('Pendente');
-  const [editValor, setEditValor] = useState<number>(75.60);
+  const [editValor, setEditValor] = useState<number>(82.05);
   const [editVencimento, setEditVencimento] = useState<string>('');
   const [editDataPagamento, setEditDataPagamento] = useState<string>('');
   const [editObs, setEditObs] = useState<string>('');
@@ -208,7 +208,7 @@ export const ControleDas: React.FC = () => {
   const handleSincronizarAno = async () => {
     try {
       setActionLoading(true);
-      await api.post('/das/gerar-ano', { ano: selectedYear, valor_mensal: 75.60 });
+      await api.post('/das/gerar-ano', { ano: selectedYear, valor_mensal: 82.05 });
       setAlertSuccess(`Guias do ano ${selectedYear} sincronizadas com sucesso!`);
       fetchData(selectedYear);
     } catch (err: any) {
@@ -583,7 +583,7 @@ export const ControleDas: React.FC = () => {
             colorScheme="primary"
             humanExplanation={`Vencimento em ${
               dasMesAtual ? formatDate(dasMesAtual.vencimento) : 'Dia 20'
-            } • ${formatCurrency(dasMesAtual?.valor || 75.60)}`}
+            } • ${formatCurrency(dasMesAtual?.valor || 82.05)}`}
             statusPill={
               dasMesAtual?.status === 'Pago'
                 ? { label: 'Quitado', variant: 'success' }

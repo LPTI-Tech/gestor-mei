@@ -449,7 +449,7 @@ export const Layout: React.FC = () => {
             flexGrow: 1,
             overflowY: 'auto',
             pt: 1.5,
-            pb: 6,
+            pb: 10,
             px: isEffectivelyCollapsed ? 0.75 : 1.25,
             '&::-webkit-scrollbar': {
               width: '4px',
