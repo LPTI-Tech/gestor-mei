@@ -31,7 +31,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
 
 export const IFood: React.FC = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isOperator } = useAuth();
   const [summary, setSummary] = useState<IFoodSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -245,7 +245,7 @@ export const IFood: React.FC = () => {
                       </TableCell>
                       <TableCell>{l.observacoes || '-'}</TableCell>
                       <TableCell align="right">
-                        {isAdmin && (
+                        {!isOperator && isAdmin && (
                           <IconButton size="small" color="error" onClick={() => setDeleteId(l.id)}>
                             <Delete fontSize="small" />
                           </IconButton>

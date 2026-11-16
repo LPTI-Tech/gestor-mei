@@ -12,7 +12,7 @@ from app.schemas.ifood import (
     LancamentoIFoodResponse,
     IFoodSummaryResponse
 )
-from app.dependencies import get_current_user, get_current_empresa, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin, require_non_operator
 
 router = APIRouter(prefix="/ifood", tags=["iFood"])
 
@@ -80,11 +80,43 @@ def create_ifood_lancamento(
     return lancamento
 
 
+@router.put("/{lancamento_id}", response_model=LancamentoIFoodResponse)
+def update_ifood_lancamento(
+    lancamento_id: int,
+    data: LancamentoIFoodCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_non_operator),
+    empresa: Empresa = Depends(get_current_empresa)
+):
+    item = db.query(LancamentoIFood).filter(
+        LancamentoIFood.id == lancamento_id,
+        LancamentoIFood.empresa_id == empresa.id
+    ).first()
+    
+    if not item:
+        raise HTTPException(status_code=404, detail="Lançamento iFood não encontrado.")
+        
+    liquido = data.valor_liquido
+    if liquido is None or liquido <= 0:
+        liquido = round(data.valor_bruto - data.taxa_ifood, 2)
+        
+    item.data = data.data
+    item.numero_pedido = data.numero_pedido
+    item.valor_bruto = data.valor_bruto
+    item.taxa_ifood = data.taxa_ifood
+    item.valor_liquido = liquido
+    item.observacoes = data.observacoes
+    
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 @router.delete("/{lancamento_id}")
 def delete_ifood_lancamento(
     lancamento_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     item = db.query(LancamentoIFood).filter(

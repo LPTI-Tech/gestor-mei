@@ -42,8 +42,10 @@ import { Motoboy, EntregaMotoboy, MotoboyRelatorio } from '../types';
 import { formatCurrency, formatDateTime } from '../services/exportUtils';
 import { StatCard } from '../components/StatCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Motoboys: React.FC = () => {
+  const { isOperator } = useAuth();
   const [tabIndex, setTabIndex] = useState<number>(0); // 0 = Entregas / Diárias, 1 = Cadastro de Motoboys
   const [motoboys, setMotoboys] = useState<Motoboy[]>([]);
   const [entregas, setEntregas] = useState<EntregaMotoboy[]>([]);
@@ -187,15 +189,17 @@ export const Motoboys: React.FC = () => {
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<Add />}
-            onClick={() => setOpenMotoboyModal(true)}
-            sx={{ fontWeight: 600, height: 44 }}
-          >
-            Cadastrar Motoboy
-          </Button>
+          {!isOperator && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => setOpenMotoboyModal(true)}
+              sx={{ fontWeight: 600, height: 44 }}
+            >
+              Cadastrar Motoboy
+            </Button>
+          )}
           <Button
             variant="contained"
             color="primary"
@@ -288,7 +292,7 @@ export const Motoboys: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">
                         Total devido: <b>{formatCurrency(item.total_devido)}</b>
                       </Typography>
-                      {item.saldo_pendente > 0 && (
+                      {!isOperator && item.saldo_pendente > 0 && (
                         <Button
                           size="small"
                           variant="contained"
@@ -363,7 +367,7 @@ export const Motoboys: React.FC = () => {
                           />
                         </TableCell>
                         <TableCell align="right">
-                          {e.status_pagamento === 'PENDENTE' && (
+                          {!isOperator && e.status_pagamento === 'PENDENTE' && (
                             <Button
                               size="small"
                               variant="outlined"

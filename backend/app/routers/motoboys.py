@@ -16,7 +16,7 @@ from app.schemas.motoboy import (
     MotoboyRelatorioResponse,
     MotoboyResumoItem
 )
-from app.dependencies import get_current_user, get_current_empresa, require_admin
+from app.dependencies import get_current_user, get_current_empresa, require_admin, require_non_operator
 
 router = APIRouter(prefix="/motoboys", tags=["Motoboys"])
 
@@ -37,7 +37,7 @@ def list_motoboys(
 def create_motoboy(
     data: MotoboyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = Motoboy(
@@ -58,7 +58,7 @@ def update_motoboy(
     motoboy_id: int,
     data: MotoboyUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = db.query(Motoboy).filter(
@@ -82,7 +82,7 @@ def update_motoboy(
 def delete_motoboy(
     motoboy_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     motoboy = db.query(Motoboy).filter(
@@ -169,7 +169,7 @@ def create_entrega(
 def quitar_entrega(
     entrega_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     entrega = db.query(EntregaMotoboy).filter(
@@ -194,7 +194,7 @@ def quitar_entrega(
 def quitar_todas_motoboy(
     motoboy_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     entregas = db.query(EntregaMotoboy).filter(

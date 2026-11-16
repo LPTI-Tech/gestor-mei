@@ -53,8 +53,10 @@ import { Cliente, ClienteCreate } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { StatCard } from '../components/StatCard';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Clientes: React.FC = () => {
+  const { isOperator } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
@@ -775,19 +777,21 @@ export const Clientes: React.FC = () => {
                             <Edit sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Excluir ou Desativar">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => setDeleteId(c.id)}
-                            sx={{
-                              p: 0.8,
-                              '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.08)' },
-                            }}
-                          >
-                            <Delete sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
+                        {!isOperator && (
+                          <Tooltip title="Excluir ou Desativar">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteId(c.id)}
+                              sx={{
+                                p: 0.8,
+                                '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.08)' },
+                              }}
+                            >
+                              <Delete sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>

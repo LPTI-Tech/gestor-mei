@@ -9,7 +9,7 @@ from app.models.venda import Venda
 from app.models.user import User
 from app.models.empresa import Empresa
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
-from app.dependencies import get_current_user, get_current_empresa
+from app.dependencies import get_current_user, get_current_empresa, require_non_operator
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
@@ -169,7 +169,7 @@ def update_cliente(
 def delete_cliente(
     cliente_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_non_operator),
     empresa: Empresa = Depends(get_current_empresa)
 ):
     cliente = db.query(Cliente).filter(

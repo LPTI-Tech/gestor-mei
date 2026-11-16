@@ -268,3 +268,20 @@ def require_consultor(
             detail="Acesso restrito ao perfil Consultor.",
         )
     return user
+
+
+def require_non_operator(
+    user: User = Depends(get_current_user)
+) -> User:
+    """
+    Exige que o usuário autenticado NÃO possua perfil OPERADOR/OPERATOR.
+    Permite acesso aos demais perfis (OWNER, ADMIN, MASTER, CONSULTOR).
+    Rejeita OPERATOR/OPERADOR com HTTP 403 Forbidden.
+    """
+    if user.role in [UserRole.OPERATOR, UserRole.OPERADOR]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso não autorizado para o perfil OPERADOR.",
+        )
+    return user
+
