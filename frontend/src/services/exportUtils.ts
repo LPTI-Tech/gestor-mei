@@ -8,25 +8,38 @@ export const formatCurrency = (value: number | undefined | null): string => {
   }).format(value);
 };
 
-export const formatDate = (dateStr: string | undefined | null): string => {
+function parseDateInput(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) return dateInput;
+  const str = String(dateInput).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [year, month, day] = str.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+  const hasTimezone = str.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(str);
+  return new Date(hasTimezone ? str : `${str}-03:00`);
+}
+
+export const formatDate = (dateStr: string | Date | undefined | null): string => {
   if (!dateStr) return '-';
   try {
-    const d = new Date(dateStr);
+    const d = parseDateInput(dateStr);
     return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     }).format(d);
   } catch {
-    return dateStr;
+    return String(dateStr);
   }
 };
 
-export const formatDateTime = (dateStr: string | undefined | null): string => {
+export const formatDateTime = (dateStr: string | Date | undefined | null): string => {
   if (!dateStr) return '-';
   try {
-    const d = new Date(dateStr);
+    const d = parseDateInput(dateStr);
     return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -34,7 +47,7 @@ export const formatDateTime = (dateStr: string | undefined | null): string => {
       minute: '2-digit',
     }).format(d);
   } catch {
-    return dateStr;
+    return String(dateStr);
   }
 };
 

@@ -137,46 +137,51 @@ export const Caixa: React.FC = () => {
     fetchCaixa();
   }, []);
 
-  // Detector de Turno aberto em dias anteriores
+  // Detector de Turno aberto em dias anteriores (Fuso Horário de Brasília)
   const isTurnoDiaAnterior = React.useMemo(() => {
     if (!caixaStatus?.is_aberto || !caixaStatus?.turno_atual?.data_abertura) return false;
-    const abertura = new Date(caixaStatus.turno_atual.data_abertura);
-    const hoje = new Date();
-    const dtAbertura = new Date(abertura.getFullYear(), abertura.getMonth(), abertura.getDate());
-    const dtHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    return dtAbertura.getTime() < dtHoje.getTime();
+    const getBrasiliaDate = (d: string | Date) => {
+      const dt = typeof d === 'string' ? new Date(d) : d;
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(dt);
+    };
+    return getBrasiliaDate(caixaStatus.turno_atual.data_abertura) < getBrasiliaDate(new Date());
   }, [caixaStatus?.is_aberto, caixaStatus?.turno_atual?.data_abertura]);
 
-  // Formatador de texto limpo para WhatsApp
+  // Formatador de texto limpo para WhatsApp (sem emojis que geram caracteres corrompidos)
   const gerarTextoWhatsApp = (resumo: CaixaTurno) => {
     const diff = resumo.diferenca || 0;
     const statusDiff =
       diff === 0
-        ? '✅ Caixa Batido (100% Exato)'
+        ? '[OK] Caixa Batido (100% Exato)'
         : diff > 0
-        ? `⚠️ Sobra de Caixa (+${formatCurrency(diff)})`
-        : `❌ Quebra de Caixa (${formatCurrency(diff)})`;
+        ? `[!] Sobra de Caixa (+${formatCurrency(diff)})`
+        : `[ALERTA] Quebra de Caixa (${formatCurrency(diff)})`;
 
     const dataAberturaStr = formatDateTime(resumo.data_abertura);
     const dataFechamentoStr = resumo.data_fechamento ? formatDateTime(resumo.data_fechamento) : 'Agora';
     const empresaNome = empresa?.nome_fantasia || empresa?.nome_empresarial || 'Gestor MEI';
     const opNome = resumo.user_fechamento_nome || resumo.user_abertura_nome || user?.nome || 'Operador';
 
-    return `*📊 COMPROVANTE DE FECHAMENTO DE CAIXA*
-🏪 *Empresa:* ${empresaNome}
-👤 *Operador:* ${opNome}
-🕐 *Período:* ${dataAberturaStr} até ${dataFechamentoStr}
-────────────────────────────
-💵 *Troco Inicial:* ${formatCurrency(resumo.valor_inicial)}
-📈 *Vendas em Dinheiro:* ${formatCurrency(resumo.vendas_dinheiro || 0)}
-📥 *Suprimentos (Entradas):* ${formatCurrency(resumo.total_entradas || 0)}
-📤 *Sangrias (Saídas):* ${formatCurrency(resumo.total_saidas || 0)}
-────────────────────────────
-🎯 *Saldo Esperado:* ${formatCurrency(resumo.valor_esperado || 0)}
-💰 *Valor Contado:* ${formatCurrency(resumo.valor_informado || 0)}
-⚖️ *Diferença:* ${statusDiff}
-────────────────────────────${resumo.observacoes ? `\n📝 *Observações:* ${resumo.observacoes}\n────────────────────────────` : ''}
-_Gestor MEI - Sistema de Gestão Financeira_`;
+    return `*COMPROVANTE DE FECHAMENTO DE CAIXA*
+Empresa: ${empresaNome}
+Operador: ${opNome}
+Periodo: ${dataAberturaStr} ate ${dataFechamentoStr}
+----------------------------------------
+Troco Inicial: ${formatCurrency(resumo.valor_inicial)}
+Vendas em Dinheiro: ${formatCurrency(resumo.vendas_dinheiro || 0)}
+Suprimentos (Entradas): ${formatCurrency(resumo.total_entradas || 0)}
+Sangrias (Saidas): ${formatCurrency(resumo.total_saidas || 0)}
+----------------------------------------
+Saldo Esperado: ${formatCurrency(resumo.valor_esperado || 0)}
+Valor Contado: ${formatCurrency(resumo.valor_informado || 0)}
+Diferenca: ${statusDiff}
+----------------------------------------${resumo.observacoes ? `\nObservacoes: ${resumo.observacoes}\n----------------------------------------` : ''}
+Gestor MEI - Sistema de Gestao Financeira`;
   };
 
   const handleEnviarWhatsApp = (resumo: CaixaTurno) => {
@@ -557,22 +562,32 @@ _Gestor MEI - Sistema de Gestão Financeira_`;
               </strong>
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<WhatsApp />}
-              onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
-              sx={{
-                bgcolor: '#25D366',
-                '&:hover': { bgcolor: '#1EBE5D' },
-                color: '#fff',
-                fontWeight: 700,
-                textTransform: 'none',
-              }}
-            >
-              Enviar no WhatsApp
-            </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            {isOperator ? (
+              <Chip
+                label="Relatório de fechamento enviado automaticamente para a administração."
+                color="info"
+                variant="outlined"
+                size="small"
+                sx={{ fontWeight: 600, height: 28 }}
+              />
+            ) : (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<WhatsApp />}
+                onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
+                sx={{
+                  bgcolor: '#25D366',
+                  '&:hover': { bgcolor: '#1EBE5D' },
+                  color: '#fff',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                }}
+              >
+                Enviar no WhatsApp
+              </Button>
+            )}
             <Button
               size="small"
               variant="outlined"
@@ -895,18 +910,33 @@ _Gestor MEI - Sistema de Gestão Financeira_`;
                         </TableCell>
                         <TableCell align="center">
                           {isFechado ? (
-                            <Tooltip title="Ver Comprovante / WhatsApp">
-                              <IconButton
-                                size="small"
-                                sx={{ color: '#25D366', '&:hover': { bgcolor: 'rgba(37, 211, 102, 0.1)' } }}
-                                onClick={() => {
-                                  setFechamentoResultado(h);
-                                  setOpenWhatsAppDialog(true);
-                                }}
-                              >
-                                <WhatsApp fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                            !isOperator ? (
+                              <Tooltip title="Ver Comprovante / WhatsApp">
+                                <IconButton
+                                  size="small"
+                                  sx={{ color: '#25D366', '&:hover': { bgcolor: 'rgba(37, 211, 102, 0.1)' } }}
+                                  onClick={() => {
+                                    setFechamentoResultado(h);
+                                    setOpenWhatsAppDialog(true);
+                                  }}
+                                >
+                                  <WhatsApp fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip title="Ver Conciliação do Turno">
+                                <IconButton
+                                  size="small"
+                                  color="inherit"
+                                  onClick={() => {
+                                    setFechamentoResultado(h);
+                                    setOpenWhatsAppDialog(true);
+                                  }}
+                                >
+                                  <Receipt fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )
                           ) : (
                             '-'
                           )}
@@ -1122,6 +1152,11 @@ _Gestor MEI - Sistema de Gestão Financeira_`;
             </DialogTitle>
 
             <DialogContent dividers sx={{ pt: 2 }}>
+              {isOperator && (
+                <Alert severity="info" variant="outlined" sx={{ mb: 2, borderRadius: 2, fontWeight: 600 }}>
+                  Relatório de fechamento enviado automaticamente para a administração.
+                </Alert>
+              )}
               <Typography variant="body2" color="text.secondary" mb={2}>
                 Turno encerrado e auditado com sucesso. Confira o balanço físico de conciliação cega da gaveta:
               </Typography>
@@ -1250,30 +1285,34 @@ _Gestor MEI - Sistema de Gestão Financeira_`;
             </DialogContent>
 
             <DialogActions sx={{ p: 2.5, gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<ContentCopy />}
-                onClick={() => handleCopiarResumo(fechamentoResultado)}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                Copiar Texto
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<WhatsApp />}
-                onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
-                sx={{
-                  bgcolor: '#25D366',
-                  '&:hover': { bgcolor: '#1EBE5D' },
-                  color: '#fff',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  px: 2.5,
-                }}
-              >
-                Enviar Resumo no WhatsApp
-              </Button>
+              {!isOperator && (
+                <>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<ContentCopy />}
+                    onClick={() => handleCopiarResumo(fechamentoResultado)}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                  >
+                    Copiar Texto
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<WhatsApp />}
+                    onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
+                    sx={{
+                      bgcolor: '#25D366',
+                      '&:hover': { bgcolor: '#1EBE5D' },
+                      color: '#fff',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      px: 2.5,
+                    }}
+                  >
+                    Enviar Resumo no WhatsApp
+                  </Button>
+                </>
+              )}
               <Button onClick={() => setOpenWhatsAppDialog(false)} color="inherit">
                 Fechar
               </Button>

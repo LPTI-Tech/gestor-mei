@@ -136,8 +136,12 @@ class Settings(BaseSettings):
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", ""))
     SMTP_TLS: bool = os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes")
+
+    # WhatsApp Background Notification (Evolution API / Z-API)
+    WHATSAPP_API_URL: Optional[str] = os.getenv("WHATSAPP_API_URL", None)
+    WHATSAPP_API_TOKEN: Optional[str] = os.getenv("WHATSAPP_API_TOKEN", None)
 
     # MEI Configuration
     MEI_DEFAULT_ANNUAL_LIMIT: float = 81000.00

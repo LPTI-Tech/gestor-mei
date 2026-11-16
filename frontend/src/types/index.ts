@@ -385,6 +385,7 @@ export interface CaixaTurno {
   vendas_dinheiro?: number;
   status: 'ABERTO' | 'FECHADO';
   observacoes?: string | null;
+  notificacao_enviada?: boolean | null;
   created_at: string;
   lancamentos: CaixaLancamento[];
 }

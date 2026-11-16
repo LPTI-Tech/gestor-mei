@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from app.database import get_db
@@ -8,6 +8,8 @@ from app.models.caixa import CaixaTurno, CaixaLancamento
 from app.models.venda import Venda
 from app.models.user import User, UserRole
 from app.models.empresa import Empresa
+from app.utils.timezone import get_brasilia_now
+from app.services.notificacao_caixa import processar_notificacoes_fechamento_background
 from app.schemas.caixa import (
     CaixaAberturaRequest,
     CaixaFechamentoRequest,
@@ -105,7 +107,7 @@ def abrir_caixa(
         valor_inicial=data.valor_inicial,
         observacoes=data.observacoes,
         status="ABERTO",
-        data_abertura=datetime.utcnow()
+        data_abertura=get_brasilia_now()
     )
     db.add(novo_turno)
     db.commit()
@@ -145,7 +147,7 @@ def add_lancamento(
         categoria=data.categoria,
         descricao=data.descricao.strip(),
         valor=data.valor,
-        data_hora=datetime.utcnow()
+        data_hora=get_brasilia_now()
     )
     db.add(lancamento)
     db.commit()
@@ -156,6 +158,7 @@ def add_lancamento(
 @router.post("/fechar", response_model=CaixaTurnoResponse)
 def fechar_caixa(
     data: CaixaFechamentoRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     empresa: Empresa = Depends(get_current_empresa)
@@ -192,7 +195,7 @@ def fechar_caixa(
     esperado = round(turno.valor_inicial + vendas_dinheiro + entradas - saidas, 2)
     diferenca = round(data.valor_informado - esperado, 2)
     
-    turno.data_fechamento = datetime.utcnow()
+    turno.data_fechamento = get_brasilia_now()
     turno.user_fechamento_id = current_user.id
     turno.valor_informado = data.valor_informado
     turno.valor_esperado = esperado
@@ -203,6 +206,15 @@ def fechar_caixa(
         
     db.commit()
     db.refresh(turno)
+
+    # Marca notificação e agenda despacho silencioso em segundo plano
+    turno.notificacao_enviada = True
+    background_tasks.add_task(
+        processar_notificacoes_fechamento_background,
+        turno.id,
+        empresa.id
+    )
+
     return turno
 
 

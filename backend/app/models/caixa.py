@@ -56,6 +56,14 @@ class CaixaTurno(Base):
             return round(max(0.0, calc), 2)
         return 0.0
 
+    @property
+    def notificacao_enviada(self) -> bool:
+        return getattr(self, "_notificacao_enviada", False)
+
+    @notificacao_enviada.setter
+    def notificacao_enviada(self, value: bool):
+        self._notificacao_enviada = bool(value)
+
 
 class CaixaLancamento(Base):
     __tablename__ = "caixa_lancamentos"

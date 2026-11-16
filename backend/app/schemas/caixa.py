@@ -49,6 +49,7 @@ class CaixaTurnoResponse(BaseModel):
     vendas_dinheiro: Optional[float] = 0.0
     status: str
     observacoes: Optional[str] = None
+    notificacao_enviada: Optional[bool] = False
     created_at: datetime
     lancamentos: List[CaixaLancamentoResponse] = []
 
