@@ -6,7 +6,7 @@ from sqlalchemy import desc, func
 from app.database import get_db
 from app.models.caixa import CaixaTurno, CaixaLancamento
 from app.models.venda import Venda
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.empresa import Empresa
 from app.schemas.caixa import (
     CaixaAberturaRequest,
@@ -67,13 +67,16 @@ def get_caixa_status(
     
     saldo_atual = round(saldo + vendas_dinheiro + entradas - saidas, 2)
     
+    # Blindagem de fechamento cego: Operador de caixa não visualiza saldo esperado nem vendas em dinheiro
+    is_operator = getattr(current_user, "role", None) in [UserRole.OPERATOR, "OPERATOR", "OPERADOR"]
+
     return CaixaStatusResponse(
         is_aberto=True,
         turno_atual=CaixaTurnoResponse.model_validate(turno),
-        saldo_dinheiro_atual=saldo_atual,
+        saldo_dinheiro_atual=None if is_operator else saldo_atual,
         total_entradas_dinheiro=round(entradas, 2),
         total_saidas_dinheiro=round(saidas, 2),
-        vendas_dinheiro_no_turno=round(vendas_dinheiro, 2)
+        vendas_dinheiro_no_turno=None if is_operator else round(vendas_dinheiro, 2)
     )
 
 
@@ -128,13 +131,19 @@ def add_lancamento(
             detail="Não há caixa aberto no momento para registrar lançamentos."
         )
         
+    if not data.descricao or len(data.descricao.strip()) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail="O motivo do lançamento é obrigatório e deve conter no mínimo 5 caracteres para fins de auditoria."
+        )
+
     lancamento = CaixaLancamento(
         empresa_id=empresa.id,
         caixa_turno_id=turno.id,
         user_id=current_user.id,
         tipo=data.tipo.upper(),
         categoria=data.categoria,
-        descricao=data.descricao,
+        descricao=data.descricao.strip(),
         valor=data.valor,
         data_hora=datetime.utcnow()
     )

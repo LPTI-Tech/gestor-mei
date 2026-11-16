@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from typing import Optional
 from app.database import Base
 
 class CaixaTurno(Base):
@@ -28,6 +29,33 @@ class CaixaTurno(Base):
     user_fechamento = relationship("User", foreign_keys=[user_fechamento_id])
     lancamentos = relationship("CaixaLancamento", back_populates="caixa_turno", cascade="all, delete-orphan")
 
+    @property
+    def user_abertura_nome(self) -> Optional[str]:
+        return self.user_abertura.nome if self.user_abertura else None
+
+    @property
+    def user_fechamento_nome(self) -> Optional[str]:
+        return self.user_fechamento.nome if self.user_fechamento else None
+
+    @property
+    def total_saidas(self) -> float:
+        if not self.lancamentos:
+            return 0.0
+        return round(sum(float(l.valor or 0.0) for l in self.lancamentos if l.tipo == "SAIDA"), 2)
+
+    @property
+    def total_entradas(self) -> float:
+        if not self.lancamentos:
+            return 0.0
+        return round(sum(float(l.valor or 0.0) for l in self.lancamentos if l.tipo == "ENTRADA"), 2)
+
+    @property
+    def vendas_dinheiro(self) -> float:
+        if self.valor_esperado is not None:
+            calc = (float(self.valor_esperado) - float(self.valor_inicial or 0.0) - self.total_entradas + self.total_saidas)
+            return round(max(0.0, calc), 2)
+        return 0.0
+
 
 class CaixaLancamento(Base):
     __tablename__ = "caixa_lancamentos"
@@ -49,3 +77,7 @@ class CaixaLancamento(Base):
     caixa_turno = relationship("CaixaTurno", back_populates="lancamentos")
     empresa = relationship("Empresa")
     user = relationship("User")
+
+    @property
+    def user_nome(self) -> Optional[str]:
+        return self.user.nome if self.user else None

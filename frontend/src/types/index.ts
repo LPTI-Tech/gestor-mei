@@ -291,6 +291,7 @@ export interface Venda {
   observacoes?: string | null;
   caixa_turno_id?: number | null;
   user_id?: number | null;
+  user_nome?: string | null;
   data_hora: string;
   created_at: string;
   itens: ItemVenda[];
@@ -358,6 +359,7 @@ export interface CaixaLancamento {
   empresa_id: number;
   caixa_turno_id: number;
   user_id?: number | null;
+  user_nome?: string | null;
   tipo: 'ENTRADA' | 'SAIDA';
   categoria: string;
   descricao: string;
@@ -370,12 +372,17 @@ export interface CaixaTurno {
   empresa_id: number;
   user_abertura_id: number;
   user_fechamento_id?: number | null;
+  user_abertura_nome?: string | null;
+  user_fechamento_nome?: string | null;
   data_abertura: string;
   valor_inicial: number;
   data_fechamento?: string | null;
   valor_informado?: number | null;
   valor_esperado?: number | null;
   diferenca?: number | null;
+  total_entradas?: number;
+  total_saidas?: number;
+  vendas_dinheiro?: number;
   status: 'ABERTO' | 'FECHADO';
   observacoes?: string | null;
   created_at: string;
@@ -385,10 +392,10 @@ export interface CaixaTurno {
 export interface CaixaStatus {
   is_aberto: boolean;
   turno_atual?: CaixaTurno | null;
-  saldo_dinheiro_atual: number;
+  saldo_dinheiro_atual?: number | null;
   total_entradas_dinheiro: number;
   total_saidas_dinheiro: number;
-  vendas_dinheiro_no_turno: number;
+  vendas_dinheiro_no_turno?: number | null;
 }
 
 export interface Despesa {

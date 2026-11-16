@@ -47,11 +47,16 @@ import {
   PointOfSale,
   InfoOutlined,
   Refresh,
+  WarningAmber,
+  WhatsApp,
+  ContentCopy,
+  Close,
 } from '@mui/icons-material';
 import api from '../services/api';
 import { CaixaStatus, CaixaTurno, CaixaLancamento } from '../types';
 import { formatCurrency, formatDateTime } from '../services/exportUtils';
 import { StatCard } from '../components/StatCard';
+import { useAuth } from '../contexts/AuthContext';
 
 const CATEGORIAS_ENTRADA = ['Recebimentos diversos', 'Ajustes positivos', 'Suprimento de troco', 'Outros'];
 const CATEGORIAS_SAIDA = [
@@ -68,6 +73,7 @@ const CATEGORIAS_SAIDA = [
 ];
 
 export const Caixa: React.FC = () => {
+  const { user, isOperator, empresa } = useAuth();
   const [caixaStatus, setCaixaStatus] = useState<CaixaStatus | null>(null);
   const [historico, setHistorico] = useState<CaixaTurno[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -108,6 +114,7 @@ export const Caixa: React.FC = () => {
 
   // Resultado de fechamento e auditoria
   const [fechamentoResultado, setFechamentoResultado] = useState<CaixaTurno | null>(null);
+  const [openWhatsAppDialog, setOpenWhatsAppDialog] = useState<boolean>(false);
 
   const fetchCaixa = async (silent = false) => {
     try {
@@ -130,6 +137,63 @@ export const Caixa: React.FC = () => {
     fetchCaixa();
   }, []);
 
+  // Detector de Turno aberto em dias anteriores
+  const isTurnoDiaAnterior = React.useMemo(() => {
+    if (!caixaStatus?.is_aberto || !caixaStatus?.turno_atual?.data_abertura) return false;
+    const abertura = new Date(caixaStatus.turno_atual.data_abertura);
+    const hoje = new Date();
+    const dtAbertura = new Date(abertura.getFullYear(), abertura.getMonth(), abertura.getDate());
+    const dtHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    return dtAbertura.getTime() < dtHoje.getTime();
+  }, [caixaStatus?.is_aberto, caixaStatus?.turno_atual?.data_abertura]);
+
+  // Formatador de texto limpo para WhatsApp
+  const gerarTextoWhatsApp = (resumo: CaixaTurno) => {
+    const diff = resumo.diferenca || 0;
+    const statusDiff =
+      diff === 0
+        ? '✅ Caixa Batido (100% Exato)'
+        : diff > 0
+        ? `⚠️ Sobra de Caixa (+${formatCurrency(diff)})`
+        : `❌ Quebra de Caixa (${formatCurrency(diff)})`;
+
+    const dataAberturaStr = formatDateTime(resumo.data_abertura);
+    const dataFechamentoStr = resumo.data_fechamento ? formatDateTime(resumo.data_fechamento) : 'Agora';
+    const empresaNome = empresa?.nome_fantasia || empresa?.nome_empresarial || 'Gestor MEI';
+    const opNome = resumo.user_fechamento_nome || resumo.user_abertura_nome || user?.nome || 'Operador';
+
+    return `*📊 COMPROVANTE DE FECHAMENTO DE CAIXA*
+🏪 *Empresa:* ${empresaNome}
+👤 *Operador:* ${opNome}
+🕐 *Período:* ${dataAberturaStr} até ${dataFechamentoStr}
+────────────────────────────
+💵 *Troco Inicial:* ${formatCurrency(resumo.valor_inicial)}
+📈 *Vendas em Dinheiro:* ${formatCurrency(resumo.vendas_dinheiro || 0)}
+📥 *Suprimentos (Entradas):* ${formatCurrency(resumo.total_entradas || 0)}
+📤 *Sangrias (Saídas):* ${formatCurrency(resumo.total_saidas || 0)}
+────────────────────────────
+🎯 *Saldo Esperado:* ${formatCurrency(resumo.valor_esperado || 0)}
+💰 *Valor Contado:* ${formatCurrency(resumo.valor_informado || 0)}
+⚖️ *Diferença:* ${statusDiff}
+────────────────────────────${resumo.observacoes ? `\n📝 *Observações:* ${resumo.observacoes}\n────────────────────────────` : ''}
+_Gestor MEI - Sistema de Gestão Financeira_`;
+  };
+
+  const handleEnviarWhatsApp = (resumo: CaixaTurno) => {
+    const text = gerarTextoWhatsApp(resumo);
+    const phone = empresa?.telefone ? empresa.telefone.replace(/\D/g, '') : '';
+    const url = phone
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleCopiarResumo = (resumo: CaixaTurno) => {
+    const text = gerarTextoWhatsApp(resumo);
+    navigator.clipboard.writeText(text);
+    showNotification('Comprovante copiado para a área de transferência!', 'success');
+  };
+
   const handleAbrirCaixa = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -150,12 +214,16 @@ export const Caixa: React.FC = () => {
 
   const handleAddLancamento = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!descricaoLancamento || descricaoLancamento.trim().length < 5) {
+      showNotification('O motivo do lançamento é obrigatório e deve ter no mínimo 5 caracteres.', 'warning');
+      return;
+    }
     try {
       setSubmittingLancamento(true);
       await api.post('/caixa/lancamento', {
         tipo: tipoLancamento,
         categoria: categoriaLancamento,
-        descricao: descricaoLancamento,
+        descricao: descricaoLancamento.trim(),
         valor: Number(valorLancamento) || 0,
       });
       setOpenLancamentoModal(false);
@@ -183,6 +251,7 @@ export const Caixa: React.FC = () => {
       });
       setOpenFecharModal(false);
       setFechamentoResultado(res.data);
+      setOpenWhatsAppDialog(true);
       showNotification('Caixa encerrado e auditado com sucesso.', 'success');
       fetchCaixa(true);
     } catch (err: any) {
@@ -215,6 +284,60 @@ export const Caixa: React.FC = () => {
 
   return (
     <Box>
+      {/* 0. Alerta de Turno de Dia Anterior em Aberto */}
+      {isTurnoDiaAnterior && (
+        <Alert
+          severity="warning"
+          variant="filled"
+          icon={<WarningAmber sx={{ fontSize: 26 }} />}
+          sx={{
+            mb: 3,
+            borderRadius: 2.5,
+            fontWeight: 700,
+            fontSize: '0.92rem',
+            boxShadow: '0 4px 14px rgba(217, 119, 6, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            '& .MuiAlert-message': {
+              flex: 1,
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 1.5,
+            },
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#fff' }}>
+              Turno de dia anterior em aberto!
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.92)', fontWeight: 500 }}>
+              Encerre este caixa e faça a conferência antes de iniciar as operações de hoje.
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => {
+              setValorInformado('');
+              setObsFechamento('');
+              setOpenFecharModal(true);
+            }}
+            sx={{
+              fontWeight: 800,
+              borderColor: '#fff',
+              color: '#fff',
+              bgcolor: 'rgba(0,0,0,0.12)',
+              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(0,0,0,0.25)' },
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Encerrar Caixa Agora
+          </Button>
+        </Alert>
+      )}
+
       {/* 1. Header Executivo de Turno (Design System SaaS) */}
       <Paper
         elevation={0}
@@ -390,13 +513,13 @@ export const Caixa: React.FC = () => {
               (fechamentoResultado.diferenca || 0) === 0
                 ? 'success.main'
                 : (fechamentoResultado.diferenca || 0) > 0
-                ? 'info.main'
+                ? 'warning.main'
                 : 'error.main',
             bgcolor:
               (fechamentoResultado.diferenca || 0) === 0
                 ? 'rgba(46, 125, 50, 0.06)'
                 : (fechamentoResultado.diferenca || 0) > 0
-                ? 'rgba(2, 136, 209, 0.06)'
+                ? 'rgba(217, 119, 6, 0.08)'
                 : 'rgba(211, 47, 47, 0.06)',
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
@@ -421,7 +544,7 @@ export const Caixa: React.FC = () => {
                     (fechamentoResultado.diferenca || 0) === 0
                       ? '#2E7D32'
                       : (fechamentoResultado.diferenca || 0) > 0
-                      ? '#0288D1'
+                      ? '#D97706'
                       : '#D32F2F',
                 }}
               >
@@ -430,25 +553,59 @@ export const Caixa: React.FC = () => {
                   ? '(Caixa Bateu 100%)'
                   : (fechamentoResultado.diferenca || 0) > 0
                   ? '(Sobra de Caixa)'
-                  : '(Falta de Caixa)'}
+                  : '(Falta / Quebra de Caixa)'}
               </strong>
             </Typography>
           </Box>
-          <Button size="small" variant="text" onClick={() => setFechamentoResultado(null)}>
-            Dispensar
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<WhatsApp />}
+              onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
+              sx={{
+                bgcolor: '#25D366',
+                '&:hover': { bgcolor: '#1EBE5D' },
+                color: '#fff',
+                fontWeight: 700,
+                textTransform: 'none',
+              }}
+            >
+              Enviar no WhatsApp
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="inherit"
+              onClick={() => setOpenWhatsAppDialog(true)}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              Ver Detalhes
+            </Button>
+            <Button size="small" variant="text" onClick={() => setFechamentoResultado(null)}>
+              Dispensar
+            </Button>
+          </Box>
         </Paper>
       )}
 
       {/* 3. Cards KPI do Turno Ativo (Design System Executivo) */}
       {isAberto && turno && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* Card Principal: Saldo Físico Esperado */}
+          {/* Card Principal: Saldo Físico Esperado (Oculto para Operador em Fechamento Cego) */}
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Saldo em Dinheiro na Gaveta"
-              value={formatCurrency(caixaStatus?.saldo_dinheiro_atual || 0)}
-              subtitle="Valor físico total conferível agora"
+              value={
+                isOperator || caixaStatus?.saldo_dinheiro_atual === null
+                  ? 'R$ •••••'
+                  : formatCurrency(caixaStatus?.saldo_dinheiro_atual || 0)
+              }
+              subtitle={
+                isOperator || caixaStatus?.saldo_dinheiro_atual === null
+                  ? 'Oculto até o fechamento cego'
+                  : 'Valor físico total conferível agora'
+              }
               icon={<AccountBalanceWallet />}
               color="#0284C7"
             />
@@ -465,12 +622,20 @@ export const Caixa: React.FC = () => {
             />
           </Grid>
 
-          {/* Vendas em Dinheiro */}
+          {/* Vendas em Dinheiro (Oculto para Operador em Fechamento Cego) */}
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Vendas em Dinheiro (PDV)"
-              value={formatCurrency(caixaStatus?.vendas_dinheiro_no_turno || 0)}
-              subtitle="Entradas acumuladas de vendas"
+              value={
+                isOperator || caixaStatus?.vendas_dinheiro_no_turno === null
+                  ? 'R$ •••••'
+                  : formatCurrency(caixaStatus?.vendas_dinheiro_no_turno || 0)
+              }
+              subtitle={
+                isOperator || caixaStatus?.vendas_dinheiro_no_turno === null
+                  ? 'Oculto até o fechamento cego'
+                  : 'Entradas acumuladas de vendas'
+              }
               icon={<TrendingUp />}
               color="#10B981"
             />
@@ -559,9 +724,10 @@ export const Caixa: React.FC = () => {
                   <TableHead sx={{ bgcolor: 'action.hover' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Horário</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Operador</TableCell>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Tipo</TableCell>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Categoria</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Descrição / Finalidade</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Descrição / Motivo</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.78rem' }}>
                         Valor
                       </TableCell>
@@ -574,6 +740,9 @@ export const Caixa: React.FC = () => {
                         <TableRow key={l.id} hover>
                           <TableCell sx={{ fontSize: '0.82rem', color: 'text.secondary', width: 140 }}>
                             {formatDateTime(l.data_hora)}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600, width: 130 }}>
+                            {l.user_nome || (user?.id === l.user_id ? user?.nome : 'Operador')}
                           </TableCell>
                           <TableCell sx={{ width: 130 }}>
                             <Chip
@@ -641,11 +810,13 @@ export const Caixa: React.FC = () => {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Abertura</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fechamento</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Operador</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fundo Inicial</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor Esperado</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor Contado</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Diferença</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Status</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Comprovante</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -658,29 +829,58 @@ export const Caixa: React.FC = () => {
                         <TableCell sx={{ fontSize: '0.82rem' }}>
                           {h.data_fechamento ? formatDateTime(h.data_fechamento) : 'Em aberto'}
                         </TableCell>
+                        <TableCell sx={{ fontSize: '0.82rem' }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 700 }}>
+                            {h.user_fechamento_nome || h.user_abertura_nome || 'Operador'}
+                          </Typography>
+                          {h.user_abertura_nome && h.user_fechamento_nome && h.user_abertura_nome !== h.user_fechamento_nome && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                              Aberto por: {h.user_abertura_nome}
+                            </Typography>
+                          )}
+                        </TableCell>
                         <TableCell sx={{ fontSize: '0.82rem' }}>{formatCurrency(h.valor_inicial)}</TableCell>
                         <TableCell sx={{ fontSize: '0.82rem' }}>
-                          {h.valor_esperado !== null ? formatCurrency(h.valor_esperado) : '-'}
+                          {h.valor_esperado !== null && h.valor_esperado !== undefined ? formatCurrency(h.valor_esperado) : '-'}
                         </TableCell>
                         <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>
-                          {h.valor_informado !== null ? formatCurrency(h.valor_informado) : '-'}
+                          {h.valor_informado !== null && h.valor_informado !== undefined ? formatCurrency(h.valor_informado) : '-'}
                         </TableCell>
                         <TableCell sx={{ fontSize: '0.82rem' }}>
-                          {h.diferenca !== null ? (
-                            <Typography
-                              variant="body2"
-                              fontWeight={700}
+                          {h.diferenca !== null && h.diferenca !== undefined ? (
+                            <Chip
+                              size="small"
+                              label={
+                                diff === 0
+                                  ? 'R$ 0,00 (Batido)'
+                                  : diff > 0
+                                  ? `+${formatCurrency(diff)} (Sobra)`
+                                  : `${formatCurrency(diff)} (Quebra)`
+                              }
                               sx={{
+                                fontWeight: 800,
+                                fontSize: '0.74rem',
+                                bgcolor:
+                                  diff === 0
+                                    ? 'rgba(5, 150, 105, 0.12)'
+                                    : diff > 0
+                                    ? 'rgba(217, 119, 6, 0.12)'
+                                    : 'rgba(220, 38, 38, 0.12)',
                                 color:
-                                  diff === 0 ? 'success.main' : diff > 0 ? 'info.main' : 'error.main',
+                                  diff === 0
+                                    ? '#059669'
+                                    : diff > 0
+                                    ? '#D97706'
+                                    : '#DC2626',
+                                border: '1px solid',
+                                borderColor:
+                                  diff === 0
+                                    ? 'rgba(5, 150, 105, 0.3)'
+                                    : diff > 0
+                                    ? 'rgba(217, 119, 6, 0.3)'
+                                    : 'rgba(220, 38, 38, 0.3)',
                               }}
-                            >
-                              {diff > 0
-                                ? `+${formatCurrency(diff)} (Sobra)`
-                                : diff < 0
-                                ? `${formatCurrency(diff)} (Falta)`
-                                : 'R$ 0,00 (Exato)'}
-                            </Typography>
+                            />
                           ) : (
                             '-'
                           )}
@@ -692,6 +892,24 @@ export const Caixa: React.FC = () => {
                             color={isFechado ? 'default' : 'success'}
                             sx={{ height: 22, fontSize: '0.66rem', fontWeight: 700 }}
                           />
+                        </TableCell>
+                        <TableCell align="center">
+                          {isFechado ? (
+                            <Tooltip title="Ver Comprovante / WhatsApp">
+                              <IconButton
+                                size="small"
+                                sx={{ color: '#25D366', '&:hover': { bgcolor: 'rgba(37, 211, 102, 0.1)' } }}
+                                onClick={() => {
+                                  setFechamentoResultado(h);
+                                  setOpenWhatsAppDialog(true);
+                                }}
+                              >
+                                <WhatsApp fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            '-'
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -775,12 +993,19 @@ export const Caixa: React.FC = () => {
 
             <TextField
               fullWidth
-              label="Descrição do Lançamento"
+              label="Motivo do Lançamento *"
               required
               margin="normal"
               value={descricaoLancamento}
               onChange={(e) => setDescricaoLancamento(e.target.value)}
-              placeholder={tipoLancamento === 'SAIDA' ? 'Ex: Troco reposto na gaveta' : 'Ex: Compra de botijão P13'}
+              placeholder={tipoLancamento === 'SAIDA' ? 'Ex: Compra de botijão P13 de emergência' : 'Ex: Suprimento para troco em moedas'}
+              inputProps={{ minLength: 5 }}
+              error={descricaoLancamento.length > 0 && descricaoLancamento.trim().length < 5}
+              helperText={
+                descricaoLancamento.length > 0 && descricaoLancamento.trim().length < 5
+                  ? 'Obrigatório mínimo de 5 caracteres para auditoria.'
+                  : 'Descreva detalhadamente o motivo para auditoria de balcão (mín. 5 caracteres).'
+              }
             />
 
             <TextField
@@ -867,6 +1092,194 @@ export const Caixa: React.FC = () => {
             </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      {/* DIALOG: COMPROVANTE DE CONCILIAÇÃO & WHATSAPP DO PROPRIETÁRIO */}
+      <Dialog
+        open={openWhatsAppDialog && Boolean(fechamentoResultado)}
+        onClose={() => setOpenWhatsAppDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        {fechamentoResultado && (
+          <Box>
+            <DialogTitle
+              sx={{
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pb: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircle color="success" />
+                <span>Comprovante de Fechamento de Caixa</span>
+              </Box>
+              <IconButton size="small" onClick={() => setOpenWhatsAppDialog(false)}>
+                <Close fontSize="small" />
+              </IconButton>
+            </DialogTitle>
+
+            <DialogContent dividers sx={{ pt: 2 }}>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Turno encerrado e auditado com sucesso. Confira o balanço físico de conciliação cega da gaveta:
+              </Typography>
+
+              {/* Informações de Cabeçalho do Fechamento */}
+              <Paper
+                elevation={0}
+                variant="outlined"
+                sx={{ p: 2, mb: 2.5, borderRadius: 2, bgcolor: 'background.default' }}
+              >
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Operador Responsável
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700}>
+                      {fechamentoResultado.user_fechamento_nome ||
+                        fechamentoResultado.user_abertura_nome ||
+                        user?.nome ||
+                        'Operador'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Data e Hora do Fechamento
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700}>
+                      {fechamentoResultado.data_fechamento
+                        ? formatDateTime(fechamentoResultado.data_fechamento)
+                        : formatDateTime(new Date().toISOString())}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Tabela de Conciliação Financeira */}
+              <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2, mb: 2.5 }}>
+                <Table size="small">
+                  <TableBody>
+                    <TableRow>
+                      <TableCell sx={{ color: 'text.secondary', fontWeight: 600 }}>Troco Inicial (Abertura)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        {formatCurrency(fechamentoResultado.valor_inicial)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ color: 'text.secondary', fontWeight: 600 }}>Entradas em Dinheiro (PDV)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        + {formatCurrency(fechamentoResultado.vendas_dinheiro || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ color: 'text.secondary', fontWeight: 600 }}>Suprimentos Avulsos (+)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        + {formatCurrency(fechamentoResultado.total_entradas || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ color: 'text.secondary', fontWeight: 600 }}>Sangrias / Retiradas (-)</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: 'error.main' }}>
+                        - {formatCurrency(fechamentoResultado.total_saidas || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem' }}>Saldo Esperado pelo Sistema</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                        {formatCurrency(fechamentoResultado.valor_esperado || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow sx={{ bgcolor: 'action.hover' }}>
+                      <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem' }}>Valor Físico Contado</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 800, fontSize: '0.95rem' }}>
+                        {formatCurrency(fechamentoResultado.valor_informado || 0)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow
+                      sx={{
+                        bgcolor:
+                          (fechamentoResultado.diferenca || 0) === 0
+                            ? 'rgba(5, 150, 105, 0.08)'
+                            : (fechamentoResultado.diferenca || 0) > 0
+                            ? 'rgba(217, 119, 6, 0.08)'
+                            : 'rgba(220, 38, 38, 0.08)',
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 900, fontSize: '0.95rem' }}>Diferença de Caixa</TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 900,
+                          fontSize: '1rem',
+                          color:
+                            (fechamentoResultado.diferenca || 0) === 0
+                              ? '#059669'
+                              : (fechamentoResultado.diferenca || 0) > 0
+                              ? '#D97706'
+                              : '#DC2626',
+                        }}
+                      >
+                        {formatCurrency(fechamentoResultado.diferenca || 0)}{' '}
+                        {(fechamentoResultado.diferenca || 0) === 0
+                          ? '(Caixa Batido)'
+                          : (fechamentoResultado.diferenca || 0) > 0
+                          ? '(Sobra)'
+                          : '(Quebra)'}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {fechamentoResultado.observacoes && (
+                <Paper
+                  elevation={0}
+                  variant="outlined"
+                  sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.default' }}
+                >
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
+                    Observações:
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {fechamentoResultado.observacoes}
+                  </Typography>
+                </Paper>
+              )}
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2.5, gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<ContentCopy />}
+                onClick={() => handleCopiarResumo(fechamentoResultado)}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Copiar Texto
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<WhatsApp />}
+                onClick={() => handleEnviarWhatsApp(fechamentoResultado)}
+                sx={{
+                  bgcolor: '#25D366',
+                  '&:hover': { bgcolor: '#1EBE5D' },
+                  color: '#fff',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  px: 2.5,
+                }}
+              >
+                Enviar Resumo no WhatsApp
+              </Button>
+              <Button onClick={() => setOpenWhatsAppDialog(false)} color="inherit">
+                Fechar
+              </Button>
+            </DialogActions>
+          </Box>
+        )}
       </Dialog>
 
       {/* Feedback Toast / Snackbar Global */}
