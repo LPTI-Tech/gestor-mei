@@ -20,6 +20,7 @@ from app.schemas.empresa import (
     MetricasGlobaisResponse
 )
 from app.dependencies import (
+    get_current_user,
     get_current_empresa,
     require_admin,
     require_master
@@ -32,8 +33,15 @@ router = APIRouter(prefix="/empresa", tags=["Empresa"])
 
 
 @router.get("", response_model=EmpresaResponse)
-def get_empresa_info(empresa: Empresa = Depends(get_current_empresa)):
-    return empresa
+def get_empresa_info(
+    empresa: Empresa = Depends(get_current_empresa),
+    current_user: User = Depends(get_current_user)
+):
+    resp = EmpresaResponse.model_validate(empresa)
+    is_operator = getattr(current_user, "role", None) in [UserRole.OPERATOR, "OPERATOR", "OPERADOR"]
+    if is_operator:
+        resp.pin_autorizacao = "****"
+    return resp
 
 
 @router.put("", response_model=EmpresaResponse)

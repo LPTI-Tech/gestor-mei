@@ -75,6 +75,8 @@ export interface Empresa {
   logo_url?: string;
   ativo?: boolean;
   motivo_bloqueio?: string | null;
+  pin_autorizacao?: string;
+  desconto_maximo_percentual?: number;
   data_inicio_atividades: string;
   created_at: string;
   updated_at: string;

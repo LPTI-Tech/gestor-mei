@@ -18,6 +18,7 @@ from app.migrate_unique_produto import run_migration as run_migration_unique_pro
 from app.migrate_oauth import run_migration as run_migration_oauth
 from app.migrate_rbac04 import run_migration as run_migration_rbac04
 from app.migrate_suporte import run_migration as run_migration_suporte
+from app.migrate_pin_desconto import run_migration as run_migration_pin_desconto
 
 # Import routers
 from app.routers import (
@@ -92,6 +93,7 @@ def on_startup():
     run_migration_oauth()
     run_migration_rbac04()
     run_migration_suporte()
+    run_migration_pin_desconto()
 
     if not settings.is_production and settings.should_seed:
         seed_database()

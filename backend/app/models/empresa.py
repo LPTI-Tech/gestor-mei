@@ -28,6 +28,10 @@ class Empresa(Base):
     # Status de bloqueio administrativo (Sprint RBAC 04)
     ativo = Column(Boolean, default=True, nullable=False)
     motivo_bloqueio = Column(String(255), nullable=True)
+
+    # Controle Operacional & Prevenção de Desvios (PIN e Desconto PDV)
+    pin_autorizacao = Column(String(10), default="1234", nullable=True)
+    desconto_maximo_percentual = Column(Float, default=10.0, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

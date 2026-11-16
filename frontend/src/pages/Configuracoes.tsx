@@ -48,7 +48,7 @@ import { formatCurrency } from '../services/exportUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Configuracoes: React.FC = () => {
-  const { empresa, refreshUserData } = useAuth();
+  const { empresa, refreshUserData, isOwner, isMaster } = useAuth();
   const [formData, setFormData] = useState({
     nome_empresarial: '',
     nome_fantasia: '',
@@ -63,6 +63,8 @@ export const Configuracoes: React.FC = () => {
     modulo_motoboy: true,
     modulo_ifood: true,
     modulo_estoque: false,
+    pin_autorizacao: '1234',
+    desconto_maximo_percentual: 10.0,
   });
 
   const [saving, setSaving] = useState<boolean>(false);
@@ -197,6 +199,8 @@ export const Configuracoes: React.FC = () => {
         modulo_motoboy: empresa.modulo_motoboy ?? true,
         modulo_ifood: empresa.modulo_ifood ?? true,
         modulo_estoque: empresa.modulo_estoque ?? false,
+        pin_autorizacao: empresa.pin_autorizacao || '1234',
+        desconto_maximo_percentual: empresa.desconto_maximo_percentual ?? 10.0,
       });
       setPermitirEstoqueNegativo(empresa.permitir_estoque_negativo ?? true);
     }
@@ -782,6 +786,54 @@ export const Configuracoes: React.FC = () => {
                       helperText="Padrão oficial: R$ 81.000,00"
                     />
                   </Grid>
+
+                  {(isOwner || isMaster) && (
+                    <>
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1 }}>
+                          <Security color="primary" fontSize="small" />
+                          <Typography variant="subtitle2" fontWeight={800} color="primary">
+                            Controle Operacional & Prevenção de Desvios (PDV)
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Configurações de proteção que limitam a autonomia de operadores de caixa no balcão.
+                        </Typography>
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="PIN da Proprietária (4 dígitos)"
+                          type="password"
+                          inputProps={{ maxLength: 4, pattern: '[0-9]*' }}
+                          value={formData.pin_autorizacao}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setFormData({ ...formData, pin_autorizacao: val });
+                          }}
+                          helperText="Exigido no PDV quando um operador concede desconto"
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Teto Máximo de Desconto (%)"
+                          type="number"
+                          inputProps={{ min: 0, max: 100, step: 0.5 }}
+                          value={formData.desconto_maximo_percentual}
+                          onChange={(e) =>
+                            setFormData({ ...formData, desconto_maximo_percentual: Number(e.target.value) })
+                          }
+                          helperText="Limite percentual máximo permitido no PDV (Padrão: 10%)"
+                        />
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
 
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>

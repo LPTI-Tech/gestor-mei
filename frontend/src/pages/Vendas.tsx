@@ -56,7 +56,10 @@ import {
   Close,
   Inventory2,
   ShoppingBag,
+  Lock,
+  Security,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api, { resolveImageUrl } from '../services/api';
 import {
@@ -70,6 +73,7 @@ import {
   OrigemVenda,
   TipoPedido,
   ComandaImpressao,
+  CaixaStatus,
 } from '../types';
 import { formatCurrency, formatDateTime } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -88,14 +92,26 @@ interface CartItem extends ItemVendaCreate {
 }
 
 export const Vendas: React.FC = () => {
+  const navigate = useNavigate();
+  const { empresa, isOperator } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [regioes, setRegioes] = useState<RegiaoEntrega[]>([]);
   const [motoboys, setMotoboys] = useState<Motoboy[]>([]);
   const [recentVendas, setRecentVendas] = useState<Venda[]>([]);
+  const [caixaStatus, setCaixaStatus] = useState<CaixaStatus | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Modal de Autorização por PIN da Proprietária
+  const [pinModalOpen, setPinModalOpen] = useState<boolean>(false);
+  const [pinInput, setPinInput] = useState<string>('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pendingAutorizarEstoqueNegativo, setPendingAutorizarEstoqueNegativo] = useState<boolean>(false);
+
+  // Justificativa obrigatória do operador em estoque insuficiente
+  const [justificativaEstoque, setJustificativaEstoque] = useState<string>('');
 
   // Filter Catalog
   const [categoriaFilter, setCategoriaFilter] = useState<string>('Todas');
@@ -135,7 +151,6 @@ export const Vendas: React.FC = () => {
   const [cancelVendaId, setCancelVendaId] = useState<number | null>(null);
 
   // Alerta de Estoque Negativo / Insuficiente (BUG-001)
-  const { empresa } = useAuth();
   const [estoqueModalOpen, setEstoqueModalOpen] = useState<boolean>(false);
   const [itensSemSaldo, setItensSemSaldo] = useState<{
     produto_id: number;
@@ -148,18 +163,20 @@ export const Vendas: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [prodRes, cliRes, regRes, motRes, vendRes] = await Promise.all([
+      const [prodRes, cliRes, regRes, motRes, vendRes, caixaRes] = await Promise.all([
         api.get<Produto[]>('/produtos', { params: { apenas_ativos: true } }),
         api.get<Cliente[]>('/clientes', { params: { apenas_ativos: true } }),
         api.get<RegiaoEntrega[]>('/regioes-entrega', { params: { apenas_ativas: true } }),
         api.get<Motoboy[]>('/motoboys', { params: { apenas_ativos: true } }),
         api.get<Venda[]>('/vendas', { params: { limit: 25 } }),
+        api.get<CaixaStatus>('/caixa/status'),
       ]);
       setProdutos(prodRes.data);
       setClientes(cliRes.data);
       setRegioes(regRes.data);
       setMotoboys(motRes.data);
       setRecentVendas(vendRes.data);
+      setCaixaStatus(caixaRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -332,9 +349,85 @@ export const Vendas: React.FC = () => {
   const numDesconto = Math.max(0, Number(desconto.replace(',', '.')) || 0);
   const totalPagar = Math.max(0, Math.round((subtotalCart + numTaxa - numDesconto) * 100) / 100);
 
-  const handleSubmitVenda = async (autorizarEstoqueNegativo: boolean = false) => {
+  const handleFinalizarClick = () => {
     if (cartItems.length === 0) {
       alert('Adicione pelo menos um produto ao carrinho antes de finalizar.');
+      return;
+    }
+
+    // Trava de caixa fechado para vendas em dinheiro
+    if (formaPagamento === 'Dinheiro' && !caixaStatus?.is_aberto) {
+      alert('Não é possível realizar vendas em Dinheiro com o Caixa fechado. Abra um turno de caixa para continuar.');
+      return;
+    }
+
+    // Validação de teto de desconto e exigência de PIN para perfil OPERADOR
+    if (isOperator && numDesconto > 0) {
+      const tetoPercentual = empresa?.desconto_maximo_percentual ?? 10.0;
+      const maxDescontoReais = (subtotalCart * tetoPercentual) / 100;
+      if (numDesconto > (maxDescontoReais + 0.01)) {
+        alert(
+          `O desconto de ${formatCurrency(numDesconto)} excede o teto máximo permitido de ${tetoPercentual}% (${formatCurrency(maxDescontoReais)}) configurado pela proprietária.`
+        );
+        return;
+      }
+      setPinInput('');
+      setPinError(null);
+      setPendingAutorizarEstoqueNegativo(false);
+      setPinModalOpen(true);
+      return;
+    }
+
+    handleSubmitVenda(false);
+  };
+
+  const handleConfirmarPin = () => {
+    if (!pinInput || pinInput.trim().length !== 4) {
+      setPinError('Informe o PIN de 4 dígitos da proprietária.');
+      return;
+    }
+    setPinError(null);
+    handleSubmitVenda(pendingAutorizarEstoqueNegativo, pinInput.trim());
+  };
+
+  const handleConfirmarVenderMesmoAssim = () => {
+    if (isOperator && justificativaEstoque.trim().length < 5) {
+      alert('Para venda com estoque insuficiente, o operador deve fornecer uma justificativa (mínimo 5 caracteres).');
+      return;
+    }
+
+    // Se houver desconto para operador, solicita autorização por PIN
+    if (isOperator && numDesconto > 0) {
+      const tetoPercentual = empresa?.desconto_maximo_percentual ?? 10.0;
+      const maxDescontoReais = (subtotalCart * tetoPercentual) / 100;
+      if (numDesconto > (maxDescontoReais + 0.01)) {
+        alert(
+          `O desconto de ${formatCurrency(numDesconto)} excede o teto máximo permitido de ${tetoPercentual}% (${formatCurrency(maxDescontoReais)}) configurado pela proprietária.`
+        );
+        return;
+      }
+      setPinInput('');
+      setPinError(null);
+      setPendingAutorizarEstoqueNegativo(true);
+      setEstoqueModalOpen(false);
+      setPinModalOpen(true);
+      return;
+    }
+
+    handleSubmitVenda(true);
+  };
+
+  const handleSubmitVenda = async (
+    autorizarEstoqueNegativo: boolean = false,
+    pinAutorizacao?: string
+  ) => {
+    if (cartItems.length === 0) {
+      alert('Adicione pelo menos um produto ao carrinho antes de finalizar.');
+      return;
+    }
+
+    if (formaPagamento === 'Dinheiro' && !caixaStatus?.is_aberto) {
+      alert('Não é possível realizar vendas em Dinheiro com o Caixa fechado. Abra um turno de caixa para continuar.');
       return;
     }
 
@@ -366,6 +459,7 @@ export const Vendas: React.FC = () => {
 
       if (insuficientes.length > 0) {
         setItensSemSaldo(insuficientes);
+        setJustificativaEstoque('');
         setEstoqueModalOpen(true);
         return;
       }
@@ -373,7 +467,7 @@ export const Vendas: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const payload = {
+      const payload: any = {
         cliente_id: selectedClienteId ? Number(selectedClienteId) : null,
         tipo_pedido: tipoPedido,
         regiao_entrega_id: tipoPedido === 'ENTREGA' && selectedRegiaoId ? Number(selectedRegiaoId) : null,
@@ -385,6 +479,8 @@ export const Vendas: React.FC = () => {
         desconto: numDesconto,
         observacoes: observacoes.trim() || null,
         autorizar_estoque_negativo: autorizarEstoqueNegativo,
+        pin_autorizacao: pinAutorizacao || undefined,
+        justificativa_estoque: autorizarEstoqueNegativo && isOperator ? justificativaEstoque.trim() : undefined,
         itens: cartItems.map((it) => ({
           produto_id: it.produto_id,
           descricao: it.descricao,
@@ -399,6 +495,9 @@ export const Vendas: React.FC = () => {
       setRecentVendas((prev) => [res.data, ...prev]);
       handleClearCart();
       setEstoqueModalOpen(false);
+      setPinModalOpen(false);
+      setPendingAutorizarEstoqueNegativo(false);
+      setJustificativaEstoque('');
       fetchData(); // Atualiza catálogo de produtos e saldos
 
       if (autorizarEstoqueNegativo) {
@@ -408,6 +507,11 @@ export const Vendas: React.FC = () => {
       }
     } catch (err: any) {
       const detail = err.response?.data?.detail;
+      if (typeof detail === 'string' && detail.includes('PIN')) {
+        setPinError(detail);
+        setPinModalOpen(true);
+        return;
+      }
       if (typeof detail === 'string' && detail.includes('Estoque insuficiente')) {
         const insuficientes = cartItems
           .filter((i) => i.produto_id && i.tipo_item === 'PRODUTO')
@@ -423,6 +527,7 @@ export const Vendas: React.FC = () => {
             };
           });
         setItensSemSaldo(insuficientes);
+        setJustificativaEstoque('');
         setEstoqueModalOpen(true);
       } else {
         alert(detail || 'Erro ao registrar pedido.');
@@ -519,19 +624,61 @@ export const Vendas: React.FC = () => {
         {/* Quick status or action */}
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Chip
-            icon={<CheckCircle sx={{ '&&': { fontSize: 14, color: '#2E7D32' } }} />}
-            label="Terminal Pronto"
+            icon={
+              caixaStatus?.is_aberto ? (
+                <CheckCircle sx={{ '&&': { fontSize: 14, color: '#2E7D32' } }} />
+              ) : (
+                <Lock sx={{ '&&': { fontSize: 14, color: '#D97706' } }} />
+              )
+            }
+            label={caixaStatus?.is_aberto ? "Terminal Pronto" : "Caixa Fechado"}
             size="small"
             sx={{
-              bgcolor: 'rgba(46, 125, 50, 0.08)',
-              color: '#2E7D32',
+              bgcolor: caixaStatus?.is_aberto ? 'rgba(46, 125, 50, 0.08)' : 'rgba(217, 119, 6, 0.1)',
+              color: caixaStatus?.is_aberto ? '#2E7D32' : '#D97706',
               fontWeight: 700,
               fontSize: '0.75rem',
-              border: '1px solid rgba(46, 125, 50, 0.22)',
+              border: `1px solid ${caixaStatus?.is_aberto ? 'rgba(46, 125, 50, 0.22)' : 'rgba(217, 119, 6, 0.3)'}`,
             }}
           />
         </Box>
       </Box>
+
+      {/* Alerta de Caixa Fechado */}
+      {!caixaStatus?.is_aberto && (
+        <Alert
+          severity="warning"
+          variant="filled"
+          icon={<Lock sx={{ fontSize: 24 }} />}
+          sx={{
+            mb: 3,
+            borderRadius: 2.5,
+            fontWeight: 700,
+            fontSize: '0.92rem',
+            boxShadow: '0 4px 14px rgba(217, 119, 6, 0.25)',
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              onClick={() => navigate('/caixa')}
+              sx={{
+                fontWeight: 800,
+                borderColor: '#fff',
+                color: '#fff',
+                bgcolor: 'rgba(0,0,0,0.12)',
+                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(0,0,0,0.25)' },
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Abrir Caixa
+            </Button>
+          }
+        >
+          Caixa Fechado — Não há turno de caixa aberto no momento. Vendas com pagamento em Dinheiro estão bloqueadas até a abertura do turno.
+        </Alert>
+      )}
 
       {/* Main Grid: Catalog (Left) + Cart & Checkout (Right) */}
       <Grid container spacing={3}>
@@ -572,22 +719,24 @@ export const Vendas: React.FC = () => {
                   },
                 }}
               />
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => setCustomItemModal(true)}
-                sx={{
-                  whiteSpace: 'nowrap',
-                  fontWeight: 700,
-                  height: 40,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  px: 2,
-                  fontSize: '0.85rem',
-                }}
-              >
-                + Item Avulso
-              </Button>
+              {!isOperator && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => setCustomItemModal(true)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    fontWeight: 700,
+                    height: 40,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    px: 2,
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  + Item Avulso
+                </Button>
+              )}
             </Box>
 
             {/* Category Pills (Horizontal Scroll) */}
@@ -1198,19 +1347,38 @@ export const Vendas: React.FC = () => {
               )}
 
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Desconto no Pedido:
-                </Typography>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Desconto no Pedido:
+                  </Typography>
+                  {isOperator && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', display: 'block' }}>
+                      Teto: {empresa?.desconto_maximo_percentual ?? 10}% (requer PIN)
+                    </Typography>
+                  )}
+                </Box>
                 <TextField
                   size="small"
                   value={desconto}
                   onChange={(e) => setDesconto(e.target.value)}
-                  sx={{ width: 100 }}
+                  sx={{ width: 110 }}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">R$</InputAdornment>,
                     sx: { borderRadius: 1.5 },
                   }}
                   inputProps={{ style: { textAlign: 'right', padding: '3px 6px', fontWeight: 700 } }}
+                  error={Boolean(
+                    isOperator &&
+                      numDesconto >
+                        (((subtotalCart * (empresa?.desconto_maximo_percentual ?? 10)) / 100) + 0.01)
+                  )}
+                  helperText={
+                    isOperator &&
+                    numDesconto >
+                      (((subtotalCart * (empresa?.desconto_maximo_percentual ?? 10)) / 100) + 0.01)
+                      ? `Excede teto (${empresa?.desconto_maximo_percentual ?? 10}%)`
+                      : undefined
+                  }
                 />
               </Box>
 
@@ -1268,39 +1436,60 @@ export const Vendas: React.FC = () => {
               <Grid container spacing={1}>
                 {FORMAS_PAGTO.map(({ label, icon }) => {
                   const isSelected = formaPagamento === label;
+                  const isDinheiroBloqueado = label === 'Dinheiro' && !caixaStatus?.is_aberto;
                   return (
                     <Grid item xs={3} key={label}>
-                      <Box
-                        onClick={() => setFormaPagamento(label)}
-                        sx={{
-                          cursor: 'pointer',
-                          p: 1.25,
-                          borderRadius: 2,
-                          textAlign: 'center',
-                          border: '1.5px solid',
-                          borderColor: isSelected ? 'primary.main' : 'divider',
-                          bgcolor: isSelected
-                            ? (theme) => (theme.palette.mode === 'dark' ? 'primary.main' : '#071933')
-                            : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#FFFFFF'),
-                          color: isSelected ? '#FFFFFF' : 'text.primary',
-                          boxShadow: isSelected ? '0 4px 12px rgba(7, 25, 51, 0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          '&:hover': {
-                            borderColor: isSelected ? 'primary.main' : 'text.secondary',
-                          },
-                        }}
+                      <Tooltip
+                        title={
+                          isDinheiroBloqueado
+                            ? 'Caixa Fechado: Abra um turno no Caixa para aceitar dinheiro'
+                            : ''
+                        }
                       >
-                        <Box sx={{ color: isSelected ? '#FFFFFF' : 'primary.main' }}>
-                          {icon}
+                        <Box
+                          onClick={() => {
+                            if (isDinheiroBloqueado) {
+                              alert('Caixa fechado! Abra um turno no menu Caixa antes de selecionar pagamento em Dinheiro.');
+                              return;
+                            }
+                            setFormaPagamento(label);
+                          }}
+                          sx={{
+                            cursor: 'pointer',
+                            p: 1.25,
+                            borderRadius: 2,
+                            textAlign: 'center',
+                            border: '1.5px solid',
+                            borderColor: isSelected ? 'primary.main' : 'divider',
+                            bgcolor: isSelected
+                              ? (theme) => (theme.palette.mode === 'dark' ? 'primary.main' : '#071933')
+                              : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#FFFFFF'),
+                            color: isSelected ? '#FFFFFF' : 'text.primary',
+                            opacity: isDinheiroBloqueado ? 0.55 : 1,
+                            boxShadow: isSelected ? '0 4px 12px rgba(7, 25, 51, 0.25)' : 'none',
+                            transition: 'all 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            '&:hover': {
+                              borderColor: isSelected ? 'primary.main' : 'text.secondary',
+                            },
+                          }}
+                        >
+                          <Box sx={{ color: isSelected ? '#FFFFFF' : 'primary.main' }}>
+                            {icon}
+                          </Box>
+                          <Typography variant="caption" fontWeight={700} sx={{ lineHeight: 1 }}>
+                            {label}
+                          </Typography>
+                          {isDinheiroBloqueado && (
+                            <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'warning.main', fontWeight: 800 }}>
+                              Fechado
+                            </Typography>
+                          )}
                         </Box>
-                        <Typography variant="caption" fontWeight={700} sx={{ lineHeight: 1 }}>
-                          {label}
-                        </Typography>
-                      </Box>
+                      </Tooltip>
                     </Grid>
                   );
                 })}
@@ -1362,7 +1551,7 @@ export const Vendas: React.FC = () => {
               color="success"
               size="large"
               disabled={cartItems.length === 0 || submitting}
-              onClick={() => handleSubmitVenda(false)}
+              onClick={handleFinalizarClick}
               startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
               sx={{
                 py: 1.6,
@@ -2233,6 +2422,29 @@ export const Vendas: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+
+          {empresa?.permitir_estoque_negativo !== false && isOperator && (
+            <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(237, 108, 2, 0.08)', borderRadius: 2, border: '1px dashed', borderColor: 'warning.main' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: 'warning.dark', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Auditoria de Operador (Obrigatório)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                label="Justificativa da venda sem estoque"
+                placeholder="Ex: Mercadoria recebida no balcão sem entrada lançada"
+                value={justificativaEstoque}
+                onChange={(e) => setJustificativaEstoque(e.target.value)}
+                error={justificativaEstoque.trim().length > 0 && justificativaEstoque.trim().length < 5}
+                helperText={
+                  justificativaEstoque.trim().length < 5
+                    ? 'Mínimo de 5 caracteres para liberar a venda'
+                    : 'Justificativa registrada para auditoria da proprietária'
+                }
+                required
+              />
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions sx={{ p: 2.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between' }}>
@@ -2249,14 +2461,91 @@ export const Vendas: React.FC = () => {
             <Button
               variant="contained"
               color="warning"
-              disabled={submitting}
-              onClick={() => handleSubmitVenda(true)}
+              disabled={submitting || (isOperator && justificativaEstoque.trim().length < 5)}
+              onClick={handleConfirmarVenderMesmoAssim}
               startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Warning />}
               sx={{ fontWeight: 800, px: 2.5, textTransform: 'none', borderRadius: 2 }}
             >
               Vender Mesmo Assim
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Autorização de Desconto por PIN */}
+      <Dialog
+        open={pinModalOpen}
+        onClose={() => {
+          if (!submitting) {
+            setPinModalOpen(false);
+            setPinError(null);
+            setPinInput('');
+          }
+        }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Security color="warning" />
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            Autorização da Proprietária
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Esta venda possui um desconto de <b>{((numDesconto / (subtotalCart || 1)) * 100).toFixed(1)}% ({formatCurrency(numDesconto)})</b>. Como operador, informe o PIN de 4 dígitos configurado pela proprietária para autorizar a operação.
+          </Typography>
+
+          {pinError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {pinError}
+            </Alert>
+          )}
+
+          <TextField
+            autoFocus
+            fullWidth
+            type="password"
+            label="PIN de Autorização (4 dígitos)"
+            placeholder="••••"
+            value={pinInput}
+            onChange={(e) => {
+              setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4));
+              if (pinError) setPinError(null);
+            }}
+            inputProps={{ maxLength: 4, inputMode: 'numeric', style: { letterSpacing: 8, fontSize: '1.25rem', textAlign: 'center' } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && pinInput.length === 4 && !submitting) {
+                handleConfirmarPin();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, pt: 1, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            disabled={submitting}
+            onClick={() => {
+              setPinModalOpen(false);
+              setPinError(null);
+              setPinInput('');
+            }}
+            sx={{ fontWeight: 700, textTransform: 'none', borderRadius: 2 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={submitting || pinInput.length !== 4}
+            onClick={handleConfirmarPin}
+            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Lock />}
+            sx={{ fontWeight: 800, px: 2.5, textTransform: 'none', borderRadius: 2 }}
+          >
+            {submitting ? 'Validando...' : 'Autorizar e Concluir'}
+          </Button>
         </DialogActions>
       </Dialog>
 

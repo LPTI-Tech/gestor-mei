@@ -11,8 +11,9 @@ from app.models.regiao_entrega import RegiaoEntrega
 from app.models.motoboy import Motoboy, EntregaMotoboy
 from app.models.caixa import CaixaTurno
 from app.models.empresa import Empresa
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.estoque import MovimentacaoEstoque, AuditoriaEstoque
+from app.utils.timezone import get_brasilia_now
 from app.schemas.venda import (
     VendaCreate,
     VendaResponse,
@@ -172,14 +173,38 @@ def create_venda(
     current_user: User = Depends(get_current_user),
     empresa: Empresa = Depends(get_current_empresa)
 ):
-    # 1. Active Cash Shift
+    # 1. Active Cash Shift & Trava de Caixa Fechado para Dinheiro
     active_caixa = db.query(CaixaTurno).filter(
         CaixaTurno.empresa_id == empresa.id,
         CaixaTurno.status == "ABERTO"
     ).order_by(desc(CaixaTurno.data_abertura)).first()
     
+    if data.forma_pagamento == "Dinheiro" and not active_caixa:
+        raise HTTPException(
+            status_code=400,
+            detail="Não é possível realizar vendas em Dinheiro com o Caixa fechado. Abra um turno de caixa para continuar."
+        )
+
     caixa_id = active_caixa.id if active_caixa else None
-    sale_dt = data.data_hora if data.data_hora else datetime.utcnow()
+    sale_dt = data.data_hora if data.data_hora else get_brasilia_now()
+    is_operator = getattr(current_user, "role", None) in [UserRole.OPERATOR, "OPERATOR", "OPERADOR"]
+
+    # Bloqueio de Item Avulso para Operador
+    tem_item_avulso = False
+    if data.itens and len(data.itens) > 0:
+        for it in data.itens:
+            if not it.produto_id:
+                tem_item_avulso = True
+                break
+    else:
+        if not data.produto_id:
+            tem_item_avulso = True
+
+    if is_operator and tem_item_avulso:
+        raise HTTPException(
+            status_code=403,
+            detail="Operadores não têm permissão para adicionar itens avulsos. Selecione apenas produtos cadastrados no catálogo."
+        )
 
     # 2. Check Client & Inherit Address
     cliente = None
@@ -323,6 +348,33 @@ def create_venda(
     else:
         venda_tipo = "PRODUTO"
 
+    nota_auditoria = []
+
+    # Validação de Desconto e Autorização por PIN para perfil OPERADOR
+    if is_operator and desconto > 0:
+        limite_percentual = float(empresa.desconto_maximo_percentual or 10.0)
+        percentual_aplicado = round((desconto / valor_subtotal) * 100, 2) if valor_subtotal > 0 else 0.0
+        if percentual_aplicado > (limite_percentual + 0.01):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Desconto de {percentual_aplicado:.1f}% excede o limite máximo permitido de {limite_percentual:.1f}% configurado pela proprietária."
+            )
+        pin_esperado = str(empresa.pin_autorizacao or "1234").strip()
+        pin_informado = str(data.pin_autorizacao or "").strip()
+        if not pin_informado:
+            raise HTTPException(
+                status_code=403,
+                detail="Operador precisa de autorização da proprietária (PIN) para conceder desconto."
+            )
+        if pin_informado != pin_esperado:
+            raise HTTPException(
+                status_code=403,
+                detail="PIN de autorização da proprietária incorreto."
+            )
+        nota_auditoria.append(
+            f"[Desconto de R$ {desconto:.2f} ({percentual_aplicado:.1f}%) autorizado via PIN pelo operador {current_user.nome}]"
+        )
+
     if len(itens_para_criar) == 1:
         resumo_desc = itens_para_criar[0]["descricao"]
         resumo_qtd = itens_para_criar[0]["quantidade"]
@@ -379,9 +431,23 @@ def create_venda(
                 status_code=400,
                 detail="Estoque insuficiente para concluir a venda."
             )
+        # Quando for operador, exige justificativa obrigatória (mínimo 5 caracteres)
+        if is_operator:
+            justificativa = (data.justificativa_estoque or "").strip()
+            if len(justificativa) < 5:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Para venda com estoque insuficiente, o operador deve fornecer uma justificativa (mínimo 5 caracteres)."
+                )
+            prods_nomes = ", ".join(p["nome"] for p in produtos_insuficientes)
+            nota_auditoria.append(f"[Estoque Negativo ({prods_nomes}): Justificativa do operador '{justificativa}']")
 
     tipo_ped = data.tipo_pedido or ("ENTREGA" if data.origem in ["WhatsApp", "Delivery Próprio", "iFood"] else "BALCAO")
     status_ped = data.status_pedido or "Recebido"
+
+    obs_final = (data.observacoes or "").strip()
+    if nota_auditoria:
+        obs_final = (obs_final + "\n" + "\n".join(nota_auditoria)).strip()
 
     venda = Venda(
         empresa_id=empresa.id,
@@ -401,7 +467,7 @@ def create_venda(
         origem=data.origem,
         forma_pagamento=data.forma_pagamento,
         status=data.status or "Concluída",
-        observacoes=data.observacoes,
+        observacoes=obs_final or None,
         tipo_item=venda_tipo,
         data_hora=sale_dt,
         produto_id=resumo_prod_id,
@@ -452,6 +518,11 @@ def create_venda(
                         f"Alerta de estoque crítico gerado para auditoria."
                     )
                     # Histórico de auditoria
+                    justificativa_audit = (
+                        f"Operador {current_user.nome}: {data.justificativa_estoque.strip()}"
+                        if is_operator and data.justificativa_estoque and len(data.justificativa_estoque.strip()) >= 5
+                        else "Venda concluída com autorização do usuário após confirmação de saldo insuficiente."
+                    )
                     audit = AuditoriaEstoque(
                         empresa_id=empresa.id,
                         produto_id=prod_est.id,
@@ -461,7 +532,7 @@ def create_venda(
                         quantidade_vendida=qtd_vendida,
                         saldo_resultante=novo_saldo,
                         tipo_evento="ESTOQUE_NEGATIVO_CONFIRMADO",
-                        justificativa="Venda concluída com autorização do usuário após confirmação de saldo insuficiente.",
+                        justificativa=justificativa_audit,
                         data_registro=sale_dt
                     )
                     db.add(audit)

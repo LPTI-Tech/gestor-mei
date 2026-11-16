@@ -20,6 +20,8 @@ class EmpresaBase(BaseModel):
     logo_url: Optional[str] = None
     ativo: Optional[bool] = True
     motivo_bloqueio: Optional[str] = None
+    pin_autorizacao: Optional[str] = "1234"
+    desconto_maximo_percentual: Optional[float] = 10.0
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -48,6 +50,8 @@ class EmpresaUpdate(BaseModel):
     modulo_estoque: Optional[bool] = None
     permitir_estoque_negativo: Optional[bool] = None
     logo_url: Optional[str] = None
+    pin_autorizacao: Optional[str] = None
+    desconto_maximo_percentual: Optional[float] = None
 
 class ModulosConfigUpdate(BaseModel):
     modulo_delivery: bool
