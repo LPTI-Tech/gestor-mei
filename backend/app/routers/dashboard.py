@@ -269,7 +269,10 @@ def get_dashboard_metrics(
     total_itens_est = len(prods_est)
     itens_baixo_est = sum(
         1 for p in prods_est
-        if (p.estoque_minimo or 0.0) > 0 and (p.quantidade_estoque or 0.0) <= (p.estoque_minimo or 0.0)
+        if p.tipo == "PRODUTO"
+        and p.ativo
+        and (p.estoque_minimo or 0) > 0
+        and (p.quantidade_estoque or 0) <= (p.estoque_minimo or 0)
     )
     valor_est_custo = sum(float(p.quantidade_estoque or 0.0) * float(p.custo_unitario or 0.0) for p in prods_est)
 

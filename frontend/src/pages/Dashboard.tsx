@@ -696,7 +696,7 @@ export const Dashboard: React.FC = () => {
               value={metrics.lucro_operacional_mes}
               humanExplanation={
                 (metrics.venda_mes || 0) > 0
-                  ? `Margem líquida real: ${(((metrics.lucro_operacional_mes || 0) / metrics.venda_mes) * 100).toFixed(1)}%`
+                  ? undefined
                   : 'Aguardando vendas no mês'
               }
               trend={

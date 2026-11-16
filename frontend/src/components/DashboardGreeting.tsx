@@ -70,7 +70,7 @@ export const getDynamicInsight = (
   metrics: DashboardMetrics,
   produtos: Produto[] = [],
   referenceDate: Date = new Date()
-): DynamicInsight => {
+): DynamicInsight | null => {
   // 1. Produtos sem estoque (exclusivo para itens com estoque mínimo configurado > 0)
   const qtdSemEstoque = produtos.length > 0
     ? produtos.filter(
@@ -165,13 +165,8 @@ export const getDynamicInsight = (
     };
   }
 
-  // 8. Mensagem padrão acolhedora
-  return {
-    tipo: 'PADRAO',
-    mensagem: 'Que seu dia de trabalho seja excelente, produtivo e cheio de clientes satisfeitos!',
-    severity: 'info',
-    icon: <Store size={18} strokeWidth={1.75} />,
-  };
+  // 8. Sem insights operacionais pendentes (mantém banner compacto)
+  return null;
 };
 
 interface DashboardGreetingProps {
@@ -196,6 +191,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
 
   // Paleta de cores dinâmica baseada no nível de severidade do insight
   const getSeverityStyle = () => {
+    if (!insight) return null;
     switch (insight.severity) {
       case 'warning':
         return {
@@ -345,7 +341,7 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ mt: 0.5, mb: 1.5, fontWeight: 500 }}
+          sx={{ mt: 0.5, mb: insight ? 1.5 : 0, fontWeight: 500 }}
         >
           {user?.role === 'MASTER'
             ? 'Centro de Governança Multiempresa, Auditoria e Supervisão Geral da Rede MEI.'
@@ -353,77 +349,79 @@ export const DashboardGreeting: React.FC<DashboardGreetingProps> = ({
         </Typography>
 
         {/* Card/Pill do insight inteligente com ícone e prioridade */}
-        <Box
-          onClick={() => {
-            if (insight.actionLink) {
-              navigate(insight.actionLink);
-            }
-          }}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 1.2,
-            px: 1.8,
-            py: 0.85,
-            borderRadius: 2,
-            bgcolor: style.bg,
-            border: '1px solid',
-            borderColor: style.border,
-            color: style.color,
-            cursor: insight.actionLink ? 'pointer' : 'default',
-            transition: 'all 0.2s ease',
-            '&:hover': insight.actionLink
-              ? {
-                  bgcolor: alpha(style.bg, 0.9),
-                  transform: 'translateY(-1px)',
-                }
-              : {},
-          }}
-        >
+        {insight && style && (
           <Box
+            onClick={() => {
+              if (insight.actionLink) {
+                navigate(insight.actionLink);
+              }
+            }}
             sx={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              color: style.iconColor,
-            }}
-          >
-            {insight.icon}
-          </Box>
-
-          <Typography
-            variant="body2"
-            fontWeight={600}
-            sx={{
+              flexWrap: 'wrap',
+              gap: 1.2,
+              px: 1.8,
+              py: 0.85,
+              borderRadius: 2,
+              bgcolor: style.bg,
+              border: '1px solid',
+              borderColor: style.border,
               color: style.color,
-              lineHeight: 1.4,
+              cursor: insight.actionLink ? 'pointer' : 'default',
+              transition: 'all 0.2s ease',
+              '&:hover': insight.actionLink
+                ? {
+                    bgcolor: alpha(style.bg, 0.9),
+                    transform: 'translateY(-1px)',
+                  }
+                : {},
             }}
           >
-            {insight.mensagem}
-          </Typography>
-
-          {insight.actionLabel && (
-            <Chip
-              size="small"
-              label={insight.actionLabel}
-              deleteIcon={<ArrowRight size={14} strokeWidth={1.75} />}
-              onDelete={insight.actionLink ? () => navigate(insight.actionLink!) : undefined}
+            <Box
               sx={{
-                height: 22,
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                bgcolor: style.color,
-                color: '#fff',
-                cursor: 'pointer',
-                ml: 0.5,
-                '& .MuiChip-deleteIcon': {
-                  color: '#fff',
-                  '&:hover': { color: '#fff' },
-                },
+                display: 'flex',
+                alignItems: 'center',
+                color: style.iconColor,
               }}
-            />
-          )}
-        </Box>
+            >
+              {insight.icon}
+            </Box>
+
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{
+                color: style.color,
+                lineHeight: 1.4,
+              }}
+            >
+              {insight.mensagem}
+            </Typography>
+
+            {insight.actionLabel && (
+              <Chip
+                size="small"
+                label={insight.actionLabel}
+                deleteIcon={<ArrowRight size={14} strokeWidth={1.75} />}
+                onDelete={insight.actionLink ? () => navigate(insight.actionLink!) : undefined}
+                sx={{
+                  height: 22,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  bgcolor: style.color,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  ml: 0.5,
+                  '& .MuiChip-deleteIcon': {
+                    color: '#fff',
+                    '&:hover': { color: '#fff' },
+                  },
+                }}
+              />
+            )}
+          </Box>
+        )}
       </Box>
 
       {/* Botões de Ação Rápida */}
