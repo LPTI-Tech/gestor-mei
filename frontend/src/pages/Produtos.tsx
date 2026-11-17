@@ -50,8 +50,9 @@ import {
   SellOutlined,
   WarehouseOutlined,
   LocalOfferOutlined,
+  PhotoCamera,
 } from '@mui/icons-material';
-import api from '../services/api';
+import api, { resolveImageUrl } from '../services/api';
 import { Produto, TipoItem } from '../types';
 import { formatCurrency } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -121,6 +122,36 @@ export const Produtos: React.FC = () => {
   });
 
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        alert('O arquivo selecionado excede o limite máximo permitido de 5 MB.');
+        return;
+      }
+      setSelectedImageFile(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (editingProduto && editingProduto.imagem_url) {
+      try {
+        await api.delete(`/produtos/${editingProduto.id}/imagem`);
+        setEditingProduto({ ...editingProduto, imagem_url: undefined, imagem_nome: undefined });
+        setProdutos((prev) =>
+          prev.map((p) => (p.id === editingProduto.id ? { ...p, imagem_url: undefined, imagem_nome: undefined } : p))
+        );
+      } catch (err) {
+        console.error('Erro ao excluir foto:', err);
+      }
+    }
+    setSelectedImageFile(null);
+    setImagePreviewUrl(null);
+  };
 
   // Delete Confirm Dialog
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -145,6 +176,8 @@ export const Produtos: React.FC = () => {
   const handleOpenModal = (prod?: Produto) => {
     if (prod) {
       setEditingProduto(prod);
+      setImagePreviewUrl(prod.imagem_url || null);
+      setSelectedImageFile(null);
       setFormData({
         nome: prod.nome,
         tipo: prod.tipo || 'PRODUTO',
@@ -157,6 +190,8 @@ export const Produtos: React.FC = () => {
       });
     } else {
       setEditingProduto(null);
+      setImagePreviewUrl(null);
+      setSelectedImageFile(null);
       setFormData({
         nome: '',
         tipo: 'PRODUTO',
@@ -174,6 +209,8 @@ export const Produtos: React.FC = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingProduto(null);
+    setImagePreviewUrl(null);
+    setSelectedImageFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -191,10 +228,20 @@ export const Produtos: React.FC = () => {
         ativo: formData.ativo,
       };
 
+      let savedProdId = editingProduto ? editingProduto.id : null;
       if (editingProduto) {
         await api.put(`/produtos/${editingProduto.id}`, payload);
       } else {
-        await api.post('/produtos', payload);
+        const createRes = await api.post<Produto>('/produtos', payload);
+        savedProdId = createRes.data.id;
+      }
+
+      if (savedProdId && selectedImageFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', selectedImageFile);
+        await api.post(`/produtos/${savedProdId}/imagem`, formDataUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
       }
 
       handleCloseModal();
@@ -588,17 +635,21 @@ export const Produtos: React.FC = () => {
                     <SentinelTableCell tabular={false}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
+                          src={resolveImageUrl(prod.imagem_url)}
+                          variant="rounded"
                           sx={{
-                            width: 34,
-                            height: 34,
+                            width: 38,
+                            height: 38,
                             borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
                             bgcolor: isServico
                               ? 'rgba(123, 31, 162, 0.1)'
                               : 'rgba(25, 118, 210, 0.1)',
                             color: isServico ? '#7B1FA2' : 'primary.main',
                           }}
                         >
-                          {isServico ? <Build sx={{ fontSize: 16 }} /> : <ShoppingBag sx={{ fontSize: 16 }} />}
+                          {isServico ? <Build sx={{ fontSize: 18 }} /> : <ShoppingBag sx={{ fontSize: 18 }} />}
                         </Avatar>
                         <Box>
                           <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary', fontSize: '0.8125rem' }}>
@@ -848,6 +899,98 @@ export const Produtos: React.FC = () => {
                   </Box>
                 </Box>
               </RadioGroup>
+            </Box>
+
+            <Divider sx={{ my: 2.5 }} />
+
+            {/* SEÇÃO FOTO: Foto Principal com Otimização WebP e R2 */}
+            <Box
+              sx={{
+                mb: 2.5,
+                p: 2,
+                borderRadius: 2.5,
+                bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
+                border: '1px dashed',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight={800}
+                sx={{
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'text.secondary',
+                  display: 'block',
+                  mb: 1.5,
+                }}
+              >
+                Foto Principal do Item (Cloudflare R2 • WebP)
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar
+                  src={resolveImageUrl(imagePreviewUrl)}
+                  variant="rounded"
+                  sx={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: formData.tipo === 'SERVICO' ? 'rgba(123, 31, 162, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                    color: formData.tipo === 'SERVICO' ? '#7B1FA2' : 'primary.main',
+                  }}
+                >
+                  {formData.tipo === 'SERVICO' ? <Build sx={{ fontSize: 32 }} /> : <ShoppingBag sx={{ fontSize: 32 }} />}
+                </Avatar>
+
+                <Box sx={{ flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.75, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      component="label"
+                      startIcon={<PhotoCamera sx={{ fontSize: 16 }} />}
+                      sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 1.5, fontSize: '0.78rem' }}
+                    >
+                      {imagePreviewUrl ? 'Alterar Foto' : 'Adicionar Foto'}
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/png,image/jpeg,image/webp,image/jpg"
+                        onChange={handleImageSelect}
+                      />
+                    </Button>
+                    {imagePreviewUrl && (
+                      <Button
+                        variant="text"
+                        size="small"
+                        color="error"
+                        onClick={handleRemoveImage}
+                        sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
+                      >
+                        Remover
+                      </Button>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label="WebP Otimizado"
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        bgcolor: 'rgba(46, 125, 50, 0.08)',
+                        color: '#2E7D32',
+                      }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      PNG, JPG ou WEBP até 5 MB (redimensionamento e rotação automáticos)
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
             </Box>
 
             <Divider sx={{ my: 2.5 }} />

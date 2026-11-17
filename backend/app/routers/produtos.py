@@ -215,9 +215,10 @@ def upload_produto_imagem(
     Valida a imagem, redimensiona e converte automaticamente para WebP de alta eficiência,
     e persiste no Cloudflare R2 com fallback local transparente.
     """
+    empresa_id = getattr(empresa, "id", None) or getattr(current_user, "empresa_id", None)
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == empresa.id
+        Produto.empresa_id == empresa_id
     ).first()
 
     if not produto:
@@ -239,14 +240,14 @@ def upload_produto_imagem(
 
     # Remove imagem antiga do storage se existir
     if produto.imagem_nome:
-        storage_service.delete_product_image(produto.imagem_nome, empresa.id)
+        storage_service.delete_product_image(produto.imagem_nome, empresa_id)
 
-    # Gera nome seguro: prod_{id}_{timestamp}.webp
-    safe_name = f"prod_{produto_id}_{int(time.time())}.webp"
+    # Gera nome seguro: prod_{id}_{timestamp_ms}.webp
+    safe_name = f"prod_{produto_id}_{int(time.time() * 1000)}.webp"
     storage_service.save_product_image(
         webp_bytes,
         safe_name,
-        empresa_id=empresa.id,
+        empresa_id=empresa_id,
         produto_id=produto_id,
         content_type=content_type
     )
@@ -311,16 +312,17 @@ def delete_produto_imagem(
     """
     Remove a imagem do produto do storage e limpa a referência no banco de dados.
     """
+    empresa_id = getattr(empresa, "id", None) or getattr(current_user, "empresa_id", None)
     produto = db.query(Produto).filter(
         Produto.id == produto_id,
-        Produto.empresa_id == empresa.id
+        Produto.empresa_id == empresa_id
     ).first()
 
     if not produto:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
     if produto.imagem_nome:
-        storage_service.delete_product_image(produto.imagem_nome, empresa.id)
+        storage_service.delete_product_image(produto.imagem_nome, empresa_id)
 
     produto.imagem_nome = None
     produto.imagem_url = None

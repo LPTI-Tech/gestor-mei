@@ -65,6 +65,11 @@ def test_image_service_validation():
     assert not valido
     assert "corrompido" in msg or "inválida" in msg
 
+    # Arquivo acima do limite de 5 MB
+    valido, msg = validate_image_upload(b"0" * (5 * 1024 * 1024 + 10))
+    assert not valido
+    assert "5 MB" in msg
+
     # Imagem válida PNG
     png_bytes = _create_sample_png_bytes()
     valido, msg = validate_image_upload(png_bytes)

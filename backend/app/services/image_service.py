@@ -20,7 +20,7 @@ ALLOWED_IMAGE_TYPES = {
     "image/pjpeg": ".jpg",
 }
 
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB máximo antes da compressão
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB máximo antes da compressão
 
 
 def validate_image_upload(content: bytes, content_type: Optional[str] = None) -> Tuple[bool, str]:
@@ -28,7 +28,7 @@ def validate_image_upload(content: bytes, content_type: Optional[str] = None) ->
     Valida se os bytes correspondem a uma imagem válida e suportada.
     """
     if len(content) > MAX_FILE_SIZE_BYTES:
-        return False, "O arquivo excede o limite máximo permitido de 10 MB."
+        return False, "O arquivo excede o limite máximo permitido de 5 MB."
 
     if len(content) == 0:
         return False, "O arquivo enviado está vazio."
