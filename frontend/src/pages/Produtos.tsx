@@ -779,15 +779,29 @@ export const Produtos: React.FC = () => {
         onClose={handleCloseModal}
         maxWidth="sm"
         fullWidth
+        scroll="paper"
         PaperProps={{
           sx: {
             borderRadius: 3.5,
             boxShadow: '0 24px 60px rgba(7, 25, 51, 0.22)',
             overflow: 'hidden',
+            maxHeight: 'calc(100vh - 48px)',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
       >
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
           <DialogTitle
             sx={{
               display: 'flex',
@@ -797,6 +811,9 @@ export const Produtos: React.FC = () => {
               pb: 2,
               borderBottom: '1px solid',
               borderColor: 'divider',
+              flexShrink: 0,
+              bgcolor: 'background.paper',
+              zIndex: 1,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -830,7 +847,22 @@ export const Produtos: React.FC = () => {
             </IconButton>
           </DialogTitle>
 
-          <DialogContent sx={{ p: 3 }}>
+          <DialogContent
+            dividers
+            sx={{
+              p: 3,
+              flex: '1 1 auto',
+              overflowY: 'auto',
+              minHeight: 0,
+              '&::-webkit-scrollbar': {
+                width: 6,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'rgba(0,0,0,0.18)',
+                borderRadius: 3,
+              },
+            }}
+          >
             {/* SEÇÃO 1: Classificação Fiscal DASN-SIMEI */}
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ mb: 1 }}>
@@ -1205,6 +1237,9 @@ export const Produtos: React.FC = () => {
               display: 'flex',
               justifyContent: 'flex-end',
               gap: 1.5,
+              flexShrink: 0,
+              bgcolor: 'background.paper',
+              zIndex: 1,
             }}
           >
             <Button
