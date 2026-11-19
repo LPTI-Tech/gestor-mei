@@ -49,7 +49,7 @@ import {
   PersonAdd,
 } from '@mui/icons-material';
 import api from '../services/api';
-import { User, UserRole } from '../types';
+import { User, UserRole, EmpresaMasterListItem } from '../types';
 import { formatDateTime } from '../services/exportUtils';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,8 +65,9 @@ import {
 } from '../design-system';
 
 export const Usuarios: React.FC = () => {
-  const { user: currentUser, isMaster } = useAuth();
+  const { user: currentUser, isMaster, activeEmpresaId } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaMasterListItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -78,6 +79,7 @@ export const Usuarios: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('OPERATOR');
+  const [formEmpresaId, setFormEmpresaId] = useState<string>('');
   const [formAtivo, setFormAtivo] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -116,9 +118,22 @@ export const Usuarios: React.FC = () => {
     }
   };
 
+  const fetchEmpresas = async () => {
+    if (!isMaster) return;
+    try {
+      const res = await api.get<EmpresaMasterListItem[]>('/empresa/todas');
+      setEmpresas(res.data);
+    } catch (err: any) {
+      console.error('Erro ao carregar lista de empresas:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
-  }, []);
+    if (isMaster) {
+      fetchEmpresas();
+    }
+  }, [isMaster, activeEmpresaId]);
 
   // Handlers Modal Criar / Editar
   const handleOpenCreateModal = () => {
@@ -127,9 +142,13 @@ export const Usuarios: React.FC = () => {
     setFormEmail('');
     setFormPassword('');
     setFormRole('OPERATOR');
+    setFormEmpresaId('');
     setFormAtivo(true);
     setShowPassword(false);
     setFormError(null);
+    if (isMaster && empresas.length === 0) {
+      fetchEmpresas();
+    }
     setModalOpen(true);
   };
 
@@ -139,6 +158,7 @@ export const Usuarios: React.FC = () => {
     setFormEmail(u.email);
     setFormPassword('');
     setFormRole(u.role);
+    setFormEmpresaId(u.empresa_id ? String(u.empresa_id) : '');
     setFormAtivo(u.ativo);
     setShowPassword(false);
     setFormError(null);
@@ -148,6 +168,21 @@ export const Usuarios: React.FC = () => {
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // Validação de Empresa Destino para MASTER em Visão Global
+    let finalEmpresaId: number | undefined = undefined;
+    if (isMaster) {
+      if (activeEmpresaId) {
+        finalEmpresaId = Number(activeEmpresaId);
+      } else if (formRole !== 'MASTER') {
+        if (!formEmpresaId || !formEmpresaId.trim()) {
+          setFormError('Selecione uma empresa para vincular o novo usuário.');
+          return;
+        }
+        finalEmpresaId = Number(formEmpresaId);
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -162,13 +197,17 @@ export const Usuarios: React.FC = () => {
         await api.put(`/users/${editingUserId}`, payload);
         setFeedback({ type: 'success', text: `Dados de '${formNome}' atualizados com sucesso!` });
       } else {
-        await api.post('/users', {
+        const payload: any = {
           nome: formNome,
           email: formEmail,
           password: formPassword,
           role: formRole,
           ativo: formAtivo,
-        });
+        };
+        if (finalEmpresaId !== undefined) {
+          payload.empresa_id = finalEmpresaId;
+        }
+        await api.post('/users', payload);
         setFeedback({ type: 'success', text: `Usuário '${formNome}' cadastrado com sucesso!` });
       }
       setModalOpen(false);
@@ -783,6 +822,34 @@ export const Usuarios: React.FC = () => {
                 )}
               </Select>
             </FormControl>
+
+            {/* Seletor de Empresa Destino (Obrigatório para MASTER em Visão Global) */}
+            {isMaster && !activeEmpresaId && formRole !== 'MASTER' && (
+              <FormControl fullWidth margin="normal" required error={Boolean(formError && !formEmpresaId)}>
+                <InputLabel id="empresa-destino-label">Empresa Destino *</InputLabel>
+                <Select
+                  labelId="empresa-destino-label"
+                  value={formEmpresaId}
+                  label="Empresa Destino *"
+                  onChange={(e) => {
+                    setFormEmpresaId(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    <em>Selecione a empresa vinculada...</em>
+                  </MenuItem>
+                  {empresas.map((emp) => (
+                    <MenuItem key={emp.id} value={String(emp.id)}>
+                      {emp.nome_fantasia || emp.nome_empresarial} {emp.cnpj ? `(${emp.cnpj})` : ''}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, px: 0.5 }}>
+                  ℹ️ Em modo Visão Global, selecione a qual empresa cliente este usuário pertencerá.
+                </Typography>
+              </FormControl>
+            )}
 
             {!isMaster && (
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, px: 0.5 }}>
