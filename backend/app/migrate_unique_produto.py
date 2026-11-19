@@ -53,10 +53,10 @@ def run_migration():
                     print(f"     Desambiguando ID {leg[0]}: '{leg[1]}' -> '{novo_nome}'")
                     update_sql = text("""
                         UPDATE produtos
-                        SET nome = :novo_nome, ativo = 0
+                        SET nome = :novo_nome, ativo = :ativo
                         WHERE id = :id
                     """)
-                    conn.execute(update_sql, {"novo_nome": novo_nome, "id": leg[0]})
+                    conn.execute(update_sql, {"novo_nome": novo_nome, "ativo": False, "id": leg[0]})
             conn.commit()
             print("[MIGRATE UNIQUE PRODUTO] Desambiguação de duplicatas concluída com sucesso.")
         else:
