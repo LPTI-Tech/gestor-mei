@@ -18,25 +18,10 @@ def verify_google_credential(credential: str, client_id: Optional[str] = None) -
     Valida a credencial (ID Token) do Google emitida pelo Google Identity Services (GIS).
     Utiliza o endpoint oficial de validação criptográfica do Google (tokeninfo)
     garantindo verificação de assinatura, validade temporal e confirmação de e-mail verificado.
-    Suporta mock em ambiente de desenvolvimento/testes para execução autônoma.
     """
     clean_cred = credential.strip()
-    
-    # 1. Suporte a Mock em Desenvolvimento para testes unitários automatizados
-    if settings.is_development and clean_cred.startswith("mock-google-"):
-        parts = clean_cred.replace("mock-google-", "").split(":")
-        sub = parts[0] if len(parts) > 1 else f"google_mock_{parts[0]}"
-        email = parts[1] if len(parts) > 1 else parts[0]
-        return {
-            "provider": "GOOGLE",
-            "provider_user_id": sub,
-            "email": email.lower().strip(),
-            "name": f"Google User ({email})",
-            "picture_url": None,
-            "email_verified": True
-        }
 
-    # 2. Chamada ao endpoint oficial do Google Identity
+    # 1. Chamada ao endpoint oficial do Google Identity
     try:
         url = f"https://oauth2.googleapis.com/tokeninfo?id_token={clean_cred}"
         resp = requests.get(url, timeout=10)
@@ -87,25 +72,10 @@ def verify_microsoft_token(token: str, token_type: str = "access_token") -> Dict
     """
     Valida o token da Microsoft Identity Platform / Microsoft Entra ID.
     - Se access_token: consulta a API Microsoft Graph (https://graph.microsoft.com/v1.0/me).
-    - Suporta mock em ambiente de desenvolvimento/testes.
     """
     clean_token = token.strip()
 
-    # 1. Suporte a Mock em Desenvolvimento para testes unitários automatizados
-    if settings.is_development and clean_token.startswith("mock-microsoft-"):
-        parts = clean_token.replace("mock-microsoft-", "").split(":")
-        sub = parts[0] if len(parts) > 1 else f"ms_mock_{parts[0]}"
-        email = parts[1] if len(parts) > 1 else parts[0]
-        return {
-            "provider": "MICROSOFT",
-            "provider_user_id": sub,
-            "email": email.lower().strip(),
-            "name": f"Microsoft User ({email})",
-            "picture_url": None,
-            "email_verified": True
-        }
-
-    # 2. Chamada ao Microsoft Graph
+    # 1. Chamada ao Microsoft Graph
     headers = {"Authorization": f"Bearer {clean_token}"}
     try:
         resp = requests.get("https://graph.microsoft.com/v1.0/me", headers=headers, timeout=10)

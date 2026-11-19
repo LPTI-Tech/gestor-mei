@@ -10,11 +10,6 @@ import {
   InputAdornment,
   IconButton,
   Link,
-  useTheme,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import {
   Visibility,
@@ -71,8 +66,6 @@ const isDevOrHomolog = (): boolean => {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
   const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -88,13 +81,31 @@ export const Login: React.FC = () => {
     isDevOrHomolog() ? 'admin123' : ''
   );
 
-  // Modal de Simulação / Configuração OAuth (Fallback Dev)
-  const [oauthModalOpen, setOauthModalOpen] = useState(false);
-  const [oauthModalProvider, setOauthModalProvider] = useState<'google' | 'microsoft'>('google');
-  const [customOauthEmail, setCustomOauthEmail] = useState('drrestaurantebetim@hotmail.com');
-
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const microsoftClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
+
+  // Processa retorno do OAuth da Microsoft via redirect fragment (#access_token=...)
+  useEffect(() => {
+    if (window.location.hash && window.location.hash.includes('access_token=')) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const token = hashParams.get('access_token');
+      if (token) {
+        setSocialLoading('microsoft');
+        loginWithMicrosoft(token, 'access_token')
+          .then(() => {
+            window.history.replaceState(null, '', window.location.pathname);
+            navigate('/');
+          })
+          .catch((err) => {
+            window.history.replaceState(null, '', window.location.pathname);
+            setErrorMessage(getLoginErrorMessage(err));
+          })
+          .finally(() => {
+            setSocialLoading(null);
+          });
+      }
+    }
+  }, [loginWithMicrosoft, navigate]);
 
   // Carrega SDK do Google Identity Services dinamicamente se configurado
   useEffect(() => {
@@ -181,62 +192,34 @@ export const Login: React.FC = () => {
 
   const handleGoogleClick = () => {
     setErrorMessage(null);
-    if (googleClientId && (window as any).google?.accounts?.id) {
+    if (!googleClientId) {
+      setErrorMessage('Login com Google não configurado neste ambiente (VITE_GOOGLE_CLIENT_ID ausente).');
+      return;
+    }
+    if ((window as any).google?.accounts?.id) {
       try {
         (window as any).google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setOauthModalProvider('google');
-            setOauthModalOpen(true);
+          if (notification.isNotDisplayed()) {
+            setErrorMessage('Não foi possível exibir o prompt de login do Google. Verifique se popups ou cookies de terceiros estão bloqueados.');
           }
         });
       } catch (err) {
-        setOauthModalProvider('google');
-        setOauthModalOpen(true);
+        setErrorMessage('Falha ao inicializar o prompt do Google.');
       }
     } else {
-      setOauthModalProvider('google');
-      setOauthModalOpen(true);
+      setErrorMessage('O serviço de autenticação do Google não está disponível no momento.');
     }
   };
 
   const handleMicrosoftClick = () => {
     setErrorMessage(null);
-    if (microsoftClientId) {
-      const redirectUri = encodeURIComponent(`${window.location.origin}/login`);
-      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${microsoftClientId}&response_type=token&redirect_uri=${redirectUri}&scope=User.Read%20openid%20profile%20email&response_mode=fragment`;
-      window.location.href = authUrl;
-    } else {
-      setOauthModalProvider('microsoft');
-      setOauthModalOpen(true);
+    if (!microsoftClientId) {
+      setErrorMessage('Login com Microsoft não configurado neste ambiente (VITE_MICROSOFT_CLIENT_ID ausente).');
+      return;
     }
-  };
-
-  const handleExecuteSocialLoginMock = async () => {
-    setOauthModalOpen(false);
-    setErrorMessage(null);
-    const targetEmail = customOauthEmail.trim().toLowerCase();
-
-    if (oauthModalProvider === 'google') {
-      setSocialLoading('google');
-      try {
-        await loginWithGoogle(`mock-google-uid_${Date.now()}:${targetEmail}`);
-        navigate('/');
-      } catch (err: any) {
-        setErrorMessage(getLoginErrorMessage(err));
-      } finally {
-        setSocialLoading(null);
-      }
-    } else {
-      setSocialLoading('microsoft');
-      try {
-        await loginWithMicrosoft(`mock-microsoft-uid_${Date.now()}:${targetEmail}`, 'access_token');
-        navigate('/');
-      } catch (err: any) {
-        setErrorMessage(getLoginErrorMessage(err));
-      } finally {
-        setSocialLoading(null);
-      }
-    }
+    const redirectUri = encodeURIComponent(`${window.location.origin}/login`);
+    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${microsoftClientId}&response_type=token&redirect_uri=${redirectUri}&scope=User.Read%20openid%20profile%20email&response_mode=fragment`;
+    window.location.href = authUrl;
   };
 
   // LOGIN 2.3: Inputs com fundo branco, border-radius 6px, altura 42px
@@ -331,8 +314,9 @@ export const Login: React.FC = () => {
           fullWidth
           variant="outlined"
           size="small"
-          disabled={loading || socialLoading !== null}
+          disabled={loading || socialLoading !== null || !googleClientId}
           onClick={handleGoogleClick}
+          title={!googleClientId ? 'Login com Google indisponível (VITE_GOOGLE_CLIENT_ID não configurado)' : undefined}
           sx={{
             height: 38,
             borderRadius: '6px',
@@ -346,6 +330,10 @@ export const Login: React.FC = () => {
             '&:hover': {
               borderColor: '#4285F4',
               bgcolor: 'rgba(66, 133, 244, 0.06)',
+            },
+            '&.Mui-disabled': {
+              opacity: 0.6,
+              bgcolor: '#F8FAFC',
             },
           }}
         >
@@ -361,8 +349,9 @@ export const Login: React.FC = () => {
           fullWidth
           variant="outlined"
           size="small"
-          disabled={loading || socialLoading !== null}
+          disabled={loading || socialLoading !== null || !microsoftClientId}
           onClick={handleMicrosoftClick}
+          title={!microsoftClientId ? 'Login com Microsoft indisponível (VITE_MICROSOFT_CLIENT_ID não configurado)' : undefined}
           sx={{
             height: 38,
             borderRadius: '6px',
@@ -377,6 +366,10 @@ export const Login: React.FC = () => {
               borderColor: '#05a6f0',
               bgcolor: 'rgba(5, 166, 240, 0.06)',
             },
+            '&.Mui-disabled': {
+              opacity: 0.6,
+              bgcolor: '#F8FAFC',
+            },
           }}
         >
           {socialLoading === 'microsoft' ? (
@@ -387,6 +380,25 @@ export const Login: React.FC = () => {
           <span>Microsoft</span>
         </Button>
       </Box>
+
+      {(!googleClientId || !microsoftClientId) && (
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            textAlign: 'center',
+            color: '#64748b',
+            fontSize: '0.72rem',
+            mb: 0.8,
+          }}
+        >
+          {!googleClientId && !microsoftClientId
+            ? 'Login social indisponível neste ambiente (credenciais OAuth não configuradas).'
+            : !googleClientId
+            ? 'Login com Google indisponível: credencial não configurada.'
+            : 'Login com Microsoft indisponível: credencial não configurada.'}
+        </Typography>
+      )}
 
       {/* Divisor Visual: ──────── ou ──────── */}
       <Box
@@ -553,87 +565,6 @@ export const Login: React.FC = () => {
           )}
         </Button>
       </Box>
-
-      {/* ==================================================================== */}
-      {/* DIÁLOGO ASSISTIDO DE LOGIN SOCIAL / HOMOLOGAÇÃO MULTIEMPRESA */}
-      {/* ==================================================================== */}
-      <Dialog
-        open={oauthModalOpen}
-        onClose={() => setOauthModalOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            p: 1,
-            bgcolor: isDark ? '#1e293b' : '#ffffff',
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
-          {oauthModalProvider === 'google' ? <GoogleIcon /> : <MicrosoftIcon />}
-          <span>Login com {oauthModalProvider === 'google' ? 'Google' : 'Microsoft'}</span>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            A autenticação social vincula instantaneamente o seu perfil ao tenant da sua empresa através de OpenID Connect.
-          </Typography>
-
-          <Box sx={{ mb: 2.5 }}>
-            <Typography variant="caption" fontWeight={700} sx={{ display: 'block', mb: 0.8 }}>
-              E-mail da sua conta {oauthModalProvider === 'google' ? 'Google' : 'Microsoft'}:
-            </Typography>
-            <TextField
-              fullWidth
-              size="small"
-              value={customOauthEmail}
-              onChange={(e) => setCustomOauthEmail(e.target.value)}
-              placeholder="ex: drrestaurantebetim@hotmail.com"
-            />
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setCustomOauthEmail('drrestaurantebetim@hotmail.com')}
-              sx={{ textTransform: 'none', fontSize: '0.75rem', borderRadius: 2 }}
-            >
-              Rosely (RD Restaurante)
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setCustomOauthEmail('admin@gestormei.com.br')}
-              sx={{ textTransform: 'none', fontSize: '0.75rem', borderRadius: 2 }}
-            >
-              Leonidas (Admin)
-            </Button>
-          </Box>
-
-          <Alert severity="info" sx={{ mt: 2, fontSize: '0.78rem' }}>
-            ℹ️ <strong>Vinculação Multiempresa:</strong> O e-mail informado será verificado pelo provedor e vinculado automaticamente ao cadastro da sua empresa. Se o e-mail não estiver cadastrado, o acesso será bloqueado por segurança.
-          </Alert>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setOauthModalOpen(false)} color="inherit" sx={{ fontWeight: 600 }}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleExecuteSocialLoginMock}
-            sx={{
-              fontWeight: 700,
-              bgcolor: oauthModalProvider === 'google' ? '#4285F4' : '#05a6f0',
-              '&:hover': {
-                bgcolor: oauthModalProvider === 'google' ? '#3367d6' : '#0487c5',
-              },
-            }}
-          >
-            Autenticar Agora
-          </Button>
-        </DialogActions>
-      </Dialog>
     </AuthLayout>
   );
 };

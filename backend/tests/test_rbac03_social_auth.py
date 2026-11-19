@@ -1,7 +1,10 @@
 import pytest
+from unittest.mock import patch, MagicMock
 from datetime import datetime
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy import text
+from app.main import app
 from app.database import SessionLocal, Base, engine
 from app.models.user import User, UserRole
 from app.models.empresa import Empresa
@@ -16,6 +19,11 @@ from app.services.oauth_service import (
 from app.routers.empresas import listar_todas_empresas_master
 from app.routers.auth import desvincular_provedor, listar_provedores_usuario
 from app.security import hash_password
+
+
+@pytest.fixture(scope="module")
+def client():
+    return TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
@@ -61,22 +69,120 @@ def test_oauth_migration_runs():
     assert "auditoria_login" in Base.metadata.tables
 
 
-def test_verify_google_credential_mock():
-    """Testa validação de credencial Google em modo mock de desenvolvimento."""
-    res = verify_google_credential("mock-google-sub12345:drrestaurantebetim_test@hotmail.com")
-    assert res["provider"] == "GOOGLE"
-    assert res["provider_user_id"] == "sub12345"
-    assert res["email"] == "drrestaurantebetim_test@hotmail.com"
-    assert res["email_verified"] is True
+def test_verify_google_credential_rejects_mock():
+    """Garante que mock-google-* é rejeitado e não autentica (SEC-CRIT-04)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 400
+        mock_get.return_value.text = '{"error": "invalid_token"}'
+        with pytest.raises(HTTPException) as exc_info:
+            verify_google_credential("mock-google-sub12345:drrestaurantebetim_test@hotmail.com")
+        assert exc_info.value.status_code == 401
+        assert "Token de autenticação do Google inválido" in exc_info.value.detail
 
 
-def test_verify_microsoft_token_mock():
-    """Testa validação de token Microsoft em modo mock de desenvolvimento."""
-    res = verify_microsoft_token("mock-microsoft-ms98765:drrestaurantebetim_test@hotmail.com")
-    assert res["provider"] == "MICROSOFT"
-    assert res["provider_user_id"] == "ms98765"
-    assert res["email"] == "drrestaurantebetim_test@hotmail.com"
-    assert res["email_verified"] is True
+def test_verify_google_credential_legitimate_internal_mock():
+    """Valida fluxo legítimo do Google via mock interno de teste (sem bypass HTTP)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "sub": "sub12345",
+            "email": "drrestaurantebetim_test@hotmail.com",
+            "email_verified": "true",
+            "name": "Rosely Freitas (Google)",
+            "picture": None,
+        }
+        res = verify_google_credential("token_google_legitimo")
+        assert res["provider"] == "GOOGLE"
+        assert res["provider_user_id"] == "sub12345"
+        assert res["email"] == "drrestaurantebetim_test@hotmail.com"
+        assert res["email_verified"] is True
+
+
+def test_verify_microsoft_token_rejects_mock():
+    """Garante que mock-microsoft-* é rejeitado e não autentica (SEC-CRIT-04)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 401
+        mock_get.return_value.text = '{"error": "Unauthorized"}'
+        with pytest.raises(HTTPException) as exc_info:
+            verify_microsoft_token("mock-microsoft-ms98765:drrestaurantebetim_test@hotmail.com")
+        assert exc_info.value.status_code == 401
+        assert "Token da conta Microsoft inválido" in exc_info.value.detail
+
+
+def test_verify_microsoft_token_legitimate_internal_mock():
+    """Valida fluxo legítimo da Microsoft via mock interno de teste (sem bypass HTTP)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "id": "ms98765",
+            "mail": "drrestaurantebetim_test@hotmail.com",
+            "displayName": "Rosely Freitas (Microsoft)",
+        }
+        res = verify_microsoft_token("token_microsoft_legitimo")
+        assert res["provider"] == "MICROSOFT"
+        assert res["provider_user_id"] == "ms98765"
+        assert res["email"] == "drrestaurantebetim_test@hotmail.com"
+        assert res["email_verified"] is True
+
+
+def test_http_endpoint_google_mock_rejected_401(client):
+    """Garante que POST /api/auth/google com credencial mock retorna 401 e nenhum JWT (SEC-CRIT-04)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 400
+        mock_get.return_value.text = '{"error": "invalid_token"}'
+        resp = client.post("/api/auth/google", json={"credential": "mock-google-teste"})
+        assert resp.status_code == 401
+        data = resp.json()
+        assert "access_token" not in data
+        assert "Token de autenticação do Google inválido" in data.get("detail", "")
+
+
+def test_http_endpoint_microsoft_mock_rejected_401(client):
+    """Garante que POST /api/auth/microsoft com token mock retorna 401 e nenhum JWT (SEC-CRIT-04)."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 401
+        mock_get.return_value.text = '{"error": "Unauthorized"}'
+        resp = client.post("/api/auth/microsoft", json={"token": "mock-microsoft-teste"})
+        assert resp.status_code == 401
+        data = resp.json()
+        assert "access_token" not in data
+        assert "Token da conta Microsoft inválido" in data.get("detail", "")
+
+
+def test_http_endpoint_google_legitimate_authenticated(client):
+    """Garante que POST /api/auth/google com token validado pelo Google gera JWT para usuário cadastrado."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "sub": "google_uid_endpoint_test",
+            "email": "drrestaurantebetim_test@hotmail.com",
+            "email_verified": "true",
+            "name": "Rosely Freitas (Google)",
+            "picture": None,
+        }
+        resp = client.post("/api/auth/google", json={"credential": "real_google_jwt_credential"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        assert data["email"] == "drrestaurantebetim_test@hotmail.com"
+
+
+def test_http_endpoint_microsoft_legitimate_authenticated(client):
+    """Garante que POST /api/auth/microsoft com token validado pela Microsoft gera JWT para usuário cadastrado."""
+    with patch("requests.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "id": "ms_uid_endpoint_test",
+            "mail": "drrestaurantebetim_test@hotmail.com",
+            "displayName": "Rosely Freitas (MS)",
+        }
+        resp = client.post("/api/auth/microsoft", json={"token": "real_microsoft_graph_token"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        assert data["email"] == "drrestaurantebetim_test@hotmail.com"
 
 
 def test_authenticate_or_link_social_user_google():
