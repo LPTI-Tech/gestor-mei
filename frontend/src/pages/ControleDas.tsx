@@ -12,6 +12,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Menu,
   MenuItem,
   Table,
   TableBody,
@@ -42,6 +43,8 @@ import {
   Download,
   Search,
   FileText,
+  FileSpreadsheet,
+  ChevronDown,
   CreditCard,
   Edit3,
   X,
@@ -80,6 +83,7 @@ export const ControleDas: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>('TODOS');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
 
   // Modais
   const [openPayModal, setOpenPayModal] = useState<boolean>(false);
@@ -701,44 +705,23 @@ export const ControleDas: React.FC = () => {
         title="Demonstrativo de Guias Mensais DAS"
         subtitle={`Exibindo ${filteredGuias.length} guia(s) no exercício de ${selectedYear}`}
         icon={<FileText size={20} />}
-        action={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Download size={15} />}
-              onClick={() => handleExport('excel')}
-              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
-            >
-              Excel
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Download size={15} />}
-              onClick={() => handleExport('csv')}
-              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 700 }}
-            >
-              CSV
-            </Button>
-          </Box>
-        }
         padding={0}
         sx={{ overflow: 'hidden' }}
       >
-        {/* Barra de Filtros Interna */}
+        {/* Barra de Ferramentas e Filtros Unificada (Sentinel Design System) */}
         <Box
           sx={{
             p: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
+            flexDirection: { xs: 'column', md: 'row' },
             justifyContent: 'space-between',
             gap: 2,
-            alignItems: { xs: 'stretch', sm: 'center' },
+            alignItems: { xs: 'stretch', md: 'center' },
           }}
         >
+          {/* Lado Esquerdo: Busca Textual */}
           <TextField
             size="small"
             placeholder="Buscar por mês ou observação..."
@@ -750,25 +733,104 @@ export const ControleDas: React.FC = () => {
               ),
             }}
             sx={{
-              minWidth: { xs: '100%', sm: 280 },
+              minWidth: { xs: '100%', sm: 300 },
+              maxWidth: { md: 380 },
+              flexGrow: { xs: 1, md: 0 },
               '& .MuiOutlinedInput-root': { borderRadius: '10px' },
             }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 170 }}>
-            <InputLabel>Status da Guia</InputLabel>
-            <Select
-              value={filterStatus}
-              label="Status da Guia"
-              onChange={(e) => setFilterStatus(e.target.value)}
-              sx={{ borderRadius: '10px' }}
+          {/* Lado Direito: Filtro de Status + Botão de Exportação Consolidado */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'row' },
+              gap: 1.5,
+              alignItems: 'center',
+              justifyContent: { xs: 'space-between', md: 'flex-end' },
+              width: { xs: '100%', md: 'auto' },
+            }}
+          >
+            <FormControl size="small" sx={{ minWidth: { xs: '55%', sm: 180 } }}>
+              <InputLabel>Status da Guia</InputLabel>
+              <Select
+                value={filterStatus}
+                label="Status da Guia"
+                onChange={(e) => setFilterStatus(e.target.value)}
+                sx={{ borderRadius: '10px' }}
+              >
+                <MenuItem value="TODOS">Todos os Status</MenuItem>
+                <MenuItem value="Pago">Pago</MenuItem>
+                <MenuItem value="Pendente">Pendente</MenuItem>
+                <MenuItem value="Atrasado">Atrasado</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Download size={16} />}
+              endIcon={<ChevronDown size={15} />}
+              onClick={(e) => setExportAnchorEl(e.currentTarget)}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 700,
+                height: 40,
+                px: 2,
+                minWidth: { xs: '40%', sm: 130 },
+                borderColor: 'divider',
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                },
+              }}
             >
-              <MenuItem value="TODOS">Todos os Status</MenuItem>
-              <MenuItem value="Pago">Pago</MenuItem>
-              <MenuItem value="Pendente">Pendente</MenuItem>
-              <MenuItem value="Atrasado">Atrasado</MenuItem>
-            </Select>
-          </FormControl>
+              Exportar
+            </Button>
+
+            {/* Menu Flutuante de Exportação */}
+            <Menu
+              anchorEl={exportAnchorEl}
+              open={Boolean(exportAnchorEl)}
+              onClose={() => setExportAnchorEl(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                elevation: 4,
+                sx: {
+                  borderRadius: '12px',
+                  mt: 0.8,
+                  minWidth: 200,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  p: 0.5,
+                },
+              }}
+            >
+              <MenuItem
+                onClick={() => {
+                  setExportAnchorEl(null);
+                  handleExport('excel');
+                }}
+                sx={{ borderRadius: '8px', py: 1, gap: 1.5, fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                <FileSpreadsheet size={18} color="#10B981" />
+                Exportar Excel (.xlsx)
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setExportAnchorEl(null);
+                  handleExport('csv');
+                }}
+                sx={{ borderRadius: '8px', py: 1, gap: 1.5, fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                <FileText size={18} color="#6366F1" />
+                Exportar CSV (.csv)
+              </MenuItem>
+            </Menu>
+          </Box>
         </Box>
 
         {loading ? (
