@@ -142,18 +142,47 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           my: 'auto',
         }}
       >
-        {/* LOGO TOTALMENTE LIVRE — SEM CAIXA */}
+        {/* CONTAINER DA LOGO COM GLASS PRÓPRIO E HALO TECNOLÓGICO */}
         <Box
           sx={{
             width: '100%',
+            maxWidth: 380,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
+            position: 'relative',
             mb: 1.5,
+            py: 1.2,
+            px: 2,
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.36), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)',
+            overflow: 'hidden',
             textAlign: 'center',
           }}
         >
+          {/* HALO TECNOLÓGICO SUAVE ATRÁS DA LOGO (GLOW RADIAL CIANO) */}
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 220,
+              height: 100,
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse at center, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 70%)',
+              filter: 'blur(14px)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+
           <Box
             component="img"
             src={logoOficial}
@@ -163,8 +192,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               height: 'auto',
               display: 'block',
               margin: '0 auto',
-              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4))',
-              mb: 0.6,
+              filter: 'drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5))',
+              mb: 0.5,
+              position: 'relative',
+              zIndex: 1,
             }}
           />
 
@@ -176,29 +207,46 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               letterSpacing: '-0.01em',
               lineHeight: 1.2,
               textAlign: 'center',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
             A gestão completa do seu negócio MEI
           </Typography>
         </Box>
 
-        {/* CARD CENTRAL DE LOGIN — GLASS PREMIUM TECNOLÓGICO */}
+        {/* CARD CENTRAL DE LOGIN — GLASS PREMIUM REFINADO */}
         <Card
           elevation={0}
           sx={{
             width: '100%',
             borderRadius: '16px',
-            border: '1px solid rgba(56, 189, 248, 0.15)',
-            background: 'rgba(15, 23, 42, 0.72)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(56, 189, 248, 0.05)',
+            border: '1px solid rgba(56, 189, 248, 0.28)',
+            background: 'rgba(30, 41, 59, 0.82)',
+            backdropFilter: 'blur(22px)',
+            WebkitBackdropFilter: 'blur(22px)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 24px 0 rgba(56, 189, 248, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
             overflow: 'hidden',
             position: 'relative',
             zIndex: 10,
           }}
         >
-          <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+          {/* LEVE GRADIENTE INTERNO NO TOPO DO CARD PARA DESTAQUE DA SEÇÃO */}
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 72,
+              background: 'linear-gradient(180deg, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0) 100%)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+
+          <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } }, position: 'relative', zIndex: 1 }}>
             {/* Título & Subtítulo Interno */}
             <Box sx={{ mb: 1.5, textAlign: 'left' }}>
               <Typography
