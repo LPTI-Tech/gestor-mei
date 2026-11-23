@@ -222,40 +222,40 @@ export const Login: React.FC = () => {
     window.location.href = authUrl;
   };
 
-  // LOGIN 2.3: Inputs com fundo branco, border-radius 6px, altura 42px
+  // LOGIN SAAS PREMIUM: Inputs com Dark Glass, border-radius 8px, altura 42px
   const sentinelInputSx = {
     '& .MuiOutlinedInput-root': {
-      borderRadius: '6px',
+      borderRadius: '8px',
       height: 42,
-      color: '#0F172A',
-      bgcolor: '#FFFFFF',
+      color: '#FFFFFF',
+      bgcolor: 'rgba(2, 6, 23, 0.7)',
       transition: 'all 0.2s ease-in-out',
       '& fieldset': {
-        borderColor: '#CBD5E1',
+        borderColor: 'rgba(56, 189, 248, 0.22)',
         transition: 'all 0.2s ease-in-out',
       },
       '&:hover': {
-        bgcolor: '#FAFAFA',
+        bgcolor: 'rgba(2, 6, 23, 0.8)',
       },
       '&:hover fieldset': {
-        borderColor: '#94a3b8',
+        borderColor: 'rgba(56, 189, 248, 0.45)',
       },
       '&.Mui-focused': {
-        bgcolor: '#FFFFFF !important',
-        color: '#0F172A !important',
-        boxShadow: '0 0 0 3px rgba(2, 132, 199, 0.15)',
+        bgcolor: 'rgba(2, 6, 23, 0.9) !important',
+        color: '#FFFFFF !important',
+        boxShadow: '0 0 0 3px rgba(56, 189, 248, 0.2)',
       },
       '&.Mui-focused fieldset': {
-        borderColor: '#0284c7 !important',
+        borderColor: '#38bdf8 !important',
         borderWidth: '1.5px',
       },
       '& input': {
-        color: '#0F172A !important',
+        color: '#FFFFFF !important',
         fontSize: '0.84rem',
         backgroundColor: 'transparent !important',
         '&:focus': {
           backgroundColor: 'transparent !important',
-          color: '#0F172A !important',
+          color: '#FFFFFF !important',
           outline: 'none',
         },
       },
@@ -265,9 +265,9 @@ export const Login: React.FC = () => {
         fontSize: '0.8rem',
       },
       '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: '0 0 0 1000px #FFFFFF inset !important',
-        WebkitTextFillColor: '#0F172A !important',
-        caretColor: '#0F172A',
+        WebkitBoxShadow: '0 0 0 1000px #090e17 inset !important',
+        WebkitTextFillColor: '#FFFFFF !important',
+        caretColor: '#FFFFFF',
         transition: 'background-color 5000s ease-in-out 0s',
       },
     },
@@ -283,12 +283,13 @@ export const Login: React.FC = () => {
           severity="error"
           onClose={() => setErrorMessage(null)}
           sx={{
-            mb: 2,
+            mb: 1.5,
             py: 0.5,
             borderRadius: 2,
             borderLeft: '4px solid #ef4444',
-            bgcolor: '#fef2f2',
-            color: '#991b1b',
+            bgcolor: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#fecaca',
             fontSize: '0.82rem',
             '& .MuiAlert-icon': {
               color: '#ef4444',
@@ -319,21 +320,22 @@ export const Login: React.FC = () => {
           title={!googleClientId ? 'Login com Google indisponível (VITE_GOOGLE_CLIENT_ID não configurado)' : undefined}
           sx={{
             height: 38,
-            borderRadius: '6px',
+            borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '0.82rem',
-            borderColor: '#CBD5E1',
-            bgcolor: '#FFFFFF',
-            color: '#374151',
+            borderColor: 'rgba(56, 189, 248, 0.2)',
+            bgcolor: 'rgba(2, 6, 23, 0.65)',
+            color: '#F8FAFC',
             boxShadow: 'none',
             '&:hover': {
-              borderColor: '#4285F4',
-              bgcolor: 'rgba(66, 133, 244, 0.06)',
+              borderColor: '#38bdf8',
+              bgcolor: 'rgba(56, 189, 248, 0.1)',
             },
             '&.Mui-disabled': {
-              opacity: 0.6,
-              bgcolor: '#F8FAFC',
+              opacity: 0.5,
+              bgcolor: 'rgba(2, 6, 23, 0.3)',
+              color: '#64748b',
             },
           }}
         >
@@ -354,21 +356,22 @@ export const Login: React.FC = () => {
           title={!microsoftClientId ? 'Login com Microsoft indisponível (VITE_MICROSOFT_CLIENT_ID não configurado)' : undefined}
           sx={{
             height: 38,
-            borderRadius: '6px',
+            borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '0.82rem',
-            borderColor: '#CBD5E1',
-            bgcolor: '#FFFFFF',
-            color: '#374151',
+            borderColor: 'rgba(56, 189, 248, 0.2)',
+            bgcolor: 'rgba(2, 6, 23, 0.65)',
+            color: '#F8FAFC',
             boxShadow: 'none',
             '&:hover': {
-              borderColor: '#05a6f0',
-              bgcolor: 'rgba(5, 166, 240, 0.06)',
+              borderColor: '#38bdf8',
+              bgcolor: 'rgba(56, 189, 248, 0.1)',
             },
             '&.Mui-disabled': {
-              opacity: 0.6,
-              bgcolor: '#F8FAFC',
+              opacity: 0.5,
+              bgcolor: 'rgba(2, 6, 23, 0.3)',
+              color: '#64748b',
             },
           }}
         >
@@ -409,7 +412,7 @@ export const Login: React.FC = () => {
           '::before, ::after': {
             content: '""',
             flex: 1,
-            borderBottom: '1px solid #E2E8F0',
+            borderBottom: '1px solid rgba(56, 189, 248, 0.15)',
           },
         }}
       >
@@ -439,7 +442,7 @@ export const Login: React.FC = () => {
               mb: 0.2,
               fontWeight: 600,
               fontSize: '0.74rem',
-              color: '#374151',
+              color: '#E2E8F0',
             }}
           >
             Email
@@ -476,7 +479,7 @@ export const Login: React.FC = () => {
               sx={{
                 fontWeight: 600,
                 fontSize: '0.74rem',
-                color: '#374151',
+                color: '#E2E8F0',
               }}
             >
               Senha
@@ -489,8 +492,8 @@ export const Login: React.FC = () => {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.72rem',
-                color: '#0284c7',
-                '&:hover': { color: '#0369a1', textDecoration: 'underline' },
+                color: '#38bdf8',
+                '&:hover': { color: '#7dd3fc', textDecoration: 'underline' },
               }}
             >
               Esqueceu a senha?
@@ -520,7 +523,7 @@ export const Login: React.FC = () => {
                     edge="end"
                     tabIndex={-1}
                     size="small"
-                    sx={{ color: '#64748b' }}
+                    sx={{ color: '#94a3b8', '&:hover': { color: '#38bdf8' } }}
                   >
                     {showPassword ? <VisibilityOff sx={{ fontSize: 16 }} /> : <Visibility sx={{ fontSize: 16 }} />}
                   </IconButton>
@@ -543,15 +546,20 @@ export const Login: React.FC = () => {
             height: 42,
             fontWeight: 700,
             fontSize: '0.9rem',
-            borderRadius: '6px',
+            borderRadius: '8px',
             textTransform: 'none',
-            background: '#0284c7',
-            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: '#FFFFFF',
+            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.45)',
             transition: 'all 0.2s ease',
             '&:hover': {
-              background: '#0369a1',
-              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.45)',
+              background: 'linear-gradient(135deg, #0369a1 0%, #075985 100%)',
+              boxShadow: '0 6px 20px rgba(2, 132, 199, 0.6)',
               transform: 'translateY(-1px)',
+            },
+            '&.Mui-disabled': {
+              background: 'rgba(2, 132, 199, 0.4)',
+              color: 'rgba(255, 255, 255, 0.6)',
             },
           }}
         >
