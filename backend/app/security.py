@@ -1,7 +1,9 @@
 import uuid
 import bcrypt
+import re
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
+from fastapi import HTTPException, status
 from jose import jwt, JWTError
 from app.config import settings
 
@@ -17,6 +19,70 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(pw_bytes, hashed_password.encode("utf-8"))
     except Exception:
         return False
+
+def validate_password_complexity(
+    nova_senha: str,
+    senha_atual: Optional[str] = None,
+    user_hashed_password: Optional[str] = None
+) -> None:
+    """
+    Valida política de segurança de senhas da Sprint SEC-01:
+    - Mínimo de 8 caracteres
+    - Pelo menos uma letra maiúscula (A-Z)
+    - Pelo menos uma letra minúscula (a-z)
+    - Pelo menos um dígito numérico (0-9)
+    - Máximo de 72 bytes em UTF-8 (sem truncamento silencioso)
+    - Diferente da senha atual
+    """
+    if not nova_senha or nova_senha.isspace():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha não pode ser vazia."
+        )
+
+    # Limite rigoroso de 72 bytes UTF-8 (evita truncamento silencioso do Bcrypt em ASCII ou multibyte)
+    encoded_bytes = nova_senha.encode("utf-8")
+    if len(encoded_bytes) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha excede o limite máximo permitido de 72 bytes de segurança."
+        )
+
+    if len(nova_senha) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve possuir no mínimo 8 caracteres."
+        )
+
+    if not re.search(r"[A-Z]", nova_senha):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve conter pelo menos uma letra maiúscula."
+        )
+
+    if not re.search(r"[a-z]", nova_senha):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve conter pelo menos uma letra minúscula."
+        )
+
+    if not re.search(r"[0-9]", nova_senha):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve conter pelo menos um número."
+        )
+
+    if senha_atual is not None and nova_senha == senha_atual:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha não pode ser igual à senha provisória/atual."
+        )
+
+    if user_hashed_password and verify_password(nova_senha, user_hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha não pode ser igual à senha provisória/atual."
+        )
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """

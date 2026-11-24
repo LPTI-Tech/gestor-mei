@@ -31,6 +31,7 @@ import { RelatorioMei } from './pages/RelatorioMei';
 import { SaudeNegocioPage } from './pages/SaudeNegocio';
 import { Usuarios } from './pages/Usuarios';
 import { Configuracoes } from './pages/Configuracoes';
+import { TrocarSenhaPrimeiroAcesso } from './pages/TrocarSenhaPrimeiroAcesso';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -41,7 +42,7 @@ const ProtectedRoute: React.FC<{
   adminOnly = false,
   adminOrConsultorOnly = false,
 }) => {
-  const { isAuthenticated, isAdmin, isConsultor, isOperator, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isConsultor, isOperator, mustChangePassword, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -55,12 +56,39 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/login" replace />;
   }
 
+  if (mustChangePassword) {
+    return <Navigate to="/trocar-senha-primeiro-acesso" replace />;
+  }
+
   if (adminOnly && !isAdmin) {
     return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
   }
 
   if (adminOrConsultorOnly && !isAdmin && !isConsultor) {
     return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Guarda de acesso à tela de troca obrigatória de senha no primeiro acesso
+const PasswordChangeGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, mustChangePassword, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!mustChangePassword) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -87,7 +115,10 @@ const DashboardGuard: React.FC = () => {
 
 // Redirecionamento de rotas desconhecidas
 const FallbackRoute: React.FC = () => {
-  const { isOperator } = useAuth();
+  const { isOperator, mustChangePassword, isAuthenticated } = useAuth();
+  if (isAuthenticated && mustChangePassword) {
+    return <Navigate to="/trocar-senha-primeiro-acesso" replace />;
+  }
   return <Navigate to={isOperator ? "/pdv" : "/"} replace />;
 };
 
@@ -100,6 +131,14 @@ export const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+            <Route
+              path="/trocar-senha-primeiro-acesso"
+              element={
+                <PasswordChangeGuard>
+                  <TrocarSenhaPrimeiroAcesso />
+                </PasswordChangeGuard>
+              }
+            />
 
             <Route
               path="/"

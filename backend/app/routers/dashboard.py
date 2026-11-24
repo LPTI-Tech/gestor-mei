@@ -12,7 +12,7 @@ from app.models.produto import Produto
 from app.models.das import DasMensal
 from app.routers.das import sincronizar_e_garantir_ano
 from app.schemas.dashboard import DashboardMetricsResponse, ChartPoint, BreakdownItem
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_active_password
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -22,7 +22,7 @@ MESES_NOMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "O
 def get_dashboard_metrics(
     x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_active_password)
 ):
     empresa_id = current_user.empresa_id
     if current_user.role in [UserRole.MASTER, UserRole.CONSULTOR] and x_empresa_id:

@@ -41,7 +41,8 @@ def _formatar_usuario_response(u: User) -> UserResponse:
         created_at=u.created_at,
         ultimo_acesso=u.ultimo_acesso,
         criado_por_id=u.criado_por_id,
-        criado_por_nome=criador_nome
+        criado_por_nome=criador_nome,
+        must_change_password=getattr(u, "must_change_password", False)
     )
 
 
@@ -151,6 +152,8 @@ def create_user(
         hashed_password=hash_password(data.password),
         role=data.role,
         ativo=data.ativo,
+        must_change_password=True,
+        password_changed_at=None,
         criado_por_id=current_user.id,
         created_at=datetime.utcnow()
     )
@@ -240,6 +243,8 @@ def update_user(
     # Atualização de senha
     if "password" in update_data and update_data["password"]:
         user.hashed_password = hash_password(update_data.pop("password"))
+        user.must_change_password = True
+        user.password_changed_at = None
 
     for key, value in update_data.items():
         if key not in ["email", "password"]:
@@ -279,6 +284,8 @@ def redefinir_senha_usuario(
         )
 
     user.hashed_password = hash_password(data.nova_senha)
+    user.must_change_password = True
+    user.password_changed_at = None
     db.commit()
 
     return {"message": f"Senha do usuário '{user.nome}' redefinida com sucesso."}

@@ -34,6 +34,7 @@ class UserResponse(UserBase):
     ultimo_acesso: Optional[datetime] = None
     criado_por_id: Optional[int] = None
     criado_por_nome: Optional[str] = None
+    must_change_password: bool = False
 
     class Config:
         from_attributes = True

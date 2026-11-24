@@ -236,6 +236,8 @@ def criar_empresa_master(
                 hashed_password=hash_password(data.senha_owner),
                 role=UserRole.OWNER,
                 ativo=True,
+                must_change_password=True,
+                password_changed_at=None,
                 criado_por_id=master_user.id
             )
             db.add(owner)

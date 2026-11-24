@@ -74,12 +74,32 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear token on unauthorized
-      localStorage.removeItem('gestor_mei_token');
-      localStorage.removeItem('gestor_mei_user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    if (error.response) {
+      if (error.response.status === 401) {
+        // Clear token on unauthorized
+        localStorage.removeItem('gestor_mei_token');
+        localStorage.removeItem('gestor_mei_user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      } else if (
+        error.response.status === 403 &&
+        error.response.data?.detail === 'PASSWORD_CHANGE_REQUIRED'
+      ) {
+        // Atualiza a sessão local para refletir a exigência do backend antes de redirecionar
+        try {
+          const userStr = localStorage.getItem('gestor_mei_user');
+          if (userStr) {
+            const userObj = JSON.parse(userStr);
+            userObj.must_change_password = true;
+            localStorage.setItem('gestor_mei_user', JSON.stringify(userObj));
+          }
+        } catch (_) {}
+
+        // Defesa em profundidade: redireciona para a tela de troca obrigatória de senha
+        if (window.location.pathname !== '/trocar-senha-primeiro-acesso') {
+          window.location.href = '/trocar-senha-primeiro-acesso';
+        }
       }
     }
     return Promise.reject(error);

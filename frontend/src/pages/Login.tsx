@@ -92,9 +92,13 @@ export const Login: React.FC = () => {
       if (token) {
         setSocialLoading('microsoft');
         loginWithMicrosoft(token, 'access_token')
-          .then(() => {
+          .then((loggedUser) => {
             window.history.replaceState(null, '', window.location.pathname);
-            navigate('/');
+            if (loggedUser?.must_change_password) {
+              navigate('/trocar-senha-primeiro-acesso', { replace: true });
+            } else {
+              navigate('/');
+            }
           })
           .catch((err) => {
             window.history.replaceState(null, '', window.location.pathname);
@@ -122,8 +126,12 @@ export const Login: React.FC = () => {
               if (response?.credential) {
                 setSocialLoading('google');
                 try {
-                  await loginWithGoogle(response.credential);
-                  navigate('/');
+                  const loggedUser = await loginWithGoogle(response.credential);
+                  if (loggedUser?.must_change_password) {
+                    navigate('/trocar-senha-primeiro-acesso', { replace: true });
+                  } else {
+                    navigate('/');
+                  }
                 } catch (err: any) {
                   setErrorMessage(getLoginErrorMessage(err));
                 } finally {
@@ -181,8 +189,12 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(loginEmail, loginPassword);
-      navigate('/');
+      const loggedUser = await login(loginEmail, loginPassword);
+      if (loggedUser?.must_change_password) {
+        navigate('/trocar-senha-primeiro-acesso', { replace: true });
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setErrorMessage(getLoginErrorMessage(err));
     } finally {

@@ -12,6 +12,7 @@ export interface User {
   ultimo_acesso?: string | null;
   criado_por_id?: number | null;
   criado_por_nome?: string | null;
+  must_change_password: boolean;
 }
 
 export interface ProvedorVinculado {
@@ -101,6 +102,7 @@ export interface AuthToken {
   email: string;
   role: UserRole;
   nome_fantasia: string;
+  must_change_password: boolean;
 }
 
 export type TipoItem = 'PRODUTO' | 'SERVICO';

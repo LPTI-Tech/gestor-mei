@@ -89,9 +89,26 @@ def get_current_user(
     return user
 
 
+def require_active_password(
+    user: User = Depends(get_current_user)
+) -> User:
+    """
+    Enforcement central de segurança (SEC-01-C).
+    Exige que o usuário autenticado não possua pendência de troca obrigatória
+    de senha no primeiro acesso (must_change_password=True).
+    Retorna HTTP 403 Forbidden com detail 'PASSWORD_CHANGE_REQUIRED'.
+    """
+    if getattr(user, "must_change_password", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="PASSWORD_CHANGE_REQUIRED",
+        )
+    return user
+
+
 def get_current_empresa(
     x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID"),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_active_password),
     db: Session = Depends(get_db)
 ) -> Empresa:
     """
@@ -192,7 +209,7 @@ def get_current_empresa(
 
 
 def require_master(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Exige perfil MASTER da plataforma LPTI Tech."""
     if user.role != UserRole.MASTER:
@@ -204,7 +221,7 @@ def require_master(
 
 
 def require_owner(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Exige perfil OWNER (Proprietário) ou MASTER."""
     if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER]:
@@ -216,7 +233,7 @@ def require_owner(
 
 
 def require_owner_or_master(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Exige perfil OWNER ou MASTER."""
     if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER]:
@@ -228,14 +245,14 @@ def require_owner_or_master(
 
 
 def require_admin(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Alias retrocompatível: OWNER e MASTER atuam como administradores."""
     return require_owner_or_master(user)
 
 
 def require_operador(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Acesso para MASTER, OWNER ou OPERATOR."""
     if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER, UserRole.OPERATOR, UserRole.OPERADOR]:
@@ -247,7 +264,7 @@ def require_operador(
 
 
 def require_consultor_or_admin(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Acesso para CONSULTOR, OWNER ou MASTER."""
     if user.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.MASTER, UserRole.CONSULTOR]:
@@ -259,7 +276,7 @@ def require_consultor_or_admin(
 
 
 def require_consultor(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """Acesso para CONSULTOR ou MASTER."""
     if user.role not in [UserRole.CONSULTOR, UserRole.MASTER]:
@@ -271,7 +288,7 @@ def require_consultor(
 
 
 def require_non_operator(
-    user: User = Depends(get_current_user)
+    user: User = Depends(require_active_password)
 ) -> User:
     """
     Exige que o usuário autenticado NÃO possua perfil OPERADOR/OPERATOR.

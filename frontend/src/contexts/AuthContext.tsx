@@ -14,13 +14,15 @@ interface AuthContextType {
   isConsultor: boolean;
   isOperator: boolean;
   isSupportMode: boolean;
+  mustChangePassword: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (credential: string) => Promise<void>;
-  loginWithMicrosoft: (token: string, tokenType?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  loginWithGoogle: (credential: string) => Promise<User>;
+  loginWithMicrosoft: (token: string, tokenType?: string) => Promise<User>;
   setContextEmpresaId: (empresaId: number | null) => Promise<void>;
   logout: () => void;
   refreshUserData: () => Promise<void>;
+  markPasswordChanged: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -61,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
-  const handlePostAuthSuccess = async (accessToken: string) => {
+  const handlePostAuthSuccess = async (accessToken: string): Promise<User> => {
     setToken(accessToken);
     localStorage.setItem('gestor_mei_token', accessToken);
 
@@ -69,28 +71,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    setUser(profileRes.data.user);
+    const loggedUser: User = profileRes.data.user;
+    setUser(loggedUser);
     setEmpresa(profileRes.data.empresa);
-    localStorage.setItem('gestor_mei_user', JSON.stringify(profileRes.data.user));
+    localStorage.setItem('gestor_mei_user', JSON.stringify(loggedUser));
     localStorage.setItem('gestor_mei_empresa', JSON.stringify(profileRes.data.empresa));
+    return loggedUser;
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const response = await api.post<AuthToken>('/api/auth/login', { email, password });
-    await handlePostAuthSuccess(response.data.access_token);
+    return await handlePostAuthSuccess(response.data.access_token);
   };
 
-  const loginWithGoogle = async (credential: string) => {
+  const loginWithGoogle = async (credential: string): Promise<User> => {
     const response = await api.post<AuthToken>('/api/auth/google', { credential });
-    await handlePostAuthSuccess(response.data.access_token);
+    return await handlePostAuthSuccess(response.data.access_token);
   };
 
-  const loginWithMicrosoft = async (tokenStr: string, tokenType: string = 'access_token') => {
+  const loginWithMicrosoft = async (tokenStr: string, tokenType: string = 'access_token'): Promise<User> => {
     const response = await api.post<AuthToken>('/api/auth/microsoft', {
       token: tokenStr,
       token_type: tokenType,
     });
-    await handlePostAuthSuccess(response.data.access_token);
+    return await handlePostAuthSuccess(response.data.access_token);
+  };
+
+  const markPasswordChanged = () => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated: User = { ...prev, must_change_password: false };
+      localStorage.setItem('gestor_mei_user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const setContextEmpresaId = async (empresaId: number | null) => {
@@ -122,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = isOwner || isMaster;
   const isConsultor = user?.role === 'CONSULTOR' || isMaster;
   const isSupportMode = Boolean(isMaster && activeEmpresaId);
+  const mustChangePassword = Boolean(user?.must_change_password);
 
   return (
     <AuthContext.Provider
@@ -137,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isConsultor,
         isOperator,
         isSupportMode,
+        mustChangePassword,
         isLoading,
         login,
         loginWithGoogle,
@@ -144,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setContextEmpresaId,
         logout,
         refreshUserData,
+        markPasswordChanged,
       }}
     >
       {children}

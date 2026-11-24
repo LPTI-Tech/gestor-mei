@@ -19,7 +19,7 @@ from app.models.produto import Produto
 from app.models.fornecedor import Fornecedor
 from app.models.nfe import NfeImportada, ItemNfeImportada
 from app.models.estoque import MovimentacaoEstoque
-from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin
+from app.dependencies import get_current_user, get_current_empresa, require_consultor_or_admin, require_active_password
 from app.rate_limiter import limiter
 from app.services.storage_service import storage_service
 from app.utils.security_upload import (
@@ -101,7 +101,7 @@ def upload_comprovante_compra(
 def download_comprovante_compra(
     filename: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_active_password),
 ):
     """
     Download seguro e autenticado de comprovante de compra.

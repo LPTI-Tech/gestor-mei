@@ -20,6 +20,8 @@ from app.schemas.auth import (
     ValidarTokenResetResponse,
     RedefinirSenhaRequest,
     RedefinirSenhaResponse,
+    TrocaSenhaPrimeiroAcessoRequest,
+    TrocaSenhaPrimeiroAcessoResponse,
     GoogleAuthRequest,
     MicrosoftAuthRequest,
     ProvedorVinculadoResponse,
@@ -28,8 +30,8 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserResponse
 from app.schemas.empresa import EmpresaResponse
-from app.security import verify_password, hash_password, create_access_token
-from app.dependencies import get_current_user, get_current_empresa, require_admin, require_master
+from app.security import verify_password, hash_password, create_access_token, validate_password_complexity
+from app.dependencies import get_current_user, get_current_empresa, require_admin, require_master, require_active_password
 from app.services.email_service import enviar_email_recuperacao
 from app.services.oauth_service import (
     verify_google_credential,
@@ -157,7 +159,8 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         nome=user.nome,
         email=user.email,
         role=user.role,
-        nome_fantasia=nome_fantasia
+        nome_fantasia=nome_fantasia,
+        must_change_password=getattr(user, "must_change_password", False)
     )
 
 
@@ -194,7 +197,8 @@ def login_google(request: Request, data: GoogleAuthRequest, db: Session = Depend
         nome=user.nome,
         email=user.email,
         role=user.role,
-        nome_fantasia=nome_fantasia
+        nome_fantasia=nome_fantasia,
+        must_change_password=getattr(user, "must_change_password", False)
     )
 
 
@@ -227,13 +231,14 @@ def login_microsoft(request: Request, data: MicrosoftAuthRequest, db: Session = 
         nome=user.nome,
         email=user.email,
         role=user.role,
-        nome_fantasia=nome_fantasia
+        nome_fantasia=nome_fantasia,
+        must_change_password=getattr(user, "must_change_password", False)
     )
 
 
 @router.get("/provedores", response_model=ProvedoresUsuarioResponse)
 def listar_provedores_usuario(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_active_password),
     db: Session = Depends(get_db)
 ):
     """
@@ -267,7 +272,7 @@ def listar_provedores_usuario(
 @router.delete("/desvincular-provedor/{provider}")
 def desvincular_provedor(
     provider: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_active_password),
     db: Session = Depends(get_db)
 ):
     """
@@ -352,6 +357,112 @@ def get_me(
         "user": UserResponse.model_validate(user),
         "empresa": empresa_data
     }
+
+
+# ============================================================================
+# SPRINT SEC-01-D1: TROCA OBRIGATÓRIA DE SENHA NO PRIMEIRO ACESSO
+# ============================================================================
+
+@router.post("/trocar-senha-primeiro-acesso", response_model=TrocaSenhaPrimeiroAcessoResponse)
+@limiter.limit("5/minute")
+def trocar_senha_primeiro_acesso(
+    request: Request,
+    data: TrocaSenhaPrimeiroAcessoRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Sprint SEC-01-D1: Troca Obrigatória de Senha no Primeiro Acesso.
+    Permite ao usuário autenticado (que possui must_change_password=True)
+    definir sua nova senha definitiva.
+    EXCLUSIVAMENTE autenticado via Depends(get_current_user), JAMAIS require_active_password.
+    """
+    # 1. Validação de estado pendente
+    if not getattr(current_user, "must_change_password", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A troca obrigatória de senha não é necessária para este usuário ou já foi realizada."
+        )
+
+    # 2. Validação da confirmação de senha
+    if data.nova_senha != data.confirmacao_nova_senha:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A confirmação da nova senha não confere."
+        )
+
+    # 3. Validação da senha provisória atual
+    if not verify_password(data.senha_atual, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta."
+        )
+
+    # 4. Validação de complexidade, tamanho UTF-8 (72 bytes) e não-reutilização
+    validate_password_complexity(
+        nova_senha=data.nova_senha,
+        senha_atual=data.senha_atual,
+        user_hashed_password=current_user.hashed_password
+    )
+
+    # 5. Execução atômica com predicado condicional (concorrência e exclusão mútua)
+    novo_hash = hash_password(data.nova_senha)
+    agora = datetime.utcnow()
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent", "")[:255]
+
+    try:
+        # Predicado condicional atômico: só atualiza se must_change_password ainda for True
+        stmt = (
+            db.query(User)
+            .filter(User.id == current_user.id, User.must_change_password == True)
+            .update(
+                {
+                    User.hashed_password: novo_hash,
+                    User.must_change_password: False,
+                    User.password_changed_at: agora,
+                },
+                synchronize_session=False
+            )
+        )
+
+        if stmt == 0:
+            # Interpretação estrita: rowcount == 0 indica que o estado já foi alterado
+            # (concorrência ou condição não satisfeita)
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A troca obrigatória de senha não é necessária para este usuário ou já foi realizada."
+            )
+
+        # 6. Auditoria Transacional na mesma transação atômica (AuditoriaLogin com empresa_id nullable)
+        audit = AuditoriaLogin(
+            user_id=current_user.id,
+            email=current_user.email,
+            provider="LOCAL_PASSWORD_CHANGE",
+            sucesso=True,
+            motivo_falha=None,
+            ip=client_ip,
+            user_agent=user_agent,
+            empresa_id=current_user.empresa_id,
+            data_hora=agora
+        )
+        db.add(audit)
+        db.commit()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao atualizar senha e auditoria: {str(e)}"
+        )
+
+    return TrocaSenhaPrimeiroAcessoResponse(
+        mensagem="Senha alterada com sucesso. Acesso liberado.",
+        must_change_password=False
+    )
 
 
 # ============================================================================

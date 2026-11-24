@@ -12,6 +12,7 @@ class Token(BaseModel):
     email: str
     role: UserRole
     nome_fantasia: Optional[str] = None
+    must_change_password: bool = False
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
@@ -55,6 +56,21 @@ class RedefinirSenhaRequest(BaseModel):
 
 class RedefinirSenhaResponse(BaseModel):
     mensagem: str
+
+
+# ============================================================================
+# SPRINT SEC-01-D1: TROCA OBRIGATÓRIA DE SENHA NO PRIMEIRO ACESSO
+# ============================================================================
+
+class TrocaSenhaPrimeiroAcessoRequest(BaseModel):
+    senha_atual: str = Field(..., min_length=1, description="Senha provisória atual")
+    nova_senha: str = Field(..., min_length=1, description="Nova senha definitiva")
+    confirmacao_nova_senha: str = Field(..., min_length=1, description="Confirmação da nova senha")
+
+
+class TrocaSenhaPrimeiroAcessoResponse(BaseModel):
+    mensagem: str
+    must_change_password: bool = False
 
 
 # ============================================================================
