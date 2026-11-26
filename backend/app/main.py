@@ -19,6 +19,7 @@ from app.migrate_oauth import run_migration as run_migration_oauth
 from app.migrate_rbac04 import run_migration as run_migration_rbac04
 from app.migrate_suporte import run_migration as run_migration_suporte
 from app.migrate_pin_desconto import run_migration as run_migration_pin_desconto
+from app.migrate_sec01_password_change import run_migration as run_migration_sec01
 
 # Import routers
 from app.routers import (
@@ -78,6 +79,7 @@ def on_startup():
     settings.validate_production_security()
 
     Base.metadata.create_all(bind=engine)
+    run_migration_sec01()
     run_migration_sprint4()
     run_migration_sprint5()
     run_migration_sprint6()
